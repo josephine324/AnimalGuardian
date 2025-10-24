@@ -126,7 +126,7 @@ AnimalGuardian is a multi-platform digital livestock health management system th
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/Telesphore-Uwabera/AnimalGuadian.git
+   git clone https://github.com/josephine324/AnimalGuardian.git
    cd AnimalGuadian
    ```
 
@@ -362,19 +362,19 @@ This project is based on academic research conducted in Nyagatare District, Rwan
 
 ## 📞 Support & Contact
 
-- **Project Lead**: Telesphore Uwabera
+- **Project Lead**: Josephine Mutesi
 - **Research Supervisor**: Thadee Gatera
-- **Institution**: University of Rwanda
+- **Institution**: African Leadership University
 - **Email**: [Contact information]
-- **GitHub**: [https://github.com/Telesphore-Uwabera/AnimalGuadian](https://github.com/Telesphore-Uwabera/AnimalGuadian)
+- **GitHub**:https://github.com/josephine324/AnimalGuardian.git
+
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
-
-- **University of Rwanda** - Academic support and supervision
+- **African Leadership University** - Academic support and supervision
 - **Nyagatare District Farmers** - Research participants and feedback
 - **Rwanda Agriculture Board (RAB)** - Technical guidance
 - **Africa's Talking** - USSD/SMS service integration
