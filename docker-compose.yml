@@ -1,0 +1,154 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: animalguardian
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - animalguardian-network
+
+  # Redis for Celery
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - animalguardian-network
+
+  # Django Backend
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgresql://postgres:postgres123@db:5432/animalguardian
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=your-secret-key-here
+    volumes:
+      - ./backend:/app
+      - backend_static:/app/staticfiles
+      - backend_media:/app/media
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - animalguardian-network
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+
+  # Celery Worker
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgresql://postgres:postgres123@db:5432/animalguardian
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=your-secret-key-here
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+      - redis
+    networks:
+      - animalguardian-network
+    command: celery -A animalguardian worker -l info
+
+  # Celery Beat (Scheduler)
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgresql://postgres:postgres123@db:5432/animalguardian
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=your-secret-key-here
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+      - redis
+    networks:
+      - animalguardian-network
+    command: celery -A animalguardian beat -l info
+
+  # USSD Service
+  ussd:
+    build:
+      context: ./ussd-service
+      dockerfile: Dockerfile
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=True
+      - BACKEND_API_URL=http://backend:8000/api
+      - AFRICASTALKING_USERNAME=your-username
+      - AFRICASTALKING_API_KEY=your-api-key
+    volumes:
+      - ./ussd-service:/app
+    ports:
+      - "5000:5000"
+    depends_on:
+      - backend
+    networks:
+      - animalguardian-network
+
+  # React Web Dashboard
+  web-dashboard:
+    build:
+      context: ./web-dashboard
+      dockerfile: Dockerfile
+    environment:
+      - REACT_APP_API_BASE_URL=http://localhost:8000/api
+    volumes:
+      - ./web-dashboard:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - animalguardian-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - backend_static:/var/www/static
+      - backend_media:/var/www/media
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+      - web-dashboard
+    networks:
+      - animalguardian-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  backend_static:
+  backend_media:
+
+networks:
+  animalguardian-network:
+    driver: bridge
