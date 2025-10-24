@@ -2,6 +2,9 @@
 
 A comprehensive digital platform designed to enhance veterinary service delivery, disease surveillance, and farmer knowledge for smallholder farmers in Nyagatare District, Rwanda.
 
+Video explaining the app: https://youtu.be/2XZ3YG0hbZ0
+
+
 ## 📋 Table of Contents
 
 - [Overview](#overview)
