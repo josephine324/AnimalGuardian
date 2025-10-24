@@ -98,7 +98,7 @@ Current dashboard shows:
 
 ## 🌐 GitHub Repository
 
-**Repository**: https://github.com/Telesphore-Uwabera/AnimalGuadian
+**Repository**: https://github.com/josephine324/AnimalGuardian.git
 
 All code has been pushed to GitHub and is available for collaboration.
 
