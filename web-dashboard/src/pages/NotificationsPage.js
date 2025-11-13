@@ -1,64 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { notificationsAPI } from '../services/api';
 
 const NotificationsPage = () => {
   const [activeTab, setActiveTab] = useState('all');
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const notifications = [
-    {
-      id: 1,
-      type: 'case',
-      title: 'New Case Reported',
-      message: 'Jean Baptiste reported a sick cattle (Bella) with fever and loss of appetite',
-      time: '5 minutes ago',
-      read: false,
-      priority: 'high',
-    },
-    {
-      id: 2,
-      type: 'case',
-      title: 'Case Resolved',
-      message: 'Case #CR005 has been successfully resolved by Dr. Paul Kagame',
-      time: '1 hour ago',
-      read: false,
-      priority: 'medium',
-    },
-    {
-      id: 3,
-      type: 'farmer',
-      title: 'New Farmer Registered',
-      message: 'Marie Claire Mukamana from Matimba Sector joined the system',
-      time: '2 hours ago',
-      read: true,
-      priority: 'low',
-    },
-    {
-      id: 4,
-      type: 'weather',
-      title: 'Weather Alert',
-      message: 'Heavy rainfall expected tomorrow. Advise farmers to shelter livestock',
-      time: '3 hours ago',
-      read: false,
-      priority: 'high',
-    },
-    {
-      id: 5,
-      type: 'vaccination',
-      title: 'Vaccination Due',
-      message: '15 animals need vaccination this week across Nyagatare District',
-      time: '5 hours ago',
-      read: true,
-      priority: 'medium',
-    },
-    {
-      id: 6,
-      type: 'system',
-      title: 'System Update',
-      message: 'New features added to the mobile app. Version 1.2.0 released',
-      time: '1 day ago',
-      read: true,
-      priority: 'low',
-    },
-  ];
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        setError('Not authenticated. Please login.');
+        setLoading(false);
+        window.location.href = '/login';
+        return;
+      }
+      const data = await notificationsAPI.getAll();
+      const notificationsList = data.results || (Array.isArray(data) ? data : []);
+      setNotifications(Array.isArray(notificationsList) ? notificationsList : []);
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+      setError(err.response?.data?.error || err.response?.data?.detail || 'Failed to load notifications');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarkAsRead = async (id) => {
+    try {
+      await notificationsAPI.markAsRead(id);
+      setNotifications(notifications.map(n => n.id === id ? { ...n, is_read: true } : n));
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+    }
+  };
 
   const getTypeIcon = (type) => {
     switch (type) {
@@ -92,11 +74,45 @@ const NotificationsPage = () => {
 
   const filteredNotifications = notifications.filter(notif => {
     if (activeTab === 'all') return true;
-    if (activeTab === 'unread') return !notif.read;
+    if (activeTab === 'unread') return !notif.is_read;
     return notif.type === activeTab;
   });
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading notifications...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <p className="text-sm text-red-700">{error}</p>
+            <button
+              onClick={fetchNotifications}
+              className="mt-2 text-sm font-medium text-red-600 hover:text-red-500"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -140,9 +156,9 @@ const NotificationsPage = () => {
             {[
               { key: 'all', label: 'All', count: notifications.length },
               { key: 'unread', label: 'Unread', count: unreadCount },
-              { key: 'case', label: 'Cases', count: notifications.filter(n => n.type === 'case').length },
-              { key: 'weather', label: 'Weather', count: notifications.filter(n => n.type === 'weather').length },
-              { key: 'vaccination', label: 'Vaccinations', count: notifications.filter(n => n.type === 'vaccination').length },
+              { key: 'case', label: 'Cases', count: notifications.filter(n => n.notification_type === 'case' || n.type === 'case').length },
+              { key: 'weather', label: 'Weather', count: notifications.filter(n => n.notification_type === 'weather' || n.type === 'weather').length },
+              { key: 'vaccination', label: 'Vaccinations', count: notifications.filter(n => n.notification_type === 'vaccination' || n.type === 'vaccination').length },
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -164,26 +180,29 @@ const NotificationsPage = () => {
             <div
               key={notification.id}
               className={`border-l-4 rounded-r-lg p-4 transition-all hover:shadow-md ${
-                notification.read ? 'bg-white' : getPriorityColor(notification.priority)
+                notification.is_read ? 'bg-white' : getPriorityColor(notification.priority || 'low')
               }`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-3 flex-1">
-                  <span className="text-2xl">{getTypeIcon(notification.type)}</span>
+                  <span className="text-2xl">{getTypeIcon(notification.notification_type || notification.type || 'system')}</span>
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-1">
-                      <h3 className="font-semibold text-gray-900">{notification.title}</h3>
-                      {!notification.read && (
+                      <h3 className="font-semibold text-gray-900">{notification.title || notification.message?.substring(0, 50) || 'Notification'}</h3>
+                      {!notification.is_read && (
                         <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-700">{notification.message}</p>
-                    <p className="text-xs text-gray-500 mt-2">{notification.time}</p>
+                    <p className="text-sm text-gray-700">{notification.message || notification.body || 'No message'}</p>
+                    <p className="text-xs text-gray-500 mt-2">{notification.created_at ? new Date(notification.created_at).toLocaleString() : 'Unknown time'}</p>
                   </div>
                 </div>
                 <div className="flex space-x-2">
-                  {!notification.read && (
-                    <button className="text-green-600 hover:text-green-700 text-sm font-medium">
+                  {!notification.is_read && (
+                    <button 
+                      onClick={() => handleMarkAsRead(notification.id)}
+                      className="text-green-600 hover:text-green-700 text-sm font-medium"
+                    >
                       Mark Read
                     </button>
                   )}

@@ -25,8 +25,11 @@ function App() {
     }
   }, []);
 
-  const handleLogin = (userData, token) => {
+  const handleLogin = (userData, token, refreshToken) => {
     localStorage.setItem('authToken', token);
+    if (refreshToken) {
+      localStorage.setItem('refreshToken', refreshToken);
+    }
     localStorage.setItem('userData', JSON.stringify(userData));
     setUser(userData);
     setIsAuthenticated(true);
@@ -34,6 +37,7 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('userData');
     setUser(null);
     setIsAuthenticated(false);

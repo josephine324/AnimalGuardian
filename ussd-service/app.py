@@ -367,7 +367,7 @@ Check drainage systems."""
 - Keep shelters clean and dry
 - Regular vaccination schedule
 - Watch for early disease signs
-- Contact vet for concerns"""
+- Contact vet for concerns"""  
     
     def send_sms(self, phone_number, message):
         """Send SMS using Africa's Talking."""

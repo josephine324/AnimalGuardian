@@ -1,7 +1,57 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { casesAPI, notificationsAPI } from '../../services/api';
 
 const Sidebar = ({ isOpen, onClose, currentPath, user }) => {
+  const [pendingCasesCount, setPendingCasesCount] = useState(0);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+
+  useEffect(() => {
+    // Fetch pending cases count
+    const fetchPendingCases = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+          const data = await casesAPI.getAll({ status: 'pending', page_size: 1 });
+          const cases = data.results || (Array.isArray(data) ? data : []);
+          // Get total count from response if available, otherwise use array length
+          const count = data.count !== undefined ? data.count : cases.length;
+          setPendingCasesCount(count);
+        }
+      } catch (err) {
+        // Silently fail, don't show badge if error
+        setPendingCasesCount(0);
+      }
+    };
+
+    // Fetch unread notifications count
+    const fetchUnreadNotifications = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+          const data = await notificationsAPI.getAll({ is_read: false, page_size: 1 });
+          const notifications = data.results || (Array.isArray(data) ? data : []);
+          const count = data.count !== undefined ? data.count : notifications.length;
+          setUnreadNotificationsCount(count);
+        }
+      } catch (err) {
+        // Silently fail
+        setUnreadNotificationsCount(0);
+      }
+    };
+
+    fetchPendingCases();
+    fetchUnreadNotifications();
+
+    // Refresh counts every 30 seconds
+    const interval = setInterval(() => {
+      fetchPendingCases();
+      fetchUnreadNotifications();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const navigation = [
     { 
       name: 'Dashboard', 
@@ -20,7 +70,7 @@ const Sidebar = ({ isOpen, onClose, currentPath, user }) => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
       ),
-      badge: 8
+      badge: pendingCasesCount > 0 ? pendingCasesCount : null
     },
     { 
       name: 'Veterinarians', 
@@ -66,7 +116,7 @@ const Sidebar = ({ isOpen, onClose, currentPath, user }) => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
       ),
-      badge: 3
+      badge: unreadNotificationsCount > 0 ? unreadNotificationsCount : null
     },
     { 
       name: 'Settings', 
@@ -123,7 +173,7 @@ const Sidebar = ({ isOpen, onClose, currentPath, user }) => {
                     </span>
                     <span className="ml-3">{item.name}</span>
                   </div>
-                  {item.badge && (
+                  {item.badge !== null && item.badge !== undefined && item.badge > 0 && (
                     <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
                       {item.badge}
                     </span>

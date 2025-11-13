@@ -1,76 +1,146 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { casesAPI, livestockAPI } from '../services/api';
 
 const CasesPage = () => {
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [cases, setCases] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [livestockList, setLivestockList] = useState([]);
+  const [formData, setFormData] = useState({
+    livestock: '',
+    symptoms_observed: '',
+    urgency: 'medium',
+    duration_of_symptoms: '',
+    number_of_affected_animals: 1,
+    location_notes: '',
+  });
+  const [submitting, setSubmitting] = useState(false);
 
-  const cases = [
-    {
-      id: 'CR001',
-      farmer: 'Jean Baptiste Uwimana',
-      phone: '+250788123456',
-      animal: 'Bella (Cattle)',
-      breed: 'Holstein',
-      symptoms: 'Loss of appetite, fever, lethargy',
-      urgency: 'high',
-      status: 'pending',
-      reportedAt: '2024-10-14 08:30',
-      location: 'Rwimiyaga Sector',
-      assignedVet: null,
-    },
-    {
-      id: 'CR002',
-      farmer: 'Marie Claire Mukamana',
-      phone: '+250788234567',
-      animal: 'Max (Goat)',
-      breed: 'Boer',
-      symptoms: 'Coughing, nasal discharge, difficulty breathing',
-      urgency: 'medium',
-      status: 'in_progress',
-      reportedAt: '2024-10-14 06:15',
-      location: 'Matimba Sector',
-      assignedVet: 'Dr. Jane Smith',
-    },
-    {
-      id: 'CR003',
-      farmer: 'Pierre Nkurunziza',
-      phone: '+250788345678',
-      animal: 'Luna (Cattle)',
-      breed: 'Friesian',
-      symptoms: 'Lameness, swelling in right leg',
-      urgency: 'medium',
-      status: 'pending',
-      reportedAt: '2024-10-14 05:45',
-      location: 'Karama Sector',
-      assignedVet: null,
-    },
-    {
-      id: 'CR004',
-      farmer: 'Grace Uwase',
-      phone: '+250788456789',
-      animal: 'Chickens (5)',
-      breed: 'Local',
-      symptoms: 'Sudden death, respiratory issues, diarrhea',
-      urgency: 'high',
-      status: 'pending',
-      reportedAt: '2024-10-14 04:20',
-      location: 'Rwimiyaga Sector',
-      assignedVet: null,
-    },
-    {
-      id: 'CR005',
-      farmer: 'Emmanuel Habimana',
-      phone: '+250788567890',
-      animal: 'Daisy (Cattle)',
-      breed: 'Jersey',
-      symptoms: 'Reduced milk production, mastitis symptoms',
-      urgency: 'low',
-      status: 'resolved',
-      reportedAt: '2024-10-13 14:30',
-      location: 'Matimba Sector',
-      assignedVet: 'Dr. Paul Kagame',
-    },
-  ];
+  useEffect(() => {
+    // Only fetch if user is authenticated
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      fetchCases();
+      fetchLivestock();
+    } else {
+      setError('Not authenticated. Please login.');
+      setLoading(false);
+    }
+  }, [filter]);
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery !== undefined) {
+        fetchCases();
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const fetchCases = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Check if token exists
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        setError('Not authenticated. Please login.');
+        setLoading(false);
+        window.location.href = '/login';
+        return;
+      }
+      
+      const params = {};
+      if (filter !== 'all') {
+        params.status = filter;
+      }
+      if (searchQuery) {
+        params.search = searchQuery;
+      }
+      const data = await casesAPI.getAll(params);
+      const casesList = data.results || (Array.isArray(data) ? data : []);
+      setCases(Array.isArray(casesList) ? casesList : []);
+    } catch (err) {
+      console.error('Error fetching cases:', err);
+      
+      // Handle 401 specifically
+      if (err.response?.status === 401) {
+        setError('Session expired. Please login again.');
+        setTimeout(() => {
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userData');
+          window.location.href = '/login';
+        }, 2000);
+      } else {
+        setError(err.response?.data?.error || err.response?.data?.detail || 'Failed to load cases');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchLivestock = async () => {
+    try {
+      const data = await livestockAPI.getAll();
+      const livestockList = data.results || (Array.isArray(data) ? data : []);
+      setLivestockList(Array.isArray(livestockList) ? livestockList : []);
+    } catch (err) {
+      console.error('Error fetching livestock:', err);
+    }
+  };
+
+  const handleAddCase = async (e) => {
+    e.preventDefault();
+    try {
+      setSubmitting(true);
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        alert('Not authenticated. Please login.');
+        return;
+      }
+
+      if (!formData.livestock) {
+        alert('Please select a livestock animal.');
+        return;
+      }
+
+      const caseData = {
+        livestock: formData.livestock,
+        symptoms_observed: formData.symptoms_observed,
+        urgency: formData.urgency,
+        duration_of_symptoms: formData.duration_of_symptoms,
+        number_of_affected_animals: parseInt(formData.number_of_affected_animals) || 1,
+        location_notes: formData.location_notes,
+      };
+
+      await casesAPI.create(caseData);
+
+      setShowAddModal(false);
+      setFormData({
+        livestock: '',
+        symptoms_observed: '',
+        urgency: 'medium',
+        duration_of_symptoms: '',
+        number_of_affected_animals: 1,
+        location_notes: '',
+      });
+
+      await fetchCases();
+      alert('Case report created successfully!');
+    } catch (err) {
+      console.error('Error creating case:', err);
+      alert(err.response?.data?.error || err.response?.data?.detail || 'Failed to create case report');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
 
   const getUrgencyColor = (urgency) => {
     switch (urgency) {
@@ -98,7 +168,7 @@ const CasesPage = () => {
     }
   };
 
-  const filteredCases = cases.filter(case_ => {
+  const filteredCases = cases.filter((case_) => {
     if (filter !== 'all' && case_.status !== filter) return false;
     if (searchQuery && !case_.farmer.toLowerCase().includes(searchQuery.toLowerCase()) && 
         !case_.id.toLowerCase().includes(searchQuery.toLowerCase())) return false;
@@ -112,6 +182,40 @@ const CasesPage = () => {
     resolved: cases.filter(c => c.status === 'resolved').length,
   };
 
+  if (loading && cases.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading cases...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <p className="text-sm text-red-700">{error}</p>
+            <button
+              onClick={fetchCases}
+              className="mt-2 text-sm font-medium text-red-600 hover:text-red-500"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -120,7 +224,10 @@ const CasesPage = () => {
           <h1 className="text-3xl font-bold text-gray-900">Case Reports</h1>
           <p className="text-gray-600 mt-1">Monitor and manage all livestock health cases</p>
         </div>
-        <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition-colors flex items-center">
+        <button 
+          onClick={() => setShowAddModal(true)}
+          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition-colors flex items-center"
+        >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -271,6 +378,116 @@ const CasesPage = () => {
           </button>
         </div>
       </div>
+
+      {/* Add Case Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Report New Case</h2>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <form onSubmit={handleAddCase} className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Livestock *</label>
+                  <select
+                    required
+                    value={formData.livestock}
+                    onChange={(e) => setFormData({ ...formData, livestock: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="">Select livestock...</option>
+                    {livestockList.map((animal) => (
+                      <option key={animal.id} value={animal.id}>
+                        {animal.name} ({animal.livestock_type?.name || animal.type || 'Unknown'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Symptoms Observed *</label>
+                  <textarea
+                    required
+                    rows={4}
+                    value={formData.symptoms_observed}
+                    onChange={(e) => setFormData({ ...formData, symptoms_observed: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="Describe the symptoms observed..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Urgency *</label>
+                  <select
+                    required
+                    value={formData.urgency}
+                    onChange={(e) => setFormData({ ...formData, urgency: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Number of Affected Animals</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.number_of_affected_animals}
+                    onChange={(e) => setFormData({ ...formData, number_of_affected_animals: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Duration of Symptoms</label>
+                  <input
+                    type="text"
+                    value={formData.duration_of_symptoms}
+                    onChange={(e) => setFormData({ ...formData, duration_of_symptoms: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="e.g., 2 days, 1 week"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Location Notes</label>
+                  <input
+                    type="text"
+                    value={formData.location_notes}
+                    onChange={(e) => setFormData({ ...formData, location_notes: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="e.g., Sector, District"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? 'Creating...' : 'Create Case Report'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

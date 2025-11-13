@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { authAPI } from '../services/api';
 
 const LoginPage = ({ onLogin }) => {
   const [formData, setFormData] = useState({
@@ -6,6 +7,7 @@ const LoginPage = ({ onLogin }) => {
     password: '',
   });
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -13,31 +15,32 @@ const LoginPage = ({ onLogin }) => {
     setError('');
     setLoading(true);
 
-    // Demo login - replace with actual API call
-    setTimeout(() => {
-      if (formData.email === 'admin@animalguardian.rw' && formData.password === 'admin123') {
-        const userData = {
-          id: 1,
-          name: 'Dr. Admin',
-          email: formData.email,
-          role: 'admin',
-          avatar: null,
-        };
-        onLogin(userData, 'demo-token-123');
-      } else if (formData.email === 'vet@animalguardian.rw' && formData.password === 'vet123') {
-        const userData = {
-          id: 2,
-          name: 'Dr. Jane Smith',
-          email: formData.email,
-          role: 'veterinarian',
-          avatar: null,
-        };
-        onLogin(userData, 'demo-token-456');
-      } else {
-        setError('Invalid email or password');
+    try {
+      // Try email login first, fallback to phone if needed
+      let response;
+      try {
+        response = await authAPI.loginWithEmail(formData.email, formData.password);
+      } catch (emailError) {
+        // If email login fails, try as phone number
+        response = await authAPI.login(formData.email, formData.password);
       }
+
+      // Store tokens
+      localStorage.setItem('authToken', response.access);
+      localStorage.setItem('refreshToken', response.refresh);
+      localStorage.setItem('userData', JSON.stringify(response.user));
+
+      // Call onLogin callback with all tokens
+      onLogin(response.user, response.access, response.refresh);
+    } catch (err) {
+      const errorMessage = err.response?.data?.error || 
+                          err.response?.data?.detail || 
+                          err.message || 
+                          'Invalid email/phone or password';
+      setError(errorMessage);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -97,16 +100,25 @@ const LoginPage = ({ onLogin }) => {
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Password
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-150"
-                placeholder="Enter your password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-150 pr-12"
+                  placeholder="Enter your password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 px-3 py-2 text-sm text-gray-500 hover:text-gray-700 focus:outline-none"
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -148,15 +160,6 @@ const LoginPage = ({ onLogin }) => {
                 'Sign in'
               )}
             </button>
-          </div>
-
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="text-xs font-semibold text-blue-800 mb-2">Demo Credentials:</p>
-            <div className="text-xs text-blue-700 space-y-1">
-              <p><strong>Admin:</strong> admin@animalguardian.rw / admin123</p>
-              <p><strong>Vet:</strong> vet@animalguardian.rw / vet123</p>
-            </div>
           </div>
         </form>
 
