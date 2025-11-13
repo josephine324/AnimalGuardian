@@ -1,16 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { notificationsAPI } from '../../services/api';
 
 const Header = ({ onMenuClick, user, onLogout }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]);
 
-  const notifications = [
-    { id: 1, title: 'New case reported', message: 'Farmer John reported sick cattle', time: '5 min ago', unread: true },
-    { id: 2, title: 'Case resolved', message: 'Case #CR001 has been resolved', time: '1 hour ago', unread: true },
-    { id: 3, title: 'New farmer registered', message: 'Marie Claire joined the system', time: '2 hours ago', unread: false },
-  ];
+  useEffect(() => {
+    fetchNotifications();
+    // Refresh notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const unreadCount = notifications.filter(n => n.unread).length;
+  const fetchNotifications = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        const data = await notificationsAPI.getAll({ page_size: 5 });
+        const notificationsList = data.results || (Array.isArray(data) ? data : []);
+        setNotifications(Array.isArray(notificationsList) ? notificationsList.slice(0, 5) : []);
+      }
+    } catch (err) {
+      // Silently fail for header notifications
+      console.error('Error fetching notifications:', err);
+    }
+  };
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
@@ -70,25 +87,31 @@ const Header = ({ onMenuClick, user, onLogout }) => {
                   <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
                 </div>
                 <div className="max-h-96 overflow-y-auto">
-                  {notifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className={`px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 ${
-                        notification.unread ? 'bg-blue-50' : ''
-                      }`}
-                    >
-                      <div className="flex items-start">
-                        {notification.unread && (
-                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
-                        )}
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">{notification.title}</p>
-                          <p className="text-xs text-gray-600 mt-1">{notification.message}</p>
-                          <p className="text-xs text-gray-400 mt-1">{notification.time}</p>
+                  {notifications.length > 0 ? (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 ${
+                          !notification.is_read ? 'bg-blue-50' : ''
+                        }`}
+                      >
+                        <div className="flex items-start">
+                          {!notification.is_read && (
+                            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
+                          )}
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900">{notification.title || notification.message?.substring(0, 50) || 'Notification'}</p>
+                            <p className="text-xs text-gray-600 mt-1">{notification.message || notification.body || ''}</p>
+                            <p className="text-xs text-gray-400 mt-1">{notification.created_at ? new Date(notification.created_at).toLocaleString() : 'Unknown time'}</p>
+                          </div>
                         </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="px-4 py-8 text-center text-gray-500 text-sm">
+                      No notifications
                     </div>
-                  ))}
+                  )}
                 </div>
                 <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 text-center">
                   <a href="/notifications" className="text-sm font-medium text-green-600 hover:text-green-700">

@@ -1,91 +1,100 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { dashboardAPI, casesAPI } from '../services/api';
 
 const DashboardPage = () => {
-  const [stats] = useState({
-    totalCases: 156,
-    pendingCases: 8,
-    resolvedCases: 132,
-    activeCases: 16,
-    totalFarmers: 248,
-    newFarmersThisWeek: 12,
-    totalVeterinarians: 15,
-    activeVeterinarians: 12,
-    totalLivestock: 1245,
-    healthyLivestock: 1180,
-    sickLivestock: 45,
-    vaccinationsDue: 28,
-    averageResponseTime: '2.5 hours',
-    resolutionRate: '85%',
+  const [stats, setStats] = useState({
+    totalCases: 0,
+    pendingCases: 0,
+    resolvedCases: 0,
+    activeCases: 0,
+    totalFarmers: 0,
+    newFarmersThisWeek: 0,
+    totalVeterinarians: 0,
+    activeVeterinarians: 0,
+    totalLivestock: 0,
+    healthyLivestock: 0,
+    sickLivestock: 0,
+    vaccinationsDue: 0,
+    averageResponseTime: '0 hours',
+    resolutionRate: '0%',
   });
+  const [recentCases, setRecentCases] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const recentCases = [
-    {
-      id: 'CR001',
-      farmer: 'Jean Baptiste Uwimana',
-      animal: 'Bella (Cattle)',
-      symptoms: 'Loss of appetite, fever',
-      urgency: 'high',
-      status: 'pending',
-      reportedAt: '2 hours ago',
-      location: 'Rwimiyaga Sector',
-    },
-    {
-      id: 'CR002',
-      farmer: 'Marie Claire Mukamana',
-      animal: 'Max (Goat)',
-      symptoms: 'Coughing, nasal discharge',
-      urgency: 'medium',
-      status: 'in_progress',
-      reportedAt: '4 hours ago',
-      location: 'Matimba Sector',
-    },
-    {
-      id: 'CR003',
-      farmer: 'Pierre Nkurunziza',
-      animal: 'Luna (Cattle)',
-      symptoms: 'Lameness, swelling in leg',
-      urgency: 'medium',
-      status: 'pending',
-      reportedAt: '6 hours ago',
-      location: 'Karama Sector',
-    },
-    {
-      id: 'CR004',
-      farmer: 'Grace Uwase',
-      animal: 'Chickens (5)',
-      symptoms: 'Sudden death, respiratory issues',
-      urgency: 'high',
-      status: 'pending',
-      reportedAt: '8 hours ago',
-      location: 'Rwimiyaga Sector',
-    },
-  ];
+  useEffect(() => {
+    // Only fetch if user is authenticated
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      fetchDashboardData();
+    } else {
+      setError('Not authenticated. Please login.');
+      setLoading(false);
+    }
+  }, []);
 
-  const weatherAlerts = [
-    {
-      id: 1,
-      type: 'warning',
-      title: 'Heavy Rainfall Expected',
-      message: 'Heavy rainfall expected in Nyagatare District tomorrow. Advise farmers to shelter livestock.',
-      severity: 'high',
-      time: '3 hours ago',
-    },
-    {
-      id: 2,
-      type: 'info',
-      title: 'Temperature Drop',
-      message: 'Temperature expected to drop to 12°C tonight. Protect young animals.',
-      severity: 'medium',
-      time: '1 day ago',
-    },
-  ];
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-  const upcomingVaccinations = [
-    { id: 1, farmer: 'Jean Baptiste', animal: 'Bella (Cattle)', vaccine: 'FMD', dueDate: 'Tomorrow', status: 'scheduled' },
-    { id: 2, farmer: 'Marie Claire', animal: 'Max (Goat)', vaccine: 'PPR', dueDate: 'In 2 days', status: 'pending' },
-    { id: 3, farmer: 'Pierre Nkurunziza', animal: 'Luna (Cattle)', vaccine: 'Brucellosis', dueDate: 'In 3 days', status: 'pending' },
-  ];
+      // Check if token exists
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        setError('Not authenticated. Please login.');
+        setLoading(false);
+        window.location.href = '/login';
+        return;
+      }
+
+      // Fetch dashboard stats
+      const statsData = await dashboardAPI.getStats();
+      setStats({
+        totalCases: statsData.total_cases || 0,
+        pendingCases: statsData.pending_cases || 0,
+        resolvedCases: statsData.resolved_cases || 0,
+        activeCases: statsData.active_cases || 0,
+        totalFarmers: statsData.total_farmers || 0,
+        newFarmersThisWeek: statsData.new_farmers_this_week || 0,
+        totalVeterinarians: statsData.total_veterinarians || 0,
+        activeVeterinarians: statsData.active_veterinarians || 0,
+        totalLivestock: statsData.total_livestock || 0,
+        healthyLivestock: statsData.healthy_livestock || 0,
+        sickLivestock: statsData.sick_livestock || 0,
+        vaccinationsDue: statsData.vaccinations_due || 0,
+        averageResponseTime: statsData.average_response_time || '0 hours',
+        resolutionRate: statsData.resolution_rate || '0%',
+      });
+
+      // Fetch recent cases
+      const casesData = await casesAPI.getAll({ page_size: 5 });
+      const cases = casesData.results || (Array.isArray(casesData) ? casesData : []);
+      setRecentCases(Array.isArray(cases) ? cases.slice(0, 5) : []);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      
+      // Handle 401 specifically
+      if (err.response?.status === 401) {
+        setError('Session expired. Please login again.');
+        // Clear tokens and redirect after a delay
+        setTimeout(() => {
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userData');
+          window.location.href = '/login';
+        }, 2000);
+      } else {
+        setError(err.response?.data?.error || err.response?.data?.detail || 'Failed to load dashboard data');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Weather alerts and vaccinations will be fetched from API when endpoints are available
+  const [weatherAlerts] = useState([]);
+  const [upcomingVaccinations] = useState([]);
 
   const getUrgencyColor = (urgency) => {
     switch (urgency) {
@@ -112,6 +121,40 @@ const DashboardPage = () => {
         return 'bg-gray-100 text-gray-800';
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading dashboard data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <p className="text-sm text-red-700">{error}</p>
+            <button
+              onClick={fetchDashboardData}
+              className="mt-2 text-sm font-medium text-red-600 hover:text-red-500"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -249,13 +292,14 @@ const DashboardPage = () => {
             </Link>
           </div>
           <div className="p-6">
-            <div className="space-y-4">
-              {recentCases.map((case_) => (
+            {recentCases.length > 0 ? (
+              <div className="space-y-4">
+                {recentCases.map((case_) => (
                 <div key={case_.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
-                        <span className="font-bold text-gray-900">{case_.id}</span>
+                        <span className="font-bold text-gray-900">{case_.case_id || case_.id}</span>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getUrgencyColor(case_.urgency)}`}>
                           {case_.urgency}
                         </span>
@@ -263,24 +307,27 @@ const DashboardPage = () => {
                           {case_.status.replace('_', ' ')}
                         </span>
                       </div>
-                      <h3 className="font-semibold text-gray-800">{case_.farmer}</h3>
-                      <p className="text-sm text-gray-600">{case_.animal}</p>
+                      <h3 className="font-semibold text-gray-800">{case_.reporter?.first_name} {case_.reporter?.last_name || case_.reporter?.username || 'Unknown Farmer'}</h3>
+                      <p className="text-sm text-gray-600">{case_.livestock?.name || case_.livestock?.type || 'Unknown Animal'}</p>
                     </div>
-                    <span className="text-xs text-gray-500">{case_.reportedAt}</span>
+                    <span className="text-xs text-gray-500">{new Date(case_.reported_at).toLocaleString()}</span>
                   </div>
                   <p className="text-gray-700 mb-2">
-                    <span className="font-medium">Symptoms:</span> {case_.symptoms}
+                    <span className="font-medium">Symptoms:</span> {case_.symptoms_observed || 'No symptoms described'}
                   </p>
                   <div className="flex items-center text-sm text-gray-500">
                     <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    {case_.location}
+                    {case_.location || case_.location_notes || 'Location not specified'}
                   </div>
                 </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 text-center py-8">No recent cases to display</p>
+            )}
           </div>
         </div>
 
@@ -293,18 +340,22 @@ const DashboardPage = () => {
               <p className="text-xs text-gray-500">Important weather information</p>
             </div>
             <div className="p-6 space-y-4">
-              {weatherAlerts.map((alert) => (
-                <div key={alert.id} className={`border-l-4 ${alert.severity === 'high' ? 'border-red-500 bg-red-50' : 'border-blue-500 bg-blue-50'} p-4 rounded-r-lg`}>
-                  <div className="flex items-start">
-                    <span className="text-2xl mr-3">{alert.type === 'warning' ? '⚠️' : 'ℹ️'}</span>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 text-sm">{alert.title}</h3>
-                      <p className="text-xs text-gray-700 mt-1">{alert.message}</p>
-                      <p className="text-xs text-gray-500 mt-2">{alert.time}</p>
+              {weatherAlerts.length > 0 ? (
+                weatherAlerts.map((alert) => (
+                  <div key={alert.id} className={`border-l-4 ${alert.severity === 'high' ? 'border-red-500 bg-red-50' : 'border-blue-500 bg-blue-50'} p-4 rounded-r-lg`}>
+                    <div className="flex items-start">
+                      <span className="text-2xl mr-3">{alert.type === 'warning' ? '⚠️' : 'ℹ️'}</span>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 text-sm">{alert.title}</h3>
+                        <p className="text-xs text-gray-700 mt-1">{alert.message}</p>
+                        <p className="text-xs text-gray-500 mt-2">{alert.time}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-4">No weather alerts at this time</p>
+              )}
             </div>
           </div>
 
@@ -315,21 +366,25 @@ const DashboardPage = () => {
               <p className="text-xs text-gray-500">{stats.vaccinationsDue} animals scheduled</p>
             </div>
             <div className="p-6 space-y-3">
-              {upcomingVaccinations.map((vac) => (
-                <div key={vac.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-900">{vac.animal}</p>
-                    <p className="text-xs text-gray-600">{vac.farmer}</p>
-                    <p className="text-xs text-gray-500 mt-1">{vac.vaccine}</p>
+              {upcomingVaccinations.length > 0 ? (
+                upcomingVaccinations.map((vac) => (
+                  <div key={vac.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900">{vac.animal}</p>
+                      <p className="text-xs text-gray-600">{vac.farmer}</p>
+                      <p className="text-xs text-gray-500 mt-1">{vac.vaccine}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-medium text-green-600">{vac.dueDate}</p>
+                      <span className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${vac.status === 'scheduled' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                        {vac.status}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs font-medium text-green-600">{vac.dueDate}</p>
-                    <span className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${vac.status === 'scheduled' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                      {vac.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-4">No upcoming vaccinations scheduled</p>
+              )}
             </div>
           </div>
         </div>

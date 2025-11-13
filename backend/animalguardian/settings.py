@@ -33,19 +33,16 @@ THIRD_PARTY_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     'drf_spectacular',
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
 ]
 
 LOCAL_APPS = [
     'accounts',
-    'farmers',
     'livestock',
     'cases',
     'notifications',
-    'ussd',
-    'analytics',
+    'weather',
+    'community',
+    'marketplace',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
