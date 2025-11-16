@@ -17,6 +17,7 @@ A comprehensive digital platform designed to enhance veterinary service delivery
 - [PowerShell Management Scripts](#powershell-management-scripts)
 - [Complete API Documentation](#complete-api-documentation)
 - [Complete Deployment Guide](#complete-deployment-guide)
+- [Railway Deployment Guide (Backend & USSD Service)](#-railway-deployment-guide-backend--ussd-service)
 - [Flutter Mobile App Details](#flutter-mobile-app-details)
 - [Feature Completion Status](#feature-completion-status)
 - [Troubleshooting](#troubleshooting)
@@ -2338,6 +2339,238 @@ This option uses fully managed platforms, keeps infrastructure-as-code in the re
    - Ensure the backend `ALLOWED_HOSTS` and `CORS_ALLOWED_ORIGINS` include both the Netlify default domain and any custom dashboard domains.
 
 With this setup you deploy both services by simply pushing to `main`: Render rebuilds the Django API (running migrations and keeping media on a persistent disk) and Netlify rebuilds the React dashboard with the correct API base URL.
+
+---
+
+## 🚂 Railway Deployment Guide (Backend & USSD Service)
+
+This guide will help you deploy the Backend API and USSD Service to Railway.
+
+### Prerequisites
+
+1. **Railway Account**: Sign up at [railway.app](https://railway.app)
+2. **GitHub Repository**: Your code should be pushed to GitHub
+3. **PostgreSQL Database**: Railway provides PostgreSQL as a service
+
+### Step 1: Deploy Backend API (Django)
+
+#### 1.1 Create New Project on Railway
+
+1. Go to [railway.app](https://railway.app) and log in
+2. Click **"New Project"**
+3. Select **"Deploy from GitHub repo"**
+4. Choose your `AnimalGuardian` repository
+5. Select the `backend` directory as the root directory
+
+#### 1.2 Add PostgreSQL Database
+
+1. In your Railway project, click **"+ New"**
+2. Select **"Database"** → **"Add PostgreSQL"**
+3. Railway will automatically create a PostgreSQL database
+4. Note the connection details (you'll need them for environment variables)
+
+#### 1.3 Configure Environment Variables
+
+Go to your backend service → **Variables** tab and add the required variables (see [Railway Environment Variables](#railway-environment-variables) section below).
+
+#### 1.4 Configure Build Settings
+
+1. Go to **Settings** → **Build & Deploy**
+2. **Root Directory**: `backend`
+3. **Build Command**: (leave empty, Railway auto-detects)
+4. **Start Command**: (leave empty, uses Procfile)
+
+#### 1.5 Deploy
+
+1. Railway will automatically detect the `Procfile` and `requirements.txt`
+2. Click **"Deploy"** or push to your GitHub repository
+3. Wait for the build to complete
+4. Your backend will be available at: `https://your-backend-service.railway.app`
+
+#### 1.6 Run Migrations
+
+After first deployment, you may need to run migrations:
+
+1. Go to your service → **Deployments** tab
+2. Click on the latest deployment
+3. Open **"View Logs"**
+4. Or use Railway CLI:
+   ```bash
+   railway run python manage.py migrate
+   railway run python manage.py createsuperuser
+   railway run python manage.py collectstatic --noinput
+   ```
+
+### Step 2: Deploy USSD Service (Flask)
+
+#### 2.1 Create New Service
+
+1. In the same Railway project, click **"+ New"**
+2. Select **"GitHub Repo"**
+3. Choose the same repository
+4. Select the `ussd-service` directory as the root directory
+
+#### 2.2 Configure Environment Variables
+
+Go to your USSD service → **Variables** tab and add:
+
+```env
+# Backend API URL (use your Railway backend URL)
+BACKEND_API_URL=https://your-backend-service.railway.app/api
+
+# Africa's Talking
+AFRICASTALKING_USERNAME=your-africastalking-username
+AFRICASTALKING_API_KEY=your-africastalking-api-key
+
+# Flask Settings
+FLASK_ENV=production
+FLASK_APP=app.py
+```
+
+#### 2.3 Configure Build Settings
+
+1. Go to **Settings** → **Build & Deploy**
+2. **Root Directory**: `ussd-service`
+3. **Build Command**: (leave empty)
+4. **Start Command**: (leave empty, uses Procfile)
+
+#### 2.4 Deploy
+
+1. Railway will automatically detect the `Procfile` and `requirements.txt`
+2. Click **"Deploy"** or push to your GitHub repository
+3. Your USSD service will be available at: `https://your-ussd-service.railway.app`
+
+### Step 3: Find Your Railway Backend URL
+
+1. Go to your Railway project dashboard
+2. Click on the **`animalguardian-backend`** service
+3. Click on the **"Settings"** tab
+4. Scroll down to the **"Domains"** section
+5. You'll see your Railway-generated domain, which looks like:
+   ```
+   https://animalguardian-backend-production-xxxxx.up.railway.app
+   ```
+
+**Current Backend URL**: `https://animalguardian-backend-production-b5a8.up.railway.app`
+
+### Step 4: Update Netlify Configuration
+
+After deploying to Railway, update your `netlify.toml`:
+
+```toml
+[build.environment]
+REACT_APP_API_URL = "https://animalguardian-backend-production-b5a8.up.railway.app/api"
+```
+
+Then redeploy your Netlify site.
+
+### Railway Environment Variables
+
+#### Required Environment Variables (Must Have)
+
+1. **DATABASE_URL**
+   - Click "Add Reference" → Select `animalguardian-postgres` → Select `DATABASE_URL`
+   - This automatically connects your backend to the PostgreSQL database
+
+2. **SECRET_KEY**
+   - Generate a random string using: `python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"`
+   - Or use: https://djecrety.ir/
+
+3. **DEBUG**
+   - Value: `False`
+
+4. **ALLOWED_HOSTS**
+   - Value: `*.railway.app,animalguardian-backend-production-b5a8.up.railway.app`
+
+5. **DJANGO_SETTINGS_MODULE**
+   - Value: `animalguardian.settings`
+
+6. **DEFAULT_FROM_EMAIL**
+   - Value: `mutesijosephine324@gmail.com`
+
+#### Important for CORS (Required for Web Dashboard)
+
+7. **CORS_ALLOWED_ORIGINS**
+   - Value: `https://your-netlify-app.netlify.app,https://animalguardian-backend-production-b5a8.up.railway.app`
+   - Update with your actual Netlify URL
+
+8. **CSRF_TRUSTED_ORIGINS**
+   - Same value as `CORS_ALLOWED_ORIGINS`
+
+#### Optional but Recommended
+
+9. **PYTHON_VERSION**
+   - Value: `3.11.7`
+
+10. **WEB_CONCURRENCY**
+    - Value: `3`
+
+#### Optional - Email Configuration
+
+11. **EMAIL_HOST** = `smtp.gmail.com`
+12. **EMAIL_PORT** = `587`
+13. **EMAIL_USE_TLS** = `True`
+14. **EMAIL_HOST_USER** = `mutesijosephine324@gmail.com`
+15. **EMAIL_HOST_PASSWORD** = Your Gmail App Password
+
+#### Optional - SMS/USSD
+
+16. **AFRICASTALKING_USERNAME** = Your Africa's Talking username
+17. **AFRICASTALKING_API_KEY** = Your Africa's Talking API key
+
+### Railway Troubleshooting
+
+#### Build Fails - Python Not Found
+
+If Railway shows `pip: not found` or `python: not found`:
+
+1. Go to your Railway project → `animalguardian-backend` service
+2. Click on **Settings** tab
+3. Scroll to **Build & Deploy** section
+4. **Clear any custom build command** (leave it empty)
+5. **Root Directory**: Make sure it's set to `backend`
+6. **Start Command**: Leave empty (Railway will use Procfile)
+
+Railway should auto-detect Python from:
+- `requirements.txt` (in backend directory)
+- `runtime.txt` (in backend directory)
+- `Procfile` (in backend directory)
+
+#### Database Connection Issues
+
+- Verify `DATABASE_URL` is set correctly using "Add Reference"
+- Check PostgreSQL service is running
+- Ensure migrations have been run
+
+#### CORS Errors
+
+- Update `CORS_ALLOWED_ORIGINS` with your Netlify domain
+- Check `ALLOWED_HOSTS` includes your Railway domain
+
+### Railway CLI (Optional)
+
+Install Railway CLI for easier management:
+
+```bash
+npm i -g @railway/cli
+railway login
+railway link
+railway up
+```
+
+### Cost Estimation
+
+Railway offers:
+- **Free Tier**: $5 credit/month
+- **Hobby Plan**: $5/month per service
+- **Pro Plan**: $20/month per service
+
+For this project:
+- Backend API: 1 service
+- USSD Service: 1 service
+- PostgreSQL: Included with service
+
+**Estimated Cost**: $10-20/month (depending on usage)
 
 ---
 
