@@ -94,7 +94,32 @@ function App() {
           path="/"
           element={
             isAuthenticated ? (
-              <DashboardLayout user={user} onLogout={handleLogout} />
+              // Only allow Sector Vets and Admins to access web dashboard
+              (user?.user_type === 'sector_vet' || user?.user_type === 'admin' || user?.is_staff || user?.is_superuser) ? (
+                <DashboardLayout user={user} onLogout={handleLogout} />
+              ) : (
+                <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                  <div className="text-center">
+                    <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
+                    <p className="text-gray-600 mb-4">
+                      The web dashboard is only available for Sector Veterinarians and Administrators.
+                    </p>
+                    <p className="text-sm text-gray-500 mb-4">
+                      Your user type: <span className="font-semibold">{user?.user_type || 'Unknown'}</span>
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {user?.user_type === 'local_vet' && 'Local Veterinarians should use the mobile app.'}
+                      {user?.user_type === 'farmer' && 'Farmers should use the mobile app or USSD service.'}
+                    </p>
+                    <button
+                      onClick={handleLogout}
+                      className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              )
             ) : (
               <Navigate to="/login" replace />
             )

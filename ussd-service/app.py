@@ -67,6 +67,22 @@ class USSDHandler(Resource):
     def process_ussd_flow(self, step, user_input, phone_number):
         """Process USSD flow based on current step."""
         
+        # Verify user is a Farmer and approved (only for step 0 to avoid repeated checks)
+        if step == 0:
+            farmer = self.get_farmer_by_phone(phone_number)
+            if farmer:
+                # Check if user is a farmer
+                if farmer.get('user_type') not in ['farmer', None]:
+                    return "END This service is only available for farmers. Please use the appropriate platform for your user type."
+                
+                # Check if user is approved
+                if not farmer.get('is_approved_by_admin', False):
+                    return "END Your account is pending approval. Please wait for approval from a sector veterinarian before using this service."
+                
+                # Check if user is verified
+                if not farmer.get('is_verified', False):
+                    return "END Please verify your phone number first before using this service."
+        
         if step == 0:
             # Welcome message
             return """CON Welcome to AnimalGuardian!
