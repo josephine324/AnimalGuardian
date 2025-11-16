@@ -2265,6 +2265,80 @@ sudo nano /etc/postgresql/13/main/pg_hba.conf
 - Implement rate limiting
 - Use HTTPS everywhere
 
+### Option 3: Render (Backend API) + Netlify (Web Dashboard)
+
+This option uses fully managed platforms, keeps infrastructure-as-code in the repo (`render.yaml`, `netlify.toml`, and `web-dashboard/public/_redirects`), and works without provisioning your own servers.
+
+#### 1. Render Backend Configuration
+1. **Create a PostgreSQL instance**  
+   - From the Render dashboard, choose *New ➜ PostgreSQL*.  
+   - Name it `animalguardian-postgres` (or match the name in `render.yaml`).  
+   - Copy the internal connection string; Render will inject it automatically when the blueprint is deployed.
+
+2. **Deploy via Blueprint**  
+   - From the Render dashboard choose *New ➜ Blueprint*, point it at this repository, and select `render.yaml`.  
+   - The blueprint creates a `python` web service located in the `backend` folder plus a persistent disk for media uploads.
+
+3. **Service settings (already reflected inside `render.yaml`):**
+   - **Root directory:** `backend`  
+   - **Build command:**
+     ```bash
+     pip install --upgrade pip
+     pip install -r requirements.txt
+     python manage.py collectstatic --noinput
+     ```
+   - **Start command:**
+     ```bash
+     python manage.py migrate --noinput && gunicorn animalguardian.wsgi:application --bind 0.0.0.0:$PORT
+     ```
+   - **Persistent disk:** 2 GB mounted at `/opt/render/project/src/media` for user uploads.
+   - **Environment variables:** (Render marks `sync: false` values as secrets—set them in the dashboard)
+
+     | Key | Purpose |
+     | --- | --- |
+     | `PYTHON_VERSION=3.11.7` | Matches CI/local runtime |
+     | `DJANGO_SETTINGS_MODULE=animalguardian.settings` | Ensures the full settings module loads |
+     | `SECRET_KEY=<generate>` | Django secret |
+     | `ALLOWED_HOSTS=<your-render-host>,api.animalguardian.rw` | Include Render hostname and custom domain |
+     | `DATABASE_URL` | Auto-filled from the managed Postgres instance |
+     | `REDIS_URL` | Optional if using a hosted Redis |
+     | `EMAIL_HOST_PASSWORD`, `AFRICASTALKING_*`, etc. | Populate as needed |
+     | `DEFAULT_FROM_EMAIL=no-reply@animalguardian.rw` | Email sender |
+     | `WEB_CONCURRENCY=3` | Gunicorn workers |
+
+4. **Post-deploy steps**
+   - Use Render’s *Post-Deploy Command* (or a manual job) to run `python manage.py migrate`.  
+   - Update `CORS_ALLOWED_ORIGINS` / `CSRF_TRUSTED_ORIGINS` in `backend/.env` to include your Netlify domain, e.g. `https://animalguardian-dashboard.netlify.app`.
+   - Add a custom domain (e.g., `api.animalguardian.rw`) in Render and point DNS (CNAME) accordingly.
+
+#### 2. Netlify Web Dashboard Configuration
+1. **Connect the repository**
+   - In Netlify, click *Add new site ➜ Import an existing project*, pick GitHub, and select this repo.
+   - Netlify automatically reads `netlify.toml` so you don’t need to configure build settings manually.
+
+2. **Build settings (defined in `netlify.toml`):**
+   - **Base directory:** `web-dashboard`
+   - **Build command:** `npm install && npm run build`
+   - **Publish directory:** `web-dashboard/build`
+   - **Environment variables:**  
+     - `NODE_VERSION=18`  
+     - `REACT_APP_API_URL=https://<render-backend-host>/api`
+
+   You can also create a `.env.production` file locally before pushing deploys:
+   ```env
+   REACT_APP_API_URL=https://<render-backend-host>/api
+   ```
+
+3. **Client-side routing & proxies**
+   - `web-dashboard/public/_redirects` is included so React Router works on Netlify (`/* /index.html 200`).  
+   - API requests go directly to the Render hostname via `REACT_APP_API_URL`, so no additional Netlify proxy rules are required.
+
+4. **Custom domains & HTTPS**
+   - Add `dashboard.animalguardian.rw` (or similar) in Netlify, then update DNS with the provided CNAME.  
+   - Ensure the backend `ALLOWED_HOSTS` and `CORS_ALLOWED_ORIGINS` include both the Netlify default domain and any custom dashboard domains.
+
+With this setup you deploy both services by simply pushing to `main`: Render rebuilds the Django API (running migrations and keeping media on a persistent disk) and Netlify rebuilds the React dashboard with the correct API base URL.
+
 ---
 
 ## 📱 Flutter Mobile App Details

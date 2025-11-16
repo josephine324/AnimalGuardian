@@ -7,7 +7,6 @@ const VeterinariansPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [statusUpdatingId, setStatusUpdatingId] = useState(null);
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -38,35 +37,7 @@ const VeterinariansPage = () => {
       }
       const data = await usersAPI.getVeterinarians();
       const vetsList = data.results || (Array.isArray(data) ? data : []);
-
-      const normalized = (Array.isArray(vetsList) ? vetsList : []).map((item) => {
-        const user = item.user || item;
-        const profile = item.veterinarian_profile || item;
-        const profileId = item.id || profile?.id || user?.vet_profile?.id || item.profile_id;
-        const isAvailable = profile?.is_available ?? item.is_available ?? user?.is_active ?? true;
-        const status = profile?.status || (isAvailable ? 'available' : 'offline');
-
-        return {
-          id: user.id || profileId || item.id,
-          profile_id: profileId || item.id,
-          first_name: user.first_name || '',
-          last_name: user.last_name || '',
-          email: user.email || '',
-          phone_number: user.phone_number || '',
-          sector: user.sector || profile?.sector || '',
-          district: user.district || profile?.district || '',
-          is_active: user.is_active ?? isAvailable,
-          is_available: isAvailable,
-          user_type: user.user_type || 'veterinarian',
-          specialization: profile.specialization || item.specialization || 'General Practice',
-          license_number: profile.license_number || item.license_number || '',
-          status,
-          created_at: user.created_at || item.created_at || null,
-          raw: item,
-        };
-      });
-
-      setVeterinarians(normalized);
+      setVeterinarians(Array.isArray(vetsList) ? vetsList : []);
     } catch (err) {
       console.error('Error fetching veterinarians:', err);
       setError(err.response?.data?.error || err.response?.data?.detail || 'Failed to load veterinarians');
@@ -126,7 +97,7 @@ const VeterinariansPage = () => {
 
   const filteredVets = veterinarians.filter(vet =>
     `${vet.first_name} ${vet.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    vet.specialization?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    vet.veterinarian_profile?.specialization?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     vet.sector?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -145,41 +116,9 @@ const VeterinariansPage = () => {
 
   const stats = {
     total: veterinarians.length,
-    available: veterinarians.filter(v => v.is_available).length,
-    busy: veterinarians.filter(v => (v.status || '').toLowerCase() === 'busy').length,
-    offline: veterinarians.filter(v => !v.is_available).length,
-  };
-
-  const handleToggleStatus = async (vet) => {
-    try {
-      const profileId = vet.profile_id || vet.id;
-      if (!profileId) {
-        alert('Unable to determine veterinarian profile id.');
-        return;
-      }
-      setStatusUpdatingId(profileId);
-      await usersAPI.setVeterinarianStatus(profileId, {
-        is_available: !vet.is_available,
-      });
-
-      setVeterinarians((prev) =>
-        prev.map((item) =>
-          (item.profile_id || item.id) === profileId
-            ? {
-                ...item,
-                is_available: !vet.is_available,
-                is_active: !vet.is_available,
-                status: !vet.is_available ? 'offline' : 'available',
-              }
-            : item
-        )
-      );
-    } catch (err) {
-      console.error('Error updating status:', err);
-      alert(err.response?.data?.error || 'Failed to update status');
-    } finally {
-      setStatusUpdatingId(null);
-    }
+    available: veterinarians.filter(v => v.veterinarian_profile?.status === 'available' || v.is_active).length,
+    busy: veterinarians.filter(v => v.veterinarian_profile?.status === 'busy').length,
+    offline: veterinarians.filter(v => !v.is_active).length,
   };
 
   if (loading) {
@@ -304,18 +243,18 @@ const VeterinariansPage = () => {
                     </div>
                     <div className="ml-4 text-white">
                       <h3 className="font-bold text-lg">Dr. {vet.first_name} {vet.last_name || ''}</h3>
-                      <p className="text-sm text-blue-100">{vet.license_number || 'No license'}</p>
+                      <p className="text-sm text-blue-100">{vet.veterinarian_profile?.license_number || 'No license'}</p>
                     </div>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(vet.status || (vet.is_available ? 'available' : 'offline'))}`}>
-                    {vet.status || (vet.is_available ? 'available' : 'offline')}
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(vet.veterinarian_profile?.status || (vet.is_active ? 'available' : 'offline'))}`}>
+                    {vet.veterinarian_profile?.status || (vet.is_active ? 'available' : 'offline')}
                   </span>
                 </div>
               </div>
               <div className="p-6 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-700">Specialization:</span>
-                  <span className="text-sm text-gray-900 font-semibold">{vet.specialization || 'General Practice'}</span>
+                  <span className="text-sm text-gray-900 font-semibold">{vet.veterinarian_profile?.specialization || 'General Practice'}</span>
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -342,9 +281,7 @@ const VeterinariansPage = () => {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Status</p>
-                    <p className={`text-lg font-bold ${vet.is_available ? 'text-green-600' : 'text-gray-600'}`}>
-                      {vet.is_available ? 'Online' : 'Offline'}
-                    </p>
+                    <p className="text-lg font-bold text-green-600">{vet.is_active ? 'Active' : 'Inactive'}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Type</p>
@@ -355,17 +292,8 @@ const VeterinariansPage = () => {
                 <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm font-medium transition-colors">
                   View Profile
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleToggleStatus(vet)}
-                  disabled={statusUpdatingId === (vet.profile_id || vet.id)}
-                  className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {statusUpdatingId === (vet.profile_id || vet.id)
-                    ? 'Updating...'
-                    : vet.is_available
-                    ? 'Set Offline'
-                    : 'Set Online'}
+                <button className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors">
+                  Assign Case
                 </button>
               </div>
             </div>
