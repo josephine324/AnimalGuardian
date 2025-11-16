@@ -4,9 +4,9 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
 
 router = DefaultRouter()
-router.register(r'users', views.UserViewSet)
-router.register(r'farmers', views.FarmerViewSet)
-router.register(r'veterinarians', views.VeterinarianViewSet)
+router.register(r'users', views.UserViewSet, basename='user')
+router.register(r'farmers', views.FarmerViewSet, basename='farmer')
+router.register(r'veterinarians', views.VeterinarianViewSet, basename='veterinarian')
 
 urlpatterns = [
     path('auth/register/', views.RegisterView.as_view(), name='register'),
