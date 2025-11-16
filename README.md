@@ -2397,9 +2397,86 @@ After first deployment, you may need to run migrations:
 4. Or use Railway CLI:
    ```bash
    railway run python manage.py migrate
-   railway run python manage.py createsuperuser
    railway run python manage.py collectstatic --noinput
    ```
+
+#### 1.7 Create Superuser
+
+**Option 1: Using the provided script (Recommended)**
+
+1. **Install Railway CLI** (if not already installed):
+   ```bash
+   npm i -g @railway/cli
+   ```
+
+2. **Login to Railway**:
+   ```bash
+   railway login
+   ```
+   This will open a browser for authentication.
+
+3. **Link to your project**:
+   ```bash
+   railway link
+   ```
+   Select your project and service when prompted.
+
+4. **Run the create superuser script**:
+   ```bash
+   railway run python backend/create_superuser.py
+   ```
+   
+   This will create a superuser with:
+   - Phone: `+250780570632`
+   - Email: `mutesijosephine324@gmail.com`
+   - Username: `admin`
+   - Default password: `Admin@123456` (change after first login)
+
+**Option 2: Using Django shell via Railway Dashboard**
+
+1. Go to Railway → `animalguardian-backend` service
+2. Click "Deployments" tab
+3. Click on the latest deployment
+4. Look for "Shell" or "Terminal" option
+5. Run:
+   ```bash
+   python manage.py shell
+   ```
+   
+   Then in the Python shell:
+   ```python
+   from accounts.models import User
+   user = User.objects.create_superuser(
+       phone_number='+250780570632',
+       username='admin',
+       email='mutesijosephine324@gmail.com',
+       password='Admin@123456',
+       user_type='admin',
+       is_verified=True,
+   )
+   print(f'Superuser created: {user.phone_number}')
+   ```
+
+**Option 3: Using Django createsuperuser command**
+
+```bash
+railway run python manage.py createsuperuser
+```
+
+When prompted:
+- **Phone number**: `+250780570632`
+- **Username**: `admin`
+- **Email**: `mutesijosephine324@gmail.com`
+- **Password**: (enter your desired password)
+
+**After Creating Superuser:**
+
+Login to admin panel at:
+- URL: `https://animalguardian-backend-production-b5a8.up.railway.app/admin/`
+- Phone number: `+250780570632`
+- Password: `Admin@123456` (or your custom password)
+
+**Important:** Change the password after first login!
 
 ### Step 2: Deploy USSD Service (Flask)
 
