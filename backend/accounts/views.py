@@ -276,10 +276,10 @@ class UserViewSet(viewsets.ModelViewSet):
         user_to_approve = self.get_object()
         approver = request.user
         
-        # Check if approver is admin or vet
-        if not (approver.is_staff or approver.is_superuser or approver.user_type in ['admin', 'veterinarian']):
+        # Check if approver is admin or sector vet (only sector vets can approve)
+        if not (approver.is_staff or approver.is_superuser or approver.user_type in ['admin', 'sector_vet']):
             return Response({
-                'error': 'You do not have permission to approve users.'
+                'error': 'You do not have permission to approve users. Only administrators and sector veterinarians can approve users.'
             }, status=status.HTTP_403_FORBIDDEN)
         
         approval_notes = request.data.get('notes', '')
@@ -297,14 +297,14 @@ class UserViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
-        """Reject a user (admin or vet only)."""
+        """Reject a user (admin or sector vet only)."""
         user_to_reject = self.get_object()
         approver = request.user
         
-        # Check if approver is admin or vet
-        if not (approver.is_staff or approver.is_superuser or approver.user_type in ['admin', 'veterinarian']):
+        # Check if approver is admin or sector vet (only sector vets can reject)
+        if not (approver.is_staff or approver.is_superuser or approver.user_type in ['admin', 'sector_vet']):
             return Response({
-                'error': 'You do not have permission to reject users.'
+                'error': 'You do not have permission to reject users. Only administrators and sector veterinarians can reject users.'
             }, status=status.HTTP_403_FORBIDDEN)
         
         rejection_notes = request.data.get('notes', '')
@@ -322,13 +322,13 @@ class UserViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'])
     def pending_approval(self, request):
-        """Get list of users pending approval (admin or vet only)."""
+        """Get list of users pending approval (admin or sector vet only)."""
         approver = request.user
         
-        # Check if approver is admin or vet
-        if not (approver.is_staff or approver.is_superuser or approver.user_type in ['admin', 'veterinarian']):
+        # Check if approver is admin or sector vet (only sector vets can view pending approvals)
+        if not (approver.is_staff or approver.is_superuser or approver.user_type in ['admin', 'sector_vet']):
             return Response({
-                'error': 'You do not have permission to view pending approvals.'
+                'error': 'You do not have permission to view pending approvals. Only administrators and sector veterinarians can view pending approvals.'
             }, status=status.HTTP_403_FORBIDDEN)
         
         pending_users = User.objects.filter(

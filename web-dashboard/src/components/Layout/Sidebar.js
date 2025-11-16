@@ -167,7 +167,7 @@ const Sidebar = ({ isOpen, onClose, currentPath, user }) => {
               // Check if item requires admin/vet access
               if (item.adminOnly) {
                 const userType = user?.user_type;
-                const isAdmin = user?.is_staff || user?.is_superuser || userType === 'admin' || userType === 'veterinarian';
+                const isAdmin = user?.is_staff || user?.is_superuser || userType === 'admin' || userType === 'sector_vet' || userType === 'local_vet';
                 if (!isAdmin) {
                   return null; // Don't show this item
                 }

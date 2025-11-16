@@ -12,7 +12,8 @@ class User(AbstractUser):
     
     USER_TYPE_CHOICES = [
         ('farmer', 'Farmer'),
-        ('veterinarian', 'Veterinarian'),
+        ('sector_vet', 'Sector Veterinarian'),
+        ('local_vet', 'Local Veterinarian'),
         ('admin', 'Admin'),
         ('field_officer', 'Field Officer'),
     ]
@@ -77,7 +78,7 @@ class User(AbstractUser):
         null=True,
         blank=True,
         related_name='approved_users',
-        help_text="Admin or vet who approved this user"
+        help_text="Admin or sector veterinarian who approved this user"
     )
     approved_at = models.DateTimeField(null=True, blank=True)
     approval_notes = models.TextField(blank=True, help_text="Notes from admin/vet about approval")

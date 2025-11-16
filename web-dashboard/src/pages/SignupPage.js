@@ -173,7 +173,8 @@ const SignupPage = ({ onLogin }) => {
                   onChange={handleChange}
                 >
                   <option value="farmer">Farmer</option>
-                  <option value="veterinarian">Veterinarian</option>
+                  <option value="sector_vet">Sector Veterinarian</option>
+                  <option value="local_vet">Local Veterinarian</option>
                   <option value="field_officer">Field Officer</option>
                 </select>
               </div>
