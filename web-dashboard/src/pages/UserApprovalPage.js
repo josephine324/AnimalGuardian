@@ -146,8 +146,16 @@ const UserApprovalPage = () => {
                       <div className="text-sm text-gray-500">{user.email}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {user.user_type}
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        user.user_type === 'farmer' ? 'bg-green-100 text-green-800' :
+                        user.user_type === 'sector_vet' ? 'bg-purple-100 text-purple-800' :
+                        user.user_type === 'local_vet' ? 'bg-blue-100 text-blue-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {user.user_type === 'sector_vet' ? 'Sector Vet' :
+                         user.user_type === 'local_vet' ? 'Local Vet' :
+                         user.user_type === 'field_officer' ? 'Field Officer' :
+                         user.user_type}
                       </span>
                     </td>
                     <td className="px-6 py-4">

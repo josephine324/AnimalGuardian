@@ -55,11 +55,18 @@ def dashboard_stats(request):
         created_at__gte=week_ago
     ).count()
     
-    total_veterinarians = User.objects.filter(user_type='veterinarian').count()
+    # Count both sector and local veterinarians
+    total_veterinarians = User.objects.filter(
+        user_type__in=['sector_vet', 'local_vet']
+    ).count()
     active_veterinarians = User.objects.filter(
-        user_type='veterinarian',
+        user_type__in=['sector_vet', 'local_vet'],
         vet_profile__is_available=True
     ).count()
+    
+    # Separate counts
+    total_sector_vets = User.objects.filter(user_type='sector_vet').count()
+    total_local_vets = User.objects.filter(user_type='local_vet').count()
     
     # Livestock statistics
     total_livestock = Livestock.objects.count()
@@ -83,6 +90,8 @@ def dashboard_stats(request):
         'new_farmers_this_week': new_farmers_this_week,
         'total_veterinarians': total_veterinarians,
         'active_veterinarians': active_veterinarians,
+        'total_sector_vets': total_sector_vets,
+        'total_local_vets': total_local_vets,
         'total_livestock': total_livestock,
         'healthy_livestock': healthy_livestock,
         'sick_livestock': sick_livestock,
