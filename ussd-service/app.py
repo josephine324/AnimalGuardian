@@ -244,14 +244,22 @@ Recommendations:
     def get_farmer_by_phone(self, phone_number):
         """Get farmer data from backend API."""
         try:
+            # Try to get user by phone number from users endpoint
             response = requests.get(
-                f"{BACKEND_API_URL}/accounts/farmers/",
+                f"{BACKEND_API_URL}/accounts/users/",
                 params={'phone_number': phone_number}
             )
             
             if response.status_code == 200:
                 data = response.json()
-                return data['results'][0] if data['results'] else None
+                users = data.get('results', []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
+                # Find user with matching phone number
+                for user in users:
+                    if user.get('phone_number') == phone_number:
+                        return user
+                # If not found in results, try first user
+                if users:
+                    return users[0]
             
         except Exception as e:
             app.logger.error(f"Error fetching farmer: {str(e)}")
@@ -396,14 +404,22 @@ Check drainage systems."""
     def get_farmer_by_phone(self, phone_number):
         """Get farmer data from backend API."""
         try:
+            # Try to get user by phone number from users endpoint
             response = requests.get(
-                f"{BACKEND_API_URL}/accounts/farmers/",
+                f"{BACKEND_API_URL}/accounts/users/",
                 params={'phone_number': phone_number}
             )
             
             if response.status_code == 200:
                 data = response.json()
-                return data['results'][0] if data['results'] else None
+                users = data.get('results', []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
+                # Find user with matching phone number
+                for user in users:
+                    if user.get('phone_number') == phone_number:
+                        return user
+                # If not found in results, try first user
+                if users:
+                    return users[0]
             
         except Exception as e:
             app.logger.error(f"Error fetching farmer: {str(e)}")
