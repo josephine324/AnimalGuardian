@@ -223,8 +223,8 @@ java --version      # Should be 11+ (for Android)
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/Telesphore-Uwabera/AnimalGuadian.git
-cd AnimalGuadian
+git clone https://github.com/josephine324/AnimalGuardian.git
+cd AnimalGuardian
 ```
 
 ### 2. Backend Setup (Django API)
@@ -871,8 +871,8 @@ Authorization: Bearer <token>
 
 ```bash
 # Clone repository
-git clone https://github.com/Telesphore-Uwabera/AnimalGuadian.git
-cd animalguardian
+git clone https://github.com/josephine324/AnimalGuardian.git
+cd AnimalGuardian
 
 # Configure environment variables
 cp backend/.env.example backend/.env
@@ -1141,7 +1141,7 @@ This project is licensed under the MIT License.
 For support and questions:
 - **Email**: support@animalguardian.rw
 - **Documentation**: https://docs.animalguardian.rw
-- **Issue Tracker**: https://github.com/Telesphore-Uwabera/AnimalGuadian/issues
+- **Issue Tracker**: https://github.com/josephine324/AnimalGuardian/issues
 
 ---
 
@@ -1863,8 +1863,8 @@ The API implements rate limiting to prevent abuse:
 
 #### 1. Clone Repository
 ```bash
-git clone https://github.com/Telesphore-Uwabera/AnimalGuadian.git
-cd animalguardian
+git clone https://github.com/josephine324/AnimalGuardian.git
+cd AnimalGuardian
 ```
 
 #### 2. Configure Environment Variables
@@ -1956,8 +1956,8 @@ GRANT ALL PRIVILEGES ON DATABASE animalguardian TO animalguardian;
 #### 3. Backend Deployment
 ```bash
 # Clone repository
-git clone https://github.com/Telesphore-Uwabera/AnimalGuadian.git
-cd animalguardian/backend
+git clone https://github.com/josephine324/AnimalGuardian.git
+cd AnimalGuardian/backend
 
 # Create virtual environment
 python3 -m venv venv
