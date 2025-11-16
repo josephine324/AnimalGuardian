@@ -2588,6 +2588,56 @@ Then redeploy your Netlify site.
 - **Sandbox**: Free $0.50 credit for testing
 - **Production**: Pay-as-you-go (~$0.01-0.05 per SMS in Rwanda)
 
+### Railway Environment Variables Checklist
+
+#### How to Add Variables in Railway
+
+1. Go to your Railway project: https://railway.app
+2. Click on **`animalguardian-backend`** service
+3. Click **"Variables"** tab
+4. Click **"+ New Variable"** for each variable
+5. Enter variable name and value
+6. Click **"Add"**
+
+#### Priority Order
+
+1. **First** (Critical): DATABASE_URL, SECRET_KEY, DEBUG, ALLOWED_HOSTS, DJANGO_SETTINGS_MODULE
+2. **Second** (For web dashboard): CORS_ALLOWED_ORIGINS, CSRF_TRUSTED_ORIGINS
+3. **Third** (SMS functionality): AFRICASTALKING_USERNAME, AFRICASTALKING_API_KEY
+4. **Fourth** (Email): EMAIL_HOST, EMAIL_PORT, EMAIL_USE_TLS, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD
+5. **Last** (Optional): PYTHON_VERSION, WEB_CONCURRENCY
+
+#### Quick Copy-Paste Checklist
+
+Copy these into Railway Variables:
+
+```
+✅ DATABASE_URL (Add Reference to postgres)
+✅ SECRET_KEY (generate new one)
+✅ DEBUG=False
+✅ ALLOWED_HOSTS=*.railway.app,animalguardian-backend-production-b5a8.up.railway.app
+✅ DJANGO_SETTINGS_MODULE=animalguardian.settings
+✅ DEFAULT_FROM_EMAIL=mutesijosephine324@gmail.com
+✅ CORS_ALLOWED_ORIGINS=https://your-netlify-app.netlify.app,https://animalguardian-backend-production-b5a8.up.railway.app
+✅ CSRF_TRUSTED_ORIGINS=https://your-netlify-app.netlify.app,https://animalguardian-backend-production-b5a8.up.railway.app
+✅ AFRICASTALKING_USERNAME=sandbox
+✅ AFRICASTALKING_API_KEY=atsk_1d0e0702b50384db6c669dce7574ef5971ddf7ebcc411a5a214c39354ad26b363dbc94e2
+```
+
+#### After Adding Variables
+
+1. Railway will automatically redeploy your service
+2. Check the **"Deployments"** tab to see the new deployment
+3. Check **"Logs"** to ensure everything starts correctly
+4. Test your API endpoints
+
+#### Verify Variables Are Set
+
+After adding, you can verify in Railway:
+1. Go to **Variables** tab
+2. You should see all your variables listed
+3. Make sure `DATABASE_URL` shows as a reference (not a value)
+
 ### Railway Troubleshooting
 
 #### Build Fails - Python Not Found
