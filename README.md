@@ -2402,7 +2402,31 @@ After first deployment, you may need to run migrations:
 
 #### 1.7 Create Superuser
 
-**Option 1: Using the provided script (Recommended)**
+**Option 1: Using Django Management Command (Easiest - Recommended)**
+
+1. **Go to Railway Dashboard**:
+   - Go to Railway → `animalguardian-backend` service
+   - Click "Deployments" tab
+   - Click on the latest deployment
+   - Look for "Shell" or "Terminal" button/option
+
+2. **Run migrations first** (if not done):
+   ```bash
+   python manage.py migrate
+   ```
+
+3. **Create superuser**:
+   ```bash
+   python manage.py create_admin
+   ```
+   
+   This will create/update a superuser with:
+   - Phone: `+250780570632`
+   - Email: `mutesijosephine324@gmail.com`
+   - Username: `admin`
+   - Default password: `Admin@123456` (change after first login)
+
+**Option 2: Using Railway CLI**
 
 1. **Install Railway CLI** (if not already installed):
    ```bash
@@ -2421,16 +2445,15 @@ After first deployment, you may need to run migrations:
    ```
    Select your project and service when prompted.
 
-4. **Run the create superuser script**:
+4. **Run migrations**:
    ```bash
-   railway run python backend/create_superuser.py
+   railway run python manage.py migrate
    ```
-   
-   This will create a superuser with:
-   - Phone: `+250780570632`
-   - Email: `mutesijosephine324@gmail.com`
-   - Username: `admin`
-   - Default password: `Admin@123456` (change after first login)
+
+5. **Create superuser**:
+   ```bash
+   railway run python manage.py create_admin
+   ```
 
 **Option 2: Using Django shell via Railway Dashboard**
 
