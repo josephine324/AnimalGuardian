@@ -5,10 +5,11 @@ publish = "build"
 
 [build.environment]
 NODE_VERSION = "18"
+# Update this URL after deploying backend to Railway
+# REACT_APP_API_URL = "https://your-backend-service.railway.app/api"
 REACT_APP_API_URL = "https://animalguardian-backend.onrender.com/api"
 
 [[redirects]]
 from = "/*"
 to = "/index.html"
 status = 200
-

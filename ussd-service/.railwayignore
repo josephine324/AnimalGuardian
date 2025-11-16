@@ -1,0 +1,21 @@
+# Railway ignore file for USSD service
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+*.log
+.DS_Store
+*.swp
+*.swo
+*~
+.pytest_cache/
+.coverage
+htmlcov/
+.idea/
+.vscode/
+

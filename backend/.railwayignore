@@ -1,0 +1,25 @@
+# Railway ignore file for backend
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+*.log
+db.sqlite3
+media/
+staticfiles/
+.DS_Store
+*.swp
+*.swo
+*~
+.pytest_cache/
+.coverage
+htmlcov/
+.idea/
+.vscode/
+*.iml
+
