@@ -2518,6 +2518,76 @@ Then redeploy your Netlify site.
 16. **AFRICASTALKING_USERNAME** = Your Africa's Talking username
 17. **AFRICASTALKING_API_KEY** = Your Africa's Talking API key
 
+**How to Get Africa's Talking Credentials:**
+
+1. **Sign Up for Africa's Talking**
+   - Go to: https://africastalking.com
+   - Click **"Sign Up"** or **"Get Started"**
+   - Use your email: `mutesijosephine324@gmail.com`
+   - Select country: **Rwanda**
+   - Complete registration and verify your email
+
+2. **Login to Dashboard**
+   - Go to: https://account.africastalking.com/auth/login
+   - Login with your credentials
+
+3. **Get Your API Credentials**
+   - In the dashboard, go to **"Settings"** → **"API Keys"** or **"Sandbox"**
+   - You'll see:
+     - **Username**: Usually your app name or generated username
+     - **API Key**: Click "Show" or "Generate" to reveal it
+   - Copy both values (keep them secure!)
+
+4. **Sandbox vs Production**
+   - **Sandbox**: Free for testing (limited to registered test numbers)
+   - **Production**: For live deployment (requires account approval)
+   - **Start with Sandbox** for development
+
+5. **Register Test Numbers (Sandbox Only)**
+   - Go to **"Sandbox"** → **"Test Numbers"**
+   - Click **"Add Number"**
+   - Enter phone number: `+250788123456` (your actual number with country code)
+   - Save the number
+   - **Note**: In sandbox, only registered numbers can receive SMS
+
+6. **Update Environment Variables**
+   - In Railway: Go to your backend service → **Variables** tab
+   - Add:
+     - `AFRICASTALKING_USERNAME` = your username
+     - `AFRICASTALKING_API_KEY` = your API key
+   - Or update `backend/.env` file locally:
+     ```env
+     AFRICASTALKING_USERNAME=your-actual-username-here
+     AFRICASTALKING_API_KEY=your-actual-api-key-here
+     ```
+
+7. **Test SMS (Optional)**
+   ```bash
+   cd backend
+   python manage.py shell
+   ```
+   Then in Python shell:
+   ```python
+   from django.conf import settings
+   from africastalking.SMS import SMS
+   
+   sms = SMS(username=settings.AFRICASTALKING_USERNAME, api_key=settings.AFRICASTALKING_API_KEY)
+   response = sms.send(
+       message="Test from AnimalGuardian!",
+       recipients=["+250788123456"]  # Your registered test number
+   )
+   print(response)
+   ```
+
+**Useful Links:**
+- Dashboard: https://account.africastalking.com
+- Documentation: https://developers.africastalking.com
+- Support: support@africastalking.com
+
+**Cost Information:**
+- **Sandbox**: Free $0.50 credit for testing
+- **Production**: Pay-as-you-go (~$0.01-0.05 per SMS in Rwanda)
+
 ### Railway Troubleshooting
 
 #### Build Fails - Python Not Found
