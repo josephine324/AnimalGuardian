@@ -195,6 +195,18 @@ export const casesAPI = {
     const response = await api.delete(`/cases/reports/${id}/`);
     return response.data;
   },
+
+  assign: async (caseId, veterinarianId) => {
+    const response = await api.post(`/cases/reports/${caseId}/assign/`, {
+      veterinarian_id: veterinarianId,
+    });
+    return response.data;
+  },
+
+  unassign: async (caseId) => {
+    const response = await api.post(`/cases/reports/${caseId}/unassign/`);
+    return response.data;
+  },
 };
 
 // Livestock API

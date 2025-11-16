@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { casesAPI, livestockAPI } from '../services/api';
+import { casesAPI, livestockAPI, usersAPI } from '../services/api';
 
 const CasesPage = () => {
   const [filter, setFilter] = useState('all');
@@ -8,7 +8,11 @@ const CasesPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [selectedCase, setSelectedCase] = useState(null);
   const [livestockList, setLivestockList] = useState([]);
+  const [localVets, setLocalVets] = useState([]);
+  const [userData, setUserData] = useState(null);
   const [formData, setFormData] = useState({
     livestock: '',
     symptoms_observed: '',
@@ -17,14 +21,35 @@ const CasesPage = () => {
     number_of_affected_animals: 1,
     location_notes: '',
   });
+  const [assignVetId, setAssignVetId] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [assigning, setAssigning] = useState(false);
 
   useEffect(() => {
     // Only fetch if user is authenticated
     const token = localStorage.getItem('authToken');
+    const storedUserData = localStorage.getItem('userData');
     if (token) {
+      if (storedUserData) {
+        try {
+          setUserData(JSON.parse(storedUserData));
+        } catch (e) {
+          console.error('Error parsing user data:', e);
+        }
+      }
       fetchCases();
       fetchLivestock();
+      // Fetch local vets if user is sector vet or admin
+      if (storedUserData) {
+        try {
+          const user = JSON.parse(storedUserData);
+          if (user.user_type === 'sector_vet' || user.user_type === 'admin' || user.is_staff || user.is_superuser) {
+            fetchLocalVets();
+          }
+        } catch (e) {
+          console.error('Error parsing user data:', e);
+        }
+      }
     } else {
       setError('Not authenticated. Please login.');
       setLoading(false);
@@ -97,6 +122,59 @@ const CasesPage = () => {
     }
   };
 
+  const fetchLocalVets = async () => {
+    try {
+      const data = await usersAPI.getVeterinarians({ user_type: 'local_vet' });
+      const vetsList = data.results || (Array.isArray(data) ? data : []);
+      setLocalVets(Array.isArray(vetsList) ? vetsList : []);
+    } catch (err) {
+      console.error('Error fetching local veterinarians:', err);
+    }
+  };
+
+  const handleAssignCase = async () => {
+    if (!selectedCase || !assignVetId) {
+      alert('Please select a veterinarian.');
+      return;
+    }
+
+    try {
+      setAssigning(true);
+      await casesAPI.assign(selectedCase.id, assignVetId);
+      setShowAssignModal(false);
+      setSelectedCase(null);
+      setAssignVetId('');
+      await fetchCases();
+      alert('Case assigned successfully!');
+    } catch (err) {
+      console.error('Error assigning case:', err);
+      alert(err.response?.data?.error || err.response?.data?.detail || 'Failed to assign case');
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const handleUnassignCase = async (caseId) => {
+    if (!window.confirm('Are you sure you want to unassign this case?')) {
+      return;
+    }
+
+    try {
+      await casesAPI.unassign(caseId);
+      await fetchCases();
+      alert('Case unassigned successfully!');
+    } catch (err) {
+      console.error('Error unassigning case:', err);
+      alert(err.response?.data?.error || err.response?.data?.detail || 'Failed to unassign case');
+    }
+  };
+
+  const openAssignModal = (case_) => {
+    setSelectedCase(case_);
+    setAssignVetId(case_.assigned_veterinarian || '');
+    setShowAssignModal(true);
+  };
+
   const handleAddCase = async (e) => {
     e.preventDefault();
     try {
@@ -161,26 +239,44 @@ const CasesPage = () => {
     switch (status) {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
-      case 'in_progress':
+      case 'under_review':
         return 'bg-blue-100 text-blue-800';
+      case 'diagnosed':
+        return 'bg-purple-100 text-purple-800';
+      case 'treated':
+        return 'bg-indigo-100 text-indigo-800';
       case 'resolved':
         return 'bg-green-100 text-green-800';
+      case 'escalated':
+        return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
+  const isSectorVetOrAdmin = () => {
+    if (!userData) return false;
+    return userData.user_type === 'sector_vet' || 
+           userData.user_type === 'admin' || 
+           userData.is_staff || 
+           userData.is_superuser;
+  };
+
   const filteredCases = cases.filter((case_) => {
     if (filter !== 'all' && case_.status !== filter) return false;
-    if (searchQuery && !case_.farmer.toLowerCase().includes(searchQuery.toLowerCase()) && 
-        !case_.id.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    const searchLower = searchQuery.toLowerCase();
+    const reporterName = (case_.reporter_name || '').toLowerCase();
+    const caseId = (case_.case_id || case_.id || '').toString().toLowerCase();
+    if (searchQuery && !reporterName.includes(searchLower) && !caseId.includes(searchLower)) {
+      return false;
+    }
     return true;
   });
 
   const stats = {
     all: cases.length,
     pending: cases.filter(c => c.status === 'pending').length,
-    in_progress: cases.filter(c => c.status === 'in_progress').length,
+    in_progress: cases.filter(c => ['under_review', 'diagnosed', 'treated'].includes(c.status)).length,
     resolved: cases.filter(c => c.status === 'resolved').length,
   };
 
@@ -254,8 +350,8 @@ const CasesPage = () => {
           <p className="text-sm text-gray-600">Pending</p>
         </button>
         <button
-          onClick={() => setFilter('in_progress')}
-          className={`p-4 rounded-lg border-2 transition-all ${filter === 'in_progress' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+          onClick={() => setFilter('under_review')}
+          className={`p-4 rounded-lg border-2 transition-all ${filter === 'under_review' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}
         >
           <p className="text-2xl font-bold text-blue-600">{stats.in_progress}</p>
           <p className="text-sm text-gray-600">In Progress</p>
@@ -319,39 +415,80 @@ const CasesPage = () => {
               {filteredCases.map((case_) => (
                 <tr key={case_.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{case_.id}</div>
-                    <div className="text-xs text-gray-500">{case_.reportedAt}</div>
+                    <div className="text-sm font-medium text-gray-900">{case_.case_id || case_.id}</div>
+                    <div className="text-xs text-gray-500">
+                      {case_.reported_at ? new Date(case_.reported_at).toLocaleDateString() : 'N/A'}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{case_.farmer}</div>
-                    <div className="text-xs text-gray-500">{case_.phone}</div>
-                    <div className="text-xs text-gray-400">{case_.location}</div>
+                    <div className="text-sm font-medium text-gray-900">{case_.reporter_name || 'Unknown'}</div>
+                    <div className="text-xs text-gray-500">{case_.reporter?.phone_number || ''}</div>
+                    <div className="text-xs text-gray-400">{case_.location_notes || ''}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{case_.animal}</div>
-                    <div className="text-xs text-gray-500">{case_.breed}</div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {case_.livestock?.livestock_type?.name || case_.livestock?.name || 'Unknown'}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {case_.livestock?.breed?.name || case_.livestock?.tag_number || ''}
+                    </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900 max-w-xs truncate">{case_.symptoms}</div>
+                    <div className="text-sm text-gray-900 max-w-xs truncate">{case_.symptoms_observed || 'No symptoms'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${getUrgencyColor(case_.urgency)}`}>
-                      {case_.urgency}
+                      {case_.urgency || 'medium'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(case_.status)}`}>
-                      {case_.status.replace('_', ' ')}
+                      {case_.status ? case_.status.replace(/_/g, ' ') : 'pending'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {case_.assignedVet || (
+                    {case_.assigned_veterinarian_name ? (
+                      <div>
+                        <div className="font-medium">{case_.assigned_veterinarian_name}</div>
+                        {case_.assigned_at && (
+                          <div className="text-xs text-gray-500">
+                            {new Date(case_.assigned_at).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
                       <span className="text-gray-400 italic">Unassigned</span>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                     <button className="text-green-600 hover:text-green-900">View</button>
-                    <button className="text-blue-600 hover:text-blue-900">Assign</button>
+                    {isSectorVetOrAdmin() && (
+                      <>
+                        {case_.assigned_veterinarian ? (
+                          <>
+                            <button 
+                              onClick={() => openAssignModal(case_)}
+                              className="text-blue-600 hover:text-blue-900"
+                            >
+                              Reassign
+                            </button>
+                            <button 
+                              onClick={() => handleUnassignCase(case_.id)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              Unassign
+                            </button>
+                          </>
+                        ) : (
+                          <button 
+                            onClick={() => openAssignModal(case_)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            Assign
+                          </button>
+                        )}
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -487,6 +624,86 @@ const CasesPage = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Case Modal */}
+      {showAssignModal && selectedCase && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">
+                {selectedCase.assigned_veterinarian ? 'Reassign Case' : 'Assign Case'}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowAssignModal(false);
+                  setSelectedCase(null);
+                  setAssignVetId('');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-2">
+                  <strong>Case ID:</strong> {selectedCase.case_id || selectedCase.id}
+                </p>
+                <p className="text-sm text-gray-600 mb-2">
+                  <strong>Reporter:</strong> {selectedCase.reporter_name || 'Unknown'}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Symptoms:</strong> {selectedCase.symptoms_observed || 'N/A'}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Select Local Veterinarian *
+                </label>
+                <select
+                  required
+                  value={assignVetId}
+                  onChange={(e) => setAssignVetId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="">Select veterinarian...</option>
+                  {localVets.map((vet) => (
+                    <option key={vet.id} value={vet.id}>
+                      {vet.first_name} {vet.last_name} ({vet.phone_number || vet.email || 'N/A'})
+                    </option>
+                  ))}
+                </select>
+                {localVets.length === 0 && (
+                  <p className="text-xs text-gray-500 mt-1">No local veterinarians available</p>
+                )}
+              </div>
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAssignModal(false);
+                    setSelectedCase(null);
+                    setAssignVetId('');
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAssignCase}
+                  disabled={assigning || !assignVetId}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {assigning ? 'Assigning...' : selectedCase.assigned_veterinarian ? 'Reassign' : 'Assign'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
