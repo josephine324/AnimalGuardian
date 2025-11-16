@@ -20,9 +20,28 @@ def create_superuser():
     # Default password - CHANGE THIS IN PRODUCTION!
     password = os.environ.get('ADMIN_PASSWORD', 'Admin@123456')
     
+    # Check if migrations have been run
+    from django.db import connection
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1 FROM information_schema.tables WHERE table_name='users'")
+            table_exists = cursor.fetchone()
+            if not table_exists:
+                print('❌ ERROR: Database tables do not exist!')
+                print('Please run migrations first:')
+                print('  railway run python manage.py migrate')
+                print('Or via Railway Dashboard terminal:')
+                print('  python manage.py migrate')
+                return
+    except Exception as e:
+        print(f'❌ ERROR: Could not check database: {e}')
+        print('Make sure DATABASE_URL is set correctly and database is accessible.')
+        return
+    
     # Check if user already exists
-    if User.objects.filter(phone_number=phone_number).exists():
-        user = User.objects.get(phone_number=phone_number)
+    try:
+        if User.objects.filter(phone_number=phone_number).exists():
+            user = User.objects.get(phone_number=phone_number)
         user.is_superuser = True
         user.is_staff = True
         user.is_active = True
@@ -47,7 +66,14 @@ def create_superuser():
             print(f'✅ Created superuser: {phone_number}')
         except Exception as e:
             print(f'❌ Error creating superuser: {e}')
+            import traceback
+            traceback.print_exc()
             return
+    except Exception as e:
+        print(f'❌ Error checking for existing user: {e}')
+        import traceback
+        traceback.print_exc()
+        return
     
     print(f'   Email: {email}')
     print(f'   Phone: {phone_number}')
