@@ -12,6 +12,10 @@ A comprehensive digital platform designed to enhance veterinary service delivery
 - [Installation & Setup](#installation--setup)
 - [Running the Application](#running-the-application)
 - [API Documentation](#api-documentation)
+- [User Guide - User Types & Platform Access](#-user-guide---user-types--platform-access)
+- [Database Keep-Alive Setup](#-database-keep-alive-setup)
+- [Flutter Build Issues & Fixes](#-flutter-build-issues--fixes)
+- [Code Review & Access Control](#-code-review--access-control)
 - [System Status & Functionality](#system-status--functionality)
 - [Test Results & System Status](#test-results--system-status)
 - [PowerShell Management Scripts](#powershell-management-scripts)
@@ -984,6 +988,418 @@ python manage.py migrate
 python manage.py collectstatic --noinput
 sudo systemctl restart animalguardian-backend
 ```
+
+---
+
+## 👥 User Guide - User Types & Platform Access
+
+### 📊 User Types Overview
+
+AnimalGuardian supports **3 main user types** with different access levels and platform assignments:
+
+---
+
+### 1. 👨‍🌾 **FARMERS**
+
+#### **Who They Are:**
+- Smallholder farmers in Nyagatare District, Rwanda
+- Primary beneficiaries of the system
+- May or may not have smartphones
+
+#### **Platform Access:**
+- **Farmers WITH Smartphones** → 📱 **Mobile App (Flutter)**
+- **Farmers WITHOUT Smartphones** → 📞 **USSD Service**
+
+#### **Functionalities:**
+
+**Via Mobile App (Smartphone Users):**
+- ✅ **Case Reporting** - Report animal health issues with photos/videos
+- ✅ **Livestock Management** - Add and manage livestock inventory
+- ✅ **Veterinary Consultation** - Chat with assigned veterinarians
+- ✅ **Health Records** - Track vaccination and treatment history
+- ✅ **Weather Integration** - Receive weather-based health alerts
+- ✅ **Community Features** - Connect with other farmers
+- ✅ **Market Information** - View livestock market prices
+- ✅ **Notifications** - Receive SMS/push notifications
+
+**Via USSD Service (Basic Phone Users):**
+- ✅ **Report Animal Disease** - Dial USSD code to report issues
+- ✅ **Get Veterinary Advice** - Access general health tips
+- ✅ **Check Vaccination Schedule** - View upcoming vaccinations
+- ✅ **Weather Alerts** - Receive weather warnings
+- ✅ **Contact Support** - Call veterinarian hotline
+- ✅ **SMS Commands** - Use SMS commands for quick access
+
+---
+
+### 2. 🩺 **LOCAL VETERINARIANS**
+
+#### **Who They Are:**
+- Licensed veterinarians working at local level
+- Provide direct veterinary services to farmers
+- Field-based professionals
+
+#### **Platform Access:**
+📱 **Mobile App (Flutter)** - Primary platform
+
+#### **Functionalities:**
+- ✅ **Case Management** - Receive case assignments from sector vets
+- ✅ **Farmer Consultation** - Chat with farmers via in-app messaging
+- ✅ **Livestock Health Records** - View farmer's livestock records
+- ✅ **Case Reporting** - Submit case reports to sector vets
+- ✅ **Notifications** - Receive new case assignments
+- ✅ **Profile Management** - Update availability status
+
+#### **Limitations:**
+- ❌ **Cannot approve new user registrations** (only Sector Vets can)
+- ❌ **Cannot access web dashboard** (desktop management)
+- ❌ **Cannot view system-wide analytics**
+
+---
+
+### 3. 🏥 **SECTOR VETERINARIANS**
+
+#### **Who They Are:**
+- Senior veterinarians at sector/district level
+- Administrative and supervisory role
+- Coordinate multiple local vets
+
+#### **Platform Access:**
+💻 **Web Dashboard (React.js)** - Primary platform
+
+#### **Functionalities:**
+- ✅ **User Management & Approval** - Approve/Reject new user registrations
+- ✅ **Case Management** - View all cases and assign to local veterinarians
+- ✅ **Dashboard & Analytics** - View comprehensive statistics
+- ✅ **Veterinarian Management** - View all veterinarians and assign cases
+- ✅ **Farmer Management** - View all registered farmers
+- ✅ **Livestock Management** - View all livestock in the system
+- ✅ **Notifications** - System-wide notifications
+- ✅ **Reports & Analytics** - Generate system reports
+
+#### **Special Permissions:**
+- ✅ **Can approve users** (Farmers, Local Vets, Field Officers)
+- ✅ **Can reject users** with notes
+- ✅ **Can view pending approvals**
+- ✅ **Full system access**
+
+---
+
+### 4. 👨‍💼 **ADMINS** (System Administrators)
+
+#### **Who They Are:**
+- System administrators
+- Full system control
+- Technical management
+
+#### **Platform Access:**
+💻 **Web Dashboard (React.js)** + **Django Admin Panel**
+
+#### **Functionalities:**
+- All Sector Vet functionalities PLUS:
+- System configuration
+- Database management
+- User role management
+- System monitoring
+- Technical support
+
+---
+
+### 5. 👨‍💻 **FIELD OFFICERS**
+
+#### **Who They Are:**
+- Agricultural extension officers
+- Support staff
+- Field coordinators
+
+#### **Platform Access:**
+📱 **Mobile App (Flutter)** (if needed)
+
+#### **Functionalities:**
+- View assigned cases
+- Support farmers
+- Report field observations
+- Coordinate with vets
+
+---
+
+### 📱 Platform Summary
+
+| User Type | Mobile App | Web Dashboard | USSD Service |
+|-----------|-----------|---------------|--------------|
+| **Farmer (Smartphone)** | ✅ Primary | ❌ | ❌ |
+| **Farmer (Basic Phone)** | ❌ | ❌ | ✅ Primary |
+| **Local Veterinarian** | ✅ Primary | ❌ | ❌ |
+| **Sector Veterinarian** | ❌ | ✅ Primary | ❌ |
+| **Admin** | ❌ | ✅ Primary | ❌ |
+| **Field Officer** | ✅ Optional | ❌ | ❌ |
+
+---
+
+### 🔐 Access Control Summary
+
+#### **Who Can Approve Users?**
+- ✅ **Sector Veterinarians** - Can approve all user types
+- ✅ **Admins** - Can approve all user types
+- ❌ **Local Veterinarians** - Cannot approve users
+- ❌ **Farmers** - Cannot approve users
+
+#### **Who Can View User Approvals?**
+- ✅ **Sector Veterinarians** - Can view pending approvals
+- ✅ **Admins** - Can view pending approvals
+- ❌ **Local Veterinarians** - Cannot view approvals
+- ❌ **Farmers** - Cannot view approvals
+
+#### **Login Requirements:**
+All users must:
+1. ✅ Verify phone number (OTP verification)
+2. ✅ Be approved by Sector Vet or Admin
+3. ✅ Have active account status
+
+---
+
+## 🔄 Database Keep-Alive Setup
+
+This guide explains how to keep your Railway PostgreSQL database always running and prevent it from going to sleep.
+
+### Solutions Implemented
+
+#### 1. Database Connection Pooling
+- **Connection Max Age**: 600 seconds (10 minutes)
+- **Connection Health Checks**: Enabled
+- **PostgreSQL Options**: Connection timeout and statement timeout configured
+
+#### 2. Middleware Keep-Alive
+- **DatabaseKeepAliveMiddleware**: Pings the database on every request
+- Automatically keeps connections alive during active usage
+- Only activates for PostgreSQL (not SQLite)
+
+#### 3. Health Check Endpoint
+- **Endpoint**: `/api/dashboard/health/`
+- **Purpose**: External services can ping this endpoint to keep the database active
+- **Access**: Public (no authentication required)
+
+#### 4. Keep-Alive Background Worker
+- **Script**: `backend/keep_alive.py`
+- **Function**: Periodically pings the database every 5 minutes
+- **Usage**: Can be run as a background process or Railway worker
+
+### Setup Instructions
+
+#### Option 1: Using Railway Worker (Recommended)
+
+1. **Add a Worker Service in Railway:**
+   - Go to your Railway project dashboard
+   - Click "New" → "Empty Service"
+   - Name it "database-keepalive"
+   - Set the root directory to `backend`
+   - Add the start command: `python keep_alive.py 5`
+   - Railway will automatically restart it if it fails
+
+2. **Environment Variables:**
+   - The worker will use the same `DATABASE_URL` from your main service
+   - No additional configuration needed
+
+#### Option 2: Using External Cron Service
+
+You can use an external service like:
+- **UptimeRobot** (Free): https://uptimerobot.com
+- **Cron-job.org** (Free): https://cron-job.org
+- **EasyCron** (Free tier available): https://www.easycron.com
+
+**Setup:**
+1. Create a new monitor/job
+2. URL: `https://animalguardian-backend-production-b5a8.up.railway.app/api/dashboard/health/`
+3. Interval: Every 5 minutes
+4. Method: GET
+
+#### Option 3: Local Background Process
+
+If you want to run the keep-alive script locally:
+
+```bash
+cd backend
+python keep_alive.py 5
+```
+
+This will ping the database every 5 minutes. Press Ctrl+C to stop.
+
+### Verification
+
+#### Test Health Endpoint
+```bash
+curl https://animalguardian-backend-production-b5a8.up.railway.app/api/dashboard/health/
+```
+
+Expected response:
+```json
+{
+  "status": "healthy",
+  "database": "connected",
+  "timestamp": "2025-01-16T10:30:00Z"
+}
+```
+
+### Configuration
+
+#### Adjust Keep-Alive Interval
+
+Edit `backend/keep_alive.py` and change the default interval:
+```python
+keep_alive_loop(interval=5)  # Change 5 to your desired minutes
+```
+
+Or pass it as a command-line argument:
+```bash
+python keep_alive.py 10  # Ping every 10 minutes
+```
+
+### Troubleshooting
+
+#### Database Still Going to Sleep
+
+1. **Check Railway Plan**: Free tier databases may have sleep policies
+2. **Verify Worker is Running**: Check Railway dashboard for worker service status
+3. **Check Health Endpoint**: Ensure it's accessible and returning 200
+4. **Review Logs**: Check for connection errors in Railway logs
+
+#### Connection Errors
+
+If you see connection errors:
+1. Verify `DATABASE_URL` is set correctly
+2. Check database service status in Railway
+3. Ensure connection pooling settings are correct
+4. Review PostgreSQL connection limits
+
+### Best Practices
+
+1. **Use Multiple Methods**: Combine middleware + health endpoint + worker for redundancy
+2. **Monitor Regularly**: Set up alerts for database connection failures
+3. **Adjust Intervals**: Balance between keeping database alive and resource usage
+4. **Upgrade Plan**: Consider upgrading Railway plan if database sleep is an issue
+
+---
+
+## 🔧 Flutter Build Issues & Fixes
+
+### Problem: Build Directory Locked by OneDrive
+
+The build directory is locked by OneDrive, preventing Flutter from building the app.
+
+### Solution 1: Exclude Build Folder from OneDrive (Recommended)
+
+1. **Right-click on the `frontend` folder** in File Explorer
+2. **Select "OneDrive" → "Free up space"** (or "Always keep on this device" if you see that)
+3. **Or exclude the build folder:**
+   - Open OneDrive settings
+   - Go to "Sync and backup" → "Advanced settings"
+   - Click "Choose folders"
+   - Uncheck the `build` folder
+
+### Solution 2: Pause OneDrive Temporarily
+
+1. Click the OneDrive icon in the system tray
+2. Click "Pause syncing" → "2 hours"
+3. Run the Flutter build
+4. Resume syncing after build completes
+
+### Solution 3: Build in a Different Location
+
+Move the project outside OneDrive temporarily:
+```powershell
+# Copy project to a non-OneDrive location
+xcopy "C:\Users\Administrator\OneDrive\Documents\GitHub\AnimalGuardian" "C:\Projects\AnimalGuardian" /E /I /H
+cd C:\Projects\AnimalGuardian\frontend
+flutter run -d emulator-5554
+```
+
+### Solution 4: Use WSL (Windows Subsystem for Linux)
+
+If you have WSL installed:
+```bash
+cd /mnt/c/Users/Administrator/OneDrive/Documents/GitHub/AnimalGuardian/frontend
+flutter run -d emulator-5554
+```
+
+### Quick Fix: Try Building Again
+
+Sometimes waiting a few seconds and trying again works:
+```powershell
+cd C:\Users\Administrator\OneDrive\Documents\GitHub\AnimalGuardian\frontend
+# Wait 10 seconds for OneDrive to release locks
+Start-Sleep -Seconds 10
+flutter run -d emulator-5554
+```
+
+### Recommended Action
+
+**Exclude the `build` folder from OneDrive** - this is the best long-term solution as build artifacts don't need to be synced.
+
+---
+
+## 🔍 Code Review & Access Control
+
+### ✅ Fixed Issues
+
+#### 1. Web Dashboard Access Control
+**Location:** `web-dashboard/src/App.js`
+
+**Problem:** Any authenticated user could access web dashboard  
+**Fix:** Added role check - Only `sector_vet`, `admin`, `is_staff`, or `is_superuser` can access  
+**Result:** ✅ Local Vets and Farmers are now blocked with helpful error message
+
+#### 2. Sidebar User Approval Access
+**Location:** `web-dashboard/src/components/Layout/Sidebar.js`
+
+**Problem:** Local vets could see "User Approval" link  
+**Fix:** Removed `local_vet` from admin check - Only `sector_vet` and `admin` can see it  
+**Result:** ✅ Only Sector Vets and Admins see User Approval menu
+
+#### 3. VeterinariansPage User Type
+**Location:** `web-dashboard/src/pages/VeterinariansPage.js`
+
+**Problem:** Used old `'veterinarian'` user type  
+**Fix:** Added dropdown to select between `sector_vet` and `local_vet`  
+**Result:** ✅ Can now properly create Sector or Local Vets
+
+#### 4. USSD User Verification
+**Location:** `ussd-service/app.py`
+
+**Problem:** USSD didn't verify user type or approval status  
+**Fix:** Added user verification at step 0 - checks if user is Farmer, approved, and verified  
+**Result:** ✅ Only approved farmers can use USSD service
+
+### ⚠️ Remaining Issues
+
+#### Mobile App - Role-Based Access Control
+**Status:** ⚠️ **NEEDS IMPLEMENTATION**
+
+**Issue:** Mobile app doesn't have role-based feature visibility
+- All users see same screens
+- Should show different features for:
+  - **Local Vets**: Case management, consultations, assigned cases
+  - **Farmers**: Case reporting, livestock management, community
+
+**Recommendation:** 
+- Add role checks in mobile app navigation
+- Show/hide features based on `user_type`
+- Different home screens for different roles
+
+### Current Access Matrix
+
+| User Type | Web Dashboard | Mobile App | USSD | Can Approve Users |
+|-----------|---------------|------------|------|-------------------|
+| **Farmer** | ❌ Blocked | ✅ Allowed | ✅ Allowed | ❌ No |
+| **Local Vet** | ❌ Blocked | ✅ Allowed | ❌ Blocked | ❌ No |
+| **Sector Vet** | ✅ Allowed | ❌ (Should use web) | ❌ Blocked | ✅ Yes |
+| **Admin** | ✅ Allowed | ❌ (Should use web) | ❌ Blocked | ✅ Yes |
+
+### Implementation Status
+
+✅ **Backend:** Fully compliant with rules  
+✅ **Web Dashboard:** Fully compliant with rules  
+✅ **USSD Service:** Fully compliant with rules  
+⚠️ **Mobile App:** Needs role-based feature visibility
 
 ---
 
