@@ -16,6 +16,9 @@ api.interceptors.request.use(
       '/auth/register/',
       '/auth/verify-otp/',
       '/auth/refresh/',
+      '/auth/password-reset/request/',
+      '/auth/password-reset/verify-otp/',
+      '/auth/password-reset/reset/',
     ];
 
     const requestUrl = config.url ?? '';
@@ -125,6 +128,34 @@ export const authAPI = {
   refreshToken: async (refreshToken) => {
     const response = await api.post('/auth/refresh/', {
       refresh: refreshToken,
+    });
+    return response.data;
+  },
+
+  requestPasswordReset: async (phoneNumber, email) => {
+    const response = await api.post('/auth/password-reset/request/', {
+      phone_number: phoneNumber,
+      email: email,
+    });
+    return response.data;
+  },
+
+  verifyPasswordResetOTP: async (phoneNumber, email, otpCode) => {
+    const response = await api.post('/auth/password-reset/verify-otp/', {
+      phone_number: phoneNumber,
+      email: email,
+      otp_code: otpCode,
+    });
+    return response.data;
+  },
+
+  resetPassword: async (phoneNumber, email, otpCode, newPassword, passwordConfirm) => {
+    const response = await api.post('/auth/password-reset/reset/', {
+      phone_number: phoneNumber,
+      email: email,
+      otp_code: otpCode,
+      new_password: newPassword,
+      password_confirm: passwordConfirm,
     });
     return response.data;
   },
@@ -238,6 +269,21 @@ export const usersAPI = {
 
   getVeterinarians: async (params = {}) => {
     const response = await api.get('/veterinarians/', { params });
+    return response.data;
+  },
+
+  getPendingApprovals: async () => {
+    const response = await api.get('/users/pending_approval/');
+    return response.data;
+  },
+
+  approveUser: async (userId, notes = '') => {
+    const response = await api.post(`/users/${userId}/approve/`, { notes });
+    return response.data;
+  },
+
+  rejectUser: async (userId, notes = '') => {
+    const response = await api.post(`/users/${userId}/reject/`, { notes });
     return response.data;
   },
 };

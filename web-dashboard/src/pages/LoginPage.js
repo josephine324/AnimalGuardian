@@ -127,9 +127,9 @@ const LoginPage = ({ onLogin }) => {
             </div>
 
             <div className="text-sm">
-              <button type="button" className="font-medium text-green-600 hover:text-green-500">
+              <Link to="/forgot-password" className="font-medium text-green-600 hover:text-green-500">
                 Forgot password?
-              </button>
+              </Link>
             </div>
           </div>
 
