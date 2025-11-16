@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import DashboardLayout from './components/Layout/DashboardLayout';
 import DashboardPage from './pages/DashboardPage';
 import CasesPage from './pages/CasesPage';
@@ -11,6 +13,7 @@ import LivestockPage from './pages/LivestockPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import SettingsPage from './pages/SettingsPage';
+import UserApprovalPage from './pages/UserApprovalPage';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -68,6 +71,26 @@ function App() {
           }
         />
         <Route
+          path="/forgot-password"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/" replace />
+            ) : (
+              <ForgotPasswordPage />
+            )
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/" replace />
+            ) : (
+              <ResetPasswordPage />
+            )
+          }
+        />
+        <Route
           path="/"
           element={
             isAuthenticated ? (
@@ -85,6 +108,7 @@ function App() {
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="user-approval" element={<UserApprovalPage />} />
         </Route>
       </Routes>
     </Router>

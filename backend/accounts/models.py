@@ -66,6 +66,26 @@ class User(AbstractUser):
     is_verified = models.BooleanField(default=False)
     verification_code = models.CharField(max_length=6, blank=True)
     
+    # Admin/Vet approval
+    is_approved_by_admin = models.BooleanField(
+        default=False,
+        help_text="User must be approved by admin or sector veterinarian before they can login"
+    )
+    approved_by = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='approved_users',
+        help_text="Admin or vet who approved this user"
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approval_notes = models.TextField(blank=True, help_text="Notes from admin/vet about approval")
+    
+    # Password reset
+    password_reset_code = models.CharField(max_length=6, blank=True)
+    password_reset_expires_at = models.DateTimeField(null=True, blank=True)
+    
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
