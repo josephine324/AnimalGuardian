@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { authAPI } from '../services/api';
 
 const LoginPage = ({ onLogin }) => {
@@ -150,6 +151,15 @@ const LoginPage = ({ onLogin }) => {
                 'Sign in'
               )}
             </button>
+          </div>
+
+          <div className="text-center">
+            <p className="text-sm text-gray-600">
+              Don't have an account?{' '}
+              <Link to="/signup" className="font-medium text-green-600 hover:text-green-500">
+                Create one
+              </Link>
+            </p>
           </div>
         </form>
 
