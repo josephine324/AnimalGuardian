@@ -164,10 +164,11 @@ const Sidebar = ({ isOpen, onClose, currentPath, user }) => {
         <nav className="mt-8 px-4">
           <div className="space-y-1">
             {navigation.map((item) => {
-              // Check if item requires admin/vet access
+              // Check if item requires admin/sector vet access (NOT local vets)
               if (item.adminOnly) {
                 const userType = user?.user_type;
-                const isAdmin = user?.is_staff || user?.is_superuser || userType === 'admin' || userType === 'sector_vet' || userType === 'local_vet';
+                // Only Sector Vets and Admins can see admin-only items (like User Approval)
+                const isAdmin = user?.is_staff || user?.is_superuser || userType === 'admin' || userType === 'sector_vet';
                 if (!isAdmin) {
                   return null; // Don't show this item
                 }
