@@ -29,6 +29,7 @@ const CasesPage = () => {
       setError('Not authenticated. Please login.');
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
   // Debounce search
@@ -39,6 +40,7 @@ const CasesPage = () => {
       }
     }, 500);
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
 
   const fetchCases = async () => {
