@@ -52,7 +52,7 @@ EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_HOST_USER=your-email@gmail.com
 EMAIL_HOST_PASSWORD=your-app-password
-DEFAULT_FROM_EMAIL=no-reply@animalguardian.rw
+DEFAULT_FROM_EMAIL=mutesijosephine324@gmail.com
 
 # Redis (if using Celery - optional)
 REDIS_URL=${{Redis.REDIS_URL}}
