@@ -53,22 +53,22 @@ def create_superuser():
             user.save()
             print(f'✅ Updated existing user {phone_number} to superuser')
         else:
-        # Create new superuser
-        try:
-            user = User.objects.create_superuser(
-                phone_number=phone_number,
-                username=username,
-                email=email,
-                password=password,
-                user_type='admin',
-                is_verified=True,
-            )
-            print(f'✅ Created superuser: {phone_number}')
-        except Exception as e:
-            print(f'❌ Error creating superuser: {e}')
-            import traceback
-            traceback.print_exc()
-            return
+            # Create new superuser
+            try:
+                user = User.objects.create_superuser(
+                    phone_number=phone_number,
+                    username=username,
+                    email=email,
+                    password=password,
+                    user_type='admin',
+                    is_verified=True,
+                )
+                print(f'✅ Created superuser: {phone_number}')
+            except Exception as e:
+                print(f'❌ Error creating superuser: {e}')
+                import traceback
+                traceback.print_exc()
+                return
     except Exception as e:
         print(f'❌ Error checking for existing user: {e}')
         import traceback
