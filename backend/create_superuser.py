@@ -42,17 +42,17 @@ def create_superuser():
     try:
         if User.objects.filter(phone_number=phone_number).exists():
             user = User.objects.get(phone_number=phone_number)
-        user.is_superuser = True
-        user.is_staff = True
-        user.is_active = True
-        user.email = email
-        user.username = username
-        user.user_type = 'admin'
-        user.is_verified = True
-        user.set_password(password)
-        user.save()
-        print(f'✅ Updated existing user {phone_number} to superuser')
-    else:
+            user.is_superuser = True
+            user.is_staff = True
+            user.is_active = True
+            user.email = email
+            user.username = username
+            user.user_type = 'admin'
+            user.is_verified = True
+            user.set_password(password)
+            user.save()
+            print(f'✅ Updated existing user {phone_number} to superuser')
+        else:
         # Create new superuser
         try:
             user = User.objects.create_superuser(
