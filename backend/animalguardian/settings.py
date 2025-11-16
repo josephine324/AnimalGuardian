@@ -56,6 +56,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'animalguardian.middleware.DatabaseKeepAliveMiddleware',  # Keep database alive
 ]
 
 ROOT_URLCONF = 'animalguardian.urls'
@@ -81,9 +82,20 @@ WSGI_APPLICATION = 'animalguardian.wsgi.application'
 # Database
 DATABASES = {
     'default': dj_database_url.config(
-        default=config('DATABASE_URL', default=f'sqlite:///{BASE_DIR}/db.sqlite3')
+        default=config('DATABASE_URL', default=f'sqlite:///{BASE_DIR}/db.sqlite3'),
+        conn_max_age=600,  # Keep connections alive for 10 minutes
+        conn_health_checks=True,  # Enable connection health checks
     )
 }
+
+# Database connection pooling settings for PostgreSQL
+if DATABASES['default'].get('ENGINE') == 'django.db.backends.postgresql':
+    DATABASES['default']['OPTIONS'] = {
+        'connect_timeout': 10,
+        'options': '-c statement_timeout=30000',  # 30 second statement timeout
+    }
+    # Keep connections alive
+    DATABASES['default']['CONN_MAX_AGE'] = 600  # 10 minutes
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
