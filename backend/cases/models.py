@@ -72,6 +72,25 @@ class CaseReport(models.Model):
     reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='case_reports')
     livestock = models.ForeignKey(Livestock, on_delete=models.CASCADE, related_name='case_reports')
     
+    # Veterinarian assignment
+    assigned_veterinarian = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='assigned_cases',
+        help_text="Local veterinarian assigned to handle this case"
+    )
+    assigned_at = models.DateTimeField(null=True, blank=True)
+    assigned_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cases_assigned',
+        help_text="Sector veterinarian or admin who assigned this case"
+    )
+    
     # Case details
     case_id = models.CharField(max_length=20, unique=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
