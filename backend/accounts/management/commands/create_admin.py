@@ -26,6 +26,7 @@ class Command(BaseCommand):
             user.username = username
             user.user_type = 'admin'
             user.is_verified = True
+            user.is_approved_by_admin = True
             user.set_password(password)
             user.save()
             self.stdout.write(
@@ -41,6 +42,7 @@ class Command(BaseCommand):
             user.email = email
             user.user_type = 'admin'
             user.is_verified = True
+            user.is_approved_by_admin = True
             user.set_password(password)
             user.save()
             self.stdout.write(
@@ -57,6 +59,8 @@ class Command(BaseCommand):
                     user_type='admin',
                     is_verified=True,
                 )
+                user.is_approved_by_admin = True
+                user.save()
                 self.stdout.write(
                     self.style.SUCCESS(f'Successfully created superuser: {phone_number}')
                 )
