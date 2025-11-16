@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
 import DashboardLayout from './components/Layout/DashboardLayout';
 import DashboardPage from './pages/DashboardPage';
 import CasesPage from './pages/CasesPage';
@@ -53,6 +54,16 @@ function App() {
               <Navigate to="/" replace />
             ) : (
               <LoginPage onLogin={handleLogin} />
+            )
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/" replace />
+            ) : (
+              <SignupPage onLogin={handleLogin} />
             )
           }
         />
