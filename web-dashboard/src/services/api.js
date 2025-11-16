@@ -240,11 +240,6 @@ export const usersAPI = {
     const response = await api.get('/veterinarians/', { params });
     return response.data;
   },
-
-  setVeterinarianStatus: async (id, payload) => {
-    const response = await api.post(`/veterinarians/${id}/set_status/`, payload);
-    return response.data;
-  },
 };
 
 // Notifications API
