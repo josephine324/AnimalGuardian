@@ -325,6 +325,24 @@ export const notificationsAPI = {
   },
 };
 
+// Broadcast API
+export const broadcastAPI = {
+  getAll: async (params = {}) => {
+    const response = await api.get('/notifications/broadcasts/', { params });
+    return response.data;
+  },
+
+  create: async (broadcastData) => {
+    const response = await api.post('/notifications/broadcasts/', broadcastData);
+    return response.data;
+  },
+
+  send: async (broadcastId) => {
+    const response = await api.post(`/notifications/broadcasts/${broadcastId}/send/`);
+    return response.data;
+  },
+};
+
 // Weather API
 export const weatherAPI = {
   getCurrent: async () => {

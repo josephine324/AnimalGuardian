@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'shared/presentation/widgets/loading_screen.dart';
+import 'features/auth/presentation/screens/login_screen.dart';
+import 'features/auth/presentation/screens/register_screen.dart';
+import 'features/home/presentation/screens/dashboard_screen.dart';
+import 'features/cases/presentation/screens/report_case_screen.dart';
+import 'features/livestock/presentation/screens/add_livestock_screen.dart';
+import 'features/community/presentation/screens/create_post_screen.dart';
 
 void main() {
   runApp(
@@ -35,14 +41,43 @@ class AnimalGuardianApp extends StatelessWidget {
   }
 }
 
-// Simple router configuration
+// Router configuration with all routes
 final _router = GoRouter(
   initialLocation: '/',
   routes: [
+    // Welcome/Home screen
     GoRoute(
       path: '/',
-      builder: (context, state) => const HomeScreen(),
+      builder: (context, state) => const _WelcomeScreen(),
     ),
+    // Auth routes
+    GoRoute(
+      path: '/login',
+      builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: '/register',
+      builder: (context, state) => const RegisterScreen(),
+    ),
+    // Main dashboard with bottom navigation
+    GoRoute(
+      path: '/dashboard',
+      builder: (context, state) => const DashboardScreen(),
+    ),
+    // Feature routes
+    GoRoute(
+      path: '/cases/report',
+      builder: (context, state) => const ReportCaseScreen(),
+    ),
+    GoRoute(
+      path: '/livestock/add',
+      builder: (context, state) => const AddLivestockScreen(),
+    ),
+    GoRoute(
+      path: '/community/create',
+      builder: (context, state) => const CreatePostScreen(),
+    ),
+    // Loading screen
     GoRoute(
       path: '/loading',
       builder: (context, state) => const LoadingScreen(),
@@ -50,17 +85,13 @@ final _router = GoRouter(
   ],
 );
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+// Welcome Screen (Landing page)
+class _WelcomeScreen extends StatelessWidget {
+  const _WelcomeScreen();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('AnimalGuardian'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -93,12 +124,7 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   ElevatedButton.icon(
                     onPressed: () {
-                      // Navigate to login when implemented
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Login screen coming soon'),
-                        ),
-                      );
+                      context.push('/login');
                     },
                     icon: const Icon(Icons.login),
                     label: const Text('Login'),
@@ -113,12 +139,7 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   OutlinedButton.icon(
                     onPressed: () {
-                      // Navigate to register when implemented
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Registration screen coming soon'),
-                        ),
-                      );
+                      context.push('/register');
                     },
                     icon: const Icon(Icons.person_add),
                     label: const Text('Register'),
