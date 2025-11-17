@@ -157,7 +157,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 items: const [
                   DropdownMenuItem(value: 'farmer', child: Text('Farmer')),
-                  DropdownMenuItem(value: 'sector_vet', child: Text('Sector Veterinarian')),
                   DropdownMenuItem(value: 'local_vet', child: Text('Local Veterinarian')),
                 ],
                 onChanged: (value) {
@@ -166,6 +165,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   });
                 },
               ),
+              if (_selectedUserType == 'local_vet') ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12.0),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue[200]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Your registration will require approval from a Sector Veterinarian via the web dashboard.',
+                          style: TextStyle(
+                            color: Colors.blue[900],
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
               TextFormField(
                 controller: _passwordController,
