@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../shared/presentation/widgets/placeholder_image.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -14,17 +15,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<OnboardingPage> _pages = [
     OnboardingPage(
-      image: Icons.agriculture,
+      imagePath: 'assets/images/onboarding_1.jpg',
+      placeholderIcon: Icons.agriculture,
       title: 'Grow your farm with AnimalGuardian',
       description: 'Get access to expert advice, veterinary help, and top-tier animal health management tips.',
     ),
     OnboardingPage(
-      image: Icons.pets,
+      imagePath: 'assets/images/onboarding_2.jpg',
+      placeholderIcon: Icons.pets,
       title: 'Welcome to AnimalGuardian',
       description: 'Your knowledge hub for elevating animal health management. Learn, implement, and transform your strategies.',
     ),
     OnboardingPage(
-      image: Icons.health_and_safety,
+      imagePath: 'assets/images/onboarding_3.jpg',
+      placeholderIcon: Icons.health_and_safety,
       title: 'Welcome to AnimalGuardian',
       description: 'Guidance is here. Your livestock\'s health is now in the best hands.',
     ),
@@ -149,19 +153,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Image placeholder (using icon for now)
-          Container(
+          // Image with placeholder support
+          PlaceholderImage(
+            assetPath: page.imagePath,
+            placeholderIcon: page.placeholderIcon,
             width: double.infinity,
             height: 300,
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(
-              page.image,
-              size: 120,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+            borderRadius: BorderRadius.circular(16),
           ),
           const SizedBox(height: 48),
           Text(
@@ -188,12 +186,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 }
 
 class OnboardingPage {
-  final IconData image;
+  final String? imagePath;
+  final IconData placeholderIcon;
   final String title;
   final String description;
 
   OnboardingPage({
-    required this.image,
+    this.imagePath,
+    required this.placeholderIcon,
     required this.title,
     required this.description,
   });
