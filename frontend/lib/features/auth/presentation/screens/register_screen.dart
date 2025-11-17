@@ -157,8 +157,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 items: const [
                   DropdownMenuItem(value: 'farmer', child: Text('Farmer')),
-                  DropdownMenuItem(value: 'vet', child: Text('Veterinarian')),
-                  DropdownMenuItem(value: 'field_officer', child: Text('Field Officer')),
+                  DropdownMenuItem(value: 'sector_vet', child: Text('Sector Veterinarian')),
+                  DropdownMenuItem(value: 'local_vet', child: Text('Local Veterinarian')),
                 ],
                 onChanged: (value) {
                   setState(() {

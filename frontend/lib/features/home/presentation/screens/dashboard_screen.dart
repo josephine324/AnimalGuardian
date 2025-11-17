@@ -17,13 +17,80 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   final List<Widget> _screens = [
     const _HomeTab(),
-    const _LivestockTab(),
     const _CasesTab(),
     const _CommunityTab(),
-    const _MarketTab(),
-    const _WeatherTab(),
     const _ProfileTab(),
   ];
+
+  void changeTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
+  // Menu items for the top-right menu
+  void _showMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.pets, color: Colors.green),
+                title: const Text('Livestock'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _navigateToLivestock(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.store, color: Colors.orange),
+                title: const Text('Market'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _navigateToMarket(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.wb_sunny, color: Colors.amber),
+                title: const Text('Weather'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _navigateToWeather(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _navigateToLivestock(BuildContext context) {
+    // Navigate to livestock screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const _LivestockTab()),
+    );
+  }
+
+  void _navigateToMarket(BuildContext context) {
+    // Navigate to market screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const _MarketTab()),
+    );
+  }
+
+  void _navigateToWeather(BuildContext context) {
+    // Navigate to weather screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const _WeatherTab()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,24 +112,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.pets),
-            label: 'Livestock',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.report_problem),
             label: 'Cases',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.people),
             label: 'Community',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.store),
-            label: 'Market',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.wb_sunny),
-            label: 'Weather',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
@@ -85,6 +140,82 @@ class _HomeTab extends StatelessWidget {
         title: const Text('AnimalGuardian'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) {
+              switch (value) {
+                case 'livestock':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const _LivestockTab()),
+                  );
+                  break;
+                case 'market':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const _MarketTab()),
+                  );
+                  break;
+                case 'weather':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const _WeatherTab()),
+                  );
+                  break;
+                case 'settings':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const _SettingsTab()),
+                  );
+                  break;
+              }
+            },
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem<String>(
+                value: 'livestock',
+                child: Row(
+                  children: [
+                    Icon(Icons.pets, color: Colors.green),
+                    SizedBox(width: 8),
+                    Text('Livestock'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'market',
+                child: Row(
+                  children: [
+                    Icon(Icons.store, color: Colors.orange),
+                    SizedBox(width: 8),
+                    Text('Market'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'weather',
+                child: Row(
+                  children: [
+                    Icon(Icons.wb_sunny, color: Colors.amber),
+                    SizedBox(width: 8),
+                    Text('Weather'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem<String>(
+                value: 'settings',
+                child: Row(
+                  children: [
+                    Icon(Icons.settings, color: Colors.grey),
+                    SizedBox(width: 8),
+                    Text('Settings'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -159,6 +290,10 @@ class _HomeTab extends StatelessWidget {
                   color: Colors.blue,
                   onTap: () {
                     // Navigate to community tab
+                    final dashboardState = context.findAncestorStateOfType<_DashboardScreenState>();
+                    if (dashboardState != null) {
+                      dashboardState.changeTab(2); // Community tab index
+                    }
                   },
                 ),
                 _QuickActionCard(
@@ -166,7 +301,10 @@ class _HomeTab extends StatelessWidget {
                   title: 'Market',
                   color: Colors.orange,
                   onTap: () {
-                    // Navigate to market tab
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const _MarketTab()),
+                    );
                   },
                 ),
               ],
@@ -227,36 +365,86 @@ class _LivestockTab extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.pets,
-              size: 80,
-              color: Colors.grey[400],
+            // Search bar
+            TextField(
+              decoration: InputDecoration(
+                hintText: 'Search livestock...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: Colors.grey[100],
+              ),
             ),
             const SizedBox(height: 16),
-            Text(
-              'No livestock yet',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.grey[600],
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Add your first livestock to get started',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[500],
-                  ),
+            // Filter chips
+            Wrap(
+              spacing: 8,
+              children: [
+                FilterChip(
+                  label: const Text('All'),
+                  selected: true,
+                  onSelected: (selected) {},
+                ),
+                FilterChip(
+                  label: const Text('Cattle'),
+                  onSelected: (selected) {},
+                ),
+                FilterChip(
+                  label: const Text('Goats'),
+                  onSelected: (selected) {},
+                ),
+                FilterChip(
+                  label: const Text('Sheep'),
+                  onSelected: (selected) {},
+                ),
+                FilterChip(
+                  label: const Text('Pigs'),
+                  onSelected: (selected) {},
+                ),
+              ],
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () {
-                context.push('/livestock/add');
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Add Livestock'),
+            // Livestock list placeholder
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.pets,
+                    size: 80,
+                    color: Colors.grey[400],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No livestock yet',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Add your first livestock to get started',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[500],
+                        ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      context.push('/livestock/add');
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Livestock'),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -283,38 +471,133 @@ class _CasesTab extends StatelessWidget {
               context.push('/cases/report');
             },
           ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) {
+              final dashboardState = context.findAncestorStateOfType<_DashboardScreenState>();
+              if (dashboardState != null) {
+                switch (value) {
+                  case 'livestock':
+                    dashboardState._navigateToLivestock(context);
+                    break;
+                  case 'market':
+                    dashboardState._navigateToMarket(context);
+                    break;
+                  case 'weather':
+                    dashboardState._navigateToWeather(context);
+                    break;
+                }
+              }
+            },
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem<String>(
+                value: 'livestock',
+                child: Row(
+                  children: [
+                    Icon(Icons.pets, color: Colors.green),
+                    SizedBox(width: 8),
+                    Text('Livestock'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'market',
+                child: Row(
+                  children: [
+                    Icon(Icons.store, color: Colors.orange),
+                    SizedBox(width: 8),
+                    Text('Market'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'weather',
+                child: Row(
+                  children: [
+                    Icon(Icons.wb_sunny, color: Colors.amber),
+                    SizedBox(width: 8),
+                    Text('Weather'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem<String>(
+                value: 'settings',
+                child: Row(
+                  children: [
+                    Icon(Icons.settings, color: Colors.grey),
+                    SizedBox(width: 8),
+                    Text('Settings'),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
-      body: Center(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.report_problem,
-              size: 80,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No cases yet',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.grey[600],
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Report a case to get veterinary help',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[500],
-                  ),
+            // Status filter chips
+            Wrap(
+              spacing: 8,
+              children: [
+                FilterChip(
+                  label: const Text('All'),
+                  selected: true,
+                  onSelected: (selected) {},
+                ),
+                FilterChip(
+                  label: const Text('Pending'),
+                  onSelected: (selected) {},
+                ),
+                FilterChip(
+                  label: const Text('Under Review'),
+                  onSelected: (selected) {},
+                ),
+                FilterChip(
+                  label: const Text('Resolved'),
+                  onSelected: (selected) {},
+                ),
+              ],
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () {
-                context.push('/cases/report');
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Report Case'),
+            // Cases list placeholder
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.report_problem,
+                    size: 80,
+                    color: Colors.grey[400],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No cases yet',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Report a case to get veterinary help',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[500],
+                        ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      context.push('/cases/report');
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Report Case'),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -341,30 +624,133 @@ class _CommunityTab extends StatelessWidget {
               context.push('/community/create');
             },
           ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) {
+              final dashboardState = context.findAncestorStateOfType<_DashboardScreenState>();
+              if (dashboardState != null) {
+                switch (value) {
+                  case 'livestock':
+                    dashboardState._navigateToLivestock(context);
+                    break;
+                  case 'market':
+                    dashboardState._navigateToMarket(context);
+                    break;
+                  case 'weather':
+                    dashboardState._navigateToWeather(context);
+                    break;
+                }
+              }
+            },
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem<String>(
+                value: 'livestock',
+                child: Row(
+                  children: [
+                    Icon(Icons.pets, color: Colors.green),
+                    SizedBox(width: 8),
+                    Text('Livestock'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'market',
+                child: Row(
+                  children: [
+                    Icon(Icons.store, color: Colors.orange),
+                    SizedBox(width: 8),
+                    Text('Market'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'weather',
+                child: Row(
+                  children: [
+                    Icon(Icons.wb_sunny, color: Colors.amber),
+                    SizedBox(width: 8),
+                    Text('Weather'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem<String>(
+                value: 'settings',
+                child: Row(
+                  children: [
+                    Icon(Icons.settings, color: Colors.grey),
+                    SizedBox(width: 8),
+                    Text('Settings'),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
-      body: Center(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.people,
-              size: 80,
-              color: Colors.grey[400],
+            // Post type filter
+            Wrap(
+              spacing: 8,
+              children: [
+                FilterChip(
+                  label: const Text('All'),
+                  selected: true,
+                  onSelected: (selected) {},
+                ),
+                FilterChip(
+                  label: const Text('Questions'),
+                  onSelected: (selected) {},
+                ),
+                FilterChip(
+                  label: const Text('Tips'),
+                  onSelected: (selected) {},
+                ),
+                FilterChip(
+                  label: const Text('Experiences'),
+                  onSelected: (selected) {},
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Community Feed',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.grey[600],
+            const SizedBox(height: 24),
+            // Community feed placeholder
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.people,
+                    size: 80,
+                    color: Colors.grey[400],
                   ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Connect with other farmers',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[500],
+                  const SizedBox(height: 16),
+                  Text(
+                    'Community Feed',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Colors.grey[600],
+                        ),
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Connect with other farmers',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[500],
+                        ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      context.push('/community/create');
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Create Post'),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -385,28 +771,101 @@ class _MarketTab extends StatelessWidget {
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
       ),
-      body: Center(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.store,
-              size: 80,
-              color: Colors.grey[400],
+            // Market overview cards
+            Row(
+              children: [
+                Expanded(
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.trending_up, color: Colors.green, size: 32),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Average Price',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          Text(
+                            'RWF 0',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.store, color: Colors.orange, size: 32),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Listings',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          Text(
+                            '0',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Livestock Categories',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 16),
-            Text(
-              'Marketplace',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.grey[600],
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'View livestock prices and market trends',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[500],
-                  ),
+            // Category grid
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 1.5,
+              children: [
+                _MarketCategoryCard(
+                  icon: Icons.agriculture,
+                  title: 'Cattle',
+                  color: Colors.brown,
+                ),
+                _MarketCategoryCard(
+                  icon: Icons.pets,
+                  title: 'Goats',
+                  color: Colors.grey,
+                ),
+                _MarketCategoryCard(
+                  icon: Icons.agriculture,
+                  title: 'Sheep',
+                  color: Colors.blueGrey,
+                ),
+                _MarketCategoryCard(
+                  icon: Icons.pets,
+                  title: 'Pigs',
+                  color: Colors.pink,
+                ),
+              ],
             ),
           ],
         ),
@@ -427,28 +886,83 @@ class _WeatherTab extends StatelessWidget {
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
       ),
-      body: Center(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.wb_sunny,
-              size: 80,
-              color: Colors.grey[400],
+            // Current weather card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  children: [
+                    const Icon(Icons.wb_sunny, size: 64, color: Colors.amber),
+                    const SizedBox(height: 16),
+                    Text(
+                      '25°C',
+                      style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Sunny',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Column(
+                          children: [
+                            const Icon(Icons.water_drop, color: Colors.blue),
+                            const SizedBox(height: 4),
+                            Text(
+                              '60%',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                            Text(
+                              'Humidity',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                        Column(
+                          children: [
+                            const Icon(Icons.air, color: Colors.grey),
+                            const SizedBox(height: 4),
+                            Text(
+                              '10 km/h',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                            Text(
+                              'Wind',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Weather Alerts',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 16),
-            Text(
-              'Weather Information',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.grey[600],
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Get weather alerts and forecasts',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[500],
-                  ),
+            Card(
+              color: Colors.blue[50],
+              child: const ListTile(
+                leading: Icon(Icons.info, color: Colors.blue),
+                title: Text('No active weather alerts'),
+                subtitle: Text('Weather conditions are normal'),
+              ),
             ),
           ],
         ),
@@ -468,6 +982,82 @@ class _ProfileTab extends StatelessWidget {
         title: const Text('Profile'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) {
+              switch (value) {
+                case 'livestock':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const _LivestockTab()),
+                  );
+                  break;
+                case 'market':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const _MarketTab()),
+                  );
+                  break;
+                case 'weather':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const _WeatherTab()),
+                  );
+                  break;
+                case 'settings':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const _SettingsTab()),
+                  );
+                  break;
+              }
+            },
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem<String>(
+                value: 'livestock',
+                child: Row(
+                  children: [
+                    Icon(Icons.pets, color: Colors.green),
+                    SizedBox(width: 8),
+                    Text('Livestock'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'market',
+                child: Row(
+                  children: [
+                    Icon(Icons.store, color: Colors.orange),
+                    SizedBox(width: 8),
+                    Text('Market'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'weather',
+                child: Row(
+                  children: [
+                    Icon(Icons.wb_sunny, color: Colors.amber),
+                    SizedBox(width: 8),
+                    Text('Weather'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem<String>(
+                value: 'settings',
+                child: Row(
+                  children: [
+                    Icon(Icons.settings, color: Colors.grey),
+                    SizedBox(width: 8),
+                    Text('Settings'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
@@ -501,7 +1091,12 @@ class _ProfileTab extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.settings),
             title: const Text('Settings'),
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const _SettingsTab()),
+              );
+            },
           ),
           ListTile(
             leading: const Icon(Icons.help),
@@ -514,6 +1109,135 @@ class _ProfileTab extends StatelessWidget {
             onTap: () {
               context.go('/login');
             },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Settings Tab
+class _SettingsTab extends StatelessWidget {
+  const _SettingsTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Settings'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16.0),
+        children: [
+          // Profile Settings
+          Text(
+            'Profile Settings',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.person),
+                  title: const Text('Edit Profile'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {},
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.lock),
+                  title: const Text('Change Password'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {},
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          // App Settings
+          Text(
+            'App Settings',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.notifications),
+                  title: const Text('Notifications'),
+                  trailing: Switch(
+                    value: true,
+                    onChanged: (value) {},
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.language),
+                  title: const Text('Language'),
+                  subtitle: const Text('English'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {},
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.dark_mode),
+                  title: const Text('Dark Mode'),
+                  trailing: Switch(
+                    value: false,
+                    onChanged: (value) {},
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          // About
+          Text(
+            'About',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.info),
+                  title: const Text('App Version'),
+                  subtitle: const Text('1.0.0'),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.help),
+                  title: const Text('Help & Support'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {},
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.privacy_tip),
+                  title: const Text('Privacy Policy'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {},
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.description),
+                  title: const Text('Terms of Service'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {},
+                ),
+              ],
+            ),
           ),
         ],
       ),
