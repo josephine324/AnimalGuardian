@@ -322,6 +322,54 @@ class MockDataService {
     ];
   }
 
+  // Mock Vet Assigned Cases Data
+  static List<Map<String, dynamic>> getMockVetAssignedCases() {
+    return [
+      {
+        'id': 1,
+        'caseId': 'CASE-001',
+        'livestock': 'Bella (Cow)',
+        'farmer': 'Jean Baptiste',
+        'farmerPhone': '+250788123456',
+        'symptoms': 'Loss of appetite, lethargy',
+        'status': 'assigned',
+        'urgency': 'high',
+        'date': '2024-01-15',
+        'location': 'Nyagatare, Rwanda',
+        'image': 'https://images.unsplash.com/photo-1560114928-40f1f1eb26a0?w=400', // Cow image
+        'notes': 'Initial assessment needed',
+      },
+      {
+        'id': 2,
+        'caseId': 'CASE-002',
+        'livestock': 'Luna (Sheep)',
+        'farmer': 'Marie Uwimana',
+        'farmerPhone': '+250788234567',
+        'symptoms': 'Coughing, nasal discharge',
+        'status': 'in_progress',
+        'urgency': 'medium',
+        'date': '2024-01-14',
+        'location': 'Karangazi, Nyagatare',
+        'image': 'https://images.unsplash.com/photo-1500462918059-b1a0cb512f1d?w=400', // Sheep image
+        'notes': 'Treatment in progress',
+      },
+      {
+        'id': 3,
+        'caseId': 'CASE-003',
+        'livestock': 'Max (Goat)',
+        'farmer': 'Paul Nkurunziza',
+        'farmerPhone': '+250788345678',
+        'symptoms': 'Lameness in left leg',
+        'status': 'resolved',
+        'urgency': 'low',
+        'date': '2024-01-10',
+        'location': 'Nyagatare, Rwanda',
+        'image': 'https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=400', // Goat image
+        'notes': 'Successfully treated',
+      },
+    ];
+  }
+
   // Mock Cases Data
   static List<Map<String, dynamic>> getMockCases() {
     return [

@@ -8,6 +8,7 @@ import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/register_screen.dart';
 import 'features/auth/presentation/screens/otp_verification_screen.dart';
 import 'features/home/presentation/screens/dashboard_screen.dart';
+import 'features/home/presentation/screens/vet_dashboard_screen.dart';
 import 'features/cases/presentation/screens/report_case_screen.dart';
 import 'features/livestock/presentation/screens/add_livestock_screen.dart';
 import 'features/community/presentation/screens/create_post_screen.dart';
@@ -76,13 +77,19 @@ final _router = GoRouter(
       path: '/otp-verify',
       builder: (context, state) {
         final phoneNumber = state.uri.queryParameters['phone'] ?? '+250********';
-        return OTPVerificationScreen(phoneNumber: phoneNumber);
+        final userType = state.uri.queryParameters['user_type'];
+        return OTPVerificationScreen(phoneNumber: phoneNumber, userType: userType);
       },
     ),
-    // Main dashboard with bottom navigation
+    // Main dashboard with bottom navigation (Farmer)
     GoRoute(
       path: '/dashboard',
       builder: (context, state) => const DashboardScreen(),
+    ),
+    // Vet dashboard with bottom navigation
+    GoRoute(
+      path: '/vet-dashboard',
+      builder: (context, state) => const VetDashboardScreen(),
     ),
     // Feature routes
     GoRoute(

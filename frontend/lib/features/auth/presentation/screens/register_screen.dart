@@ -65,8 +65,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       );
       
-      // Navigate to OTP verification
-      context.go('/otp-verify?phone=${_phoneController.text}');
+      // Navigate to OTP verification with user type
+      context.go('/otp-verify?phone=${_phoneController.text}&user_type=${_selectedUserType}');
     }
   }
 

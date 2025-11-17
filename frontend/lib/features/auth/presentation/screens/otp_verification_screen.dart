@@ -3,10 +3,12 @@ import 'package:go_router/go_router.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
   final String phoneNumber;
+  final String? userType;
   
   const OTPVerificationScreen({
     super.key,
     required this.phoneNumber,
+    this.userType,
   });
 
   @override
@@ -47,7 +49,12 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     final otp = _controllers.map((c) => c.text).join();
     if (otp.length == 4) {
       // TODO: Verify OTP with backend
-      context.go('/dashboard');
+      // Route to vet dashboard if user is local vet, otherwise farmer dashboard
+      if (widget.userType == 'local_vet') {
+        context.go('/vet-dashboard');
+      } else {
+        context.go('/dashboard');
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
