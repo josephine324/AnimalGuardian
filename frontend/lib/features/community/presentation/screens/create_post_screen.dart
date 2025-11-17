@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/community_provider.dart';
 import '../../../../core/models/community_model.dart';
@@ -86,7 +87,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.of(context).pop();
+        context.pop();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
