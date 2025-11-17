@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/services/mock_data_service.dart';
+import '../../../../shared/presentation/widgets/placeholder_image.dart';
+import '../../../cases/presentation/screens/case_detail_screen.dart';
 
 class VetDashboardScreen extends StatefulWidget {
   const VetDashboardScreen({super.key});
@@ -10,13 +13,8 @@ class VetDashboardScreen extends StatefulWidget {
 
 class _VetDashboardScreenState extends State<VetDashboardScreen> {
   int _currentIndex = 0;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  final List<Widget> _screens = [
-    const _VetHomeTab(),
-    const _VetCasesTab(),
-    const _VetCommunityTab(),
-    const _VetProfileTab(),
-  ];
 
   void changeTab(int index) {
     setState(() {
@@ -24,127 +22,209 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Theme.of(context).colorScheme.primary,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
+  Widget _buildBottomNavigationBar(BuildContext context) {
+    return BottomNavigationBar(
+      currentIndex: _currentIndex,
+      onTap: (index) {
+        setState(() {
+          _currentIndex = index;
+        });
+      },
+      type: BottomNavigationBarType.fixed,
+      selectedItemColor: Theme.of(context).colorScheme.primary,
+      unselectedItemColor: Colors.grey,
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home),
+          label: 'Home',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.report_problem),
+          label: 'Cases',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.people),
+          label: 'Community',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person),
+          label: 'Profile',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                const Icon(
+                  Icons.medical_services,
+                  size: 48,
+                  color: Colors.white,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Veterinarian',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.report_problem),
-            label: 'Cases',
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Text(
+              'Main Navigation',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Community',
+          ListTile(
+            leading: const Icon(Icons.home, color: Colors.blue),
+            title: const Text('Home'),
+            onTap: () {
+              Navigator.pop(context);
+              changeTab(0);
+            },
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
+          ListTile(
+            leading: const Icon(Icons.report_problem, color: Colors.red),
+            title: const Text('Cases'),
+            onTap: () {
+              Navigator.pop(context);
+              changeTab(1);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.people, color: Colors.purple),
+            title: const Text('Community'),
+            onTap: () {
+              Navigator.pop(context);
+              changeTab(2);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.person, color: Colors.teal),
+            title: const Text('Profile'),
+            onTap: () {
+              Navigator.pop(context);
+              changeTab(3);
+            },
+          ),
+          const Divider(),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Text(
+              'Features',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.pets, color: Colors.green),
+            title: const Text('Livestock'),
+            onTap: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Livestock feature coming soon')),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.store, color: Colors.orange),
+            title: const Text('Market'),
+            onTap: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Market feature coming soon')),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.wb_sunny, color: Colors.amber),
+            title: const Text('Weather'),
+            onTap: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Weather feature coming soon')),
+              );
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.settings, color: Colors.grey),
+            title: const Text('Settings'),
+            onTap: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Settings feature coming soon')),
+              );
+            },
           ),
         ],
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Widget> screens = [
+      _VetHomeTab(scaffoldKey: _scaffoldKey),
+      _VetCasesTab(scaffoldKey: _scaffoldKey),
+      _VetCommunityTab(scaffoldKey: _scaffoldKey),
+      _VetProfileTab(scaffoldKey: _scaffoldKey),
+    ];
+
+    return Scaffold(
+      key: _scaffoldKey,
+      drawer: _buildDrawer(context),
+      body: screens[_currentIndex],
+      bottomNavigationBar: _buildBottomNavigationBar(context),
     );
   }
 }
 
 // Vet Home Tab
 class _VetHomeTab extends StatelessWidget {
-  const _VetHomeTab();
+  final GlobalKey<ScaffoldState> scaffoldKey;
+  
+  const _VetHomeTab({required this.scaffoldKey});
 
   @override
   Widget build(BuildContext context) {
+    final assignedCases = MockDataService.getMockVetAssignedCases();
+    final activeCases = assignedCases.where((c) => c['status'] != 'resolved').length;
+    final resolvedCases = assignedCases.where((c) => c['status'] == 'resolved').length;
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () {},
+          onPressed: () => scaffoldKey.currentState?.openDrawer(),
         ),
         title: const Text('Veterinarian Dashboard'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {},
-          ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              switch (value) {
-                case 'livestock':
-                  // Navigate to livestock
-                  break;
-                case 'market':
-                  // Navigate to market
-                  break;
-                case 'weather':
-                  // Navigate to weather
-                  break;
-                case 'settings':
-                  // Navigate to settings
-                  break;
-              }
-            },
-            itemBuilder: (BuildContext context) => [
-              const PopupMenuItem<String>(
-                value: 'livestock',
-                child: Row(
-                  children: [
-                    Icon(Icons.pets, color: Colors.green),
-                    SizedBox(width: 8),
-                    Text('Livestock'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'market',
-                child: Row(
-                  children: [
-                    Icon(Icons.store, color: Colors.orange),
-                    SizedBox(width: 8),
-                    Text('Market'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'weather',
-                child: Row(
-                  children: [
-                    Icon(Icons.wb_sunny, color: Colors.amber),
-                    SizedBox(width: 8),
-                    Text('Weather'),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem<String>(
-                value: 'settings',
-                child: Row(
-                  children: [
-                    Icon(Icons.settings, color: Colors.grey),
-                    SizedBox(width: 8),
-                    Text('Settings'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -161,7 +241,7 @@ class _VetHomeTab extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Welcome, Dr. ${'Veterinarian'}',
+                      'Welcome, Dr. Veterinarian',
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -169,7 +249,7 @@ class _VetHomeTab extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Manage your assigned cases and help farmers',
+                      'Manage your assigned cases and help farmers in Nyagatare',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.white70,
                           ),
@@ -195,7 +275,7 @@ class _VetHomeTab extends StatelessWidget {
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                           Text(
-                            '0',
+                            '$activeCases',
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -219,7 +299,7 @@ class _VetHomeTab extends StatelessWidget {
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                           Text(
-                            '0',
+                            '$resolvedCases',
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -232,132 +312,168 @@ class _VetHomeTab extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 24),
-            // Quick Actions
-            Text(
-              'Quick Actions',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 16),
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.5,
-              children: [
-                _VetActionCard(
-                  icon: Icons.assignment,
-                  title: 'View Cases',
-                  color: Colors.blue,
-                  onTap: () {},
-                ),
-                _VetActionCard(
-                  icon: Icons.people,
-                  title: 'View Farmers',
-                  color: Colors.green,
-                  onTap: () {},
-                ),
-                _VetActionCard(
-                  icon: Icons.add_task,
-                  title: 'Assign Case',
-                  color: Colors.orange,
-                  onTap: () {},
-                ),
-                _VetActionCard(
-                  icon: Icons.analytics,
-                  title: 'Reports',
-                  color: Colors.purple,
-                  onTap: () {},
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
             // Recent Cases
             Text(
-              'Recent Cases',
+              'Recent Assigned Cases',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
             const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    Icon(Icons.inbox, size: 60, color: Colors.grey[400]),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No cases assigned yet',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Colors.grey[600],
+            assignedCases.isEmpty
+                ? Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          Icon(Icons.inbox, size: 60, color: Colors.grey[400]),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No cases assigned yet',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: Colors.grey[600],
+                                ),
                           ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Cases assigned to you will appear here',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[500],
+                          const SizedBox(height: 8),
+                          Text(
+                            'Cases assigned to you will appear here',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Colors.grey[500],
+                                ),
+                            textAlign: TextAlign.center,
                           ),
-                      textAlign: TextAlign.center,
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
-            ),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: assignedCases.take(3).length,
+                    itemBuilder: (context, index) {
+                      final caseItem = assignedCases[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: _getStatusColor(caseItem['status']),
+                            child: PlaceholderImage(
+                              networkUrl: caseItem['image'],
+                              placeholderIcon: Icons.report_problem,
+                              width: 40,
+                              height: 40,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                          title: Text(caseItem['caseId']),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(caseItem['livestock']),
+                              Text(
+                                'Farmer: ${caseItem['farmer']}',
+                                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                              ),
+                            ],
+                          ),
+                          trailing: Chip(
+                            label: Text(
+                              caseItem['status'].toString().replaceAll('_', ' ').toUpperCase(),
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                            backgroundColor: _getStatusColor(caseItem['status']).withOpacity(0.2),
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CaseDetailScreen(caseId: caseItem['id']),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
           ],
         ),
       ),
     );
   }
-}
 
-class _VetActionCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _VetActionCard({
-    required this.icon,
-    required this.title,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 40, color: color),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'assigned':
+        return Colors.orange;
+      case 'in_progress':
+        return Colors.blue;
+      case 'resolved':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
   }
 }
 
 // Vet Cases Tab
-class _VetCasesTab extends StatelessWidget {
-  const _VetCasesTab();
+class _VetCasesTab extends StatefulWidget {
+  final GlobalKey<ScaffoldState> scaffoldKey;
+  
+  const _VetCasesTab({required this.scaffoldKey});
+
+  @override
+  State<_VetCasesTab> createState() => _VetCasesTabState();
+}
+
+class _VetCasesTabState extends State<_VetCasesTab> {
+  String _selectedFilter = 'All';
+  List<Map<String, dynamic>> _assignedCases = MockDataService.getMockVetAssignedCases();
+  List<Map<String, dynamic>> _filteredCases = MockDataService.getMockVetAssignedCases();
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredCases = _assignedCases;
+  }
+
+  void _filterCases(String filter) {
+    setState(() {
+      _selectedFilter = filter;
+      if (filter == 'All') {
+        _filteredCases = _assignedCases;
+      } else {
+        _filteredCases = _assignedCases
+            .where((c) => c['status'].toString().toLowerCase() == filter.toLowerCase().replaceAll(' ', '_'))
+            .toList();
+      }
+    });
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'assigned':
+        return Colors.orange;
+      case 'in_progress':
+        return Colors.blue;
+      case 'resolved':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Color _getUrgencyColor(String urgency) {
+    switch (urgency) {
+      case 'high':
+        return Colors.red;
+      case 'medium':
+        return Colors.orange;
+      case 'low':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -365,116 +481,152 @@ class _VetCasesTab extends StatelessWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () {},
+          onPressed: () => widget.scaffoldKey.currentState?.openDrawer(),
         ),
-        title: const Text('My Cases'),
+        title: const Text('My Assigned Cases'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {},
-            itemBuilder: (BuildContext context) => [
-              const PopupMenuItem<String>(
-                value: 'livestock',
-                child: Row(
-                  children: [
-                    Icon(Icons.pets, color: Colors.green),
-                    SizedBox(width: 8),
-                    Text('Livestock'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'market',
-                child: Row(
-                  children: [
-                    Icon(Icons.store, color: Colors.orange),
-                    SizedBox(width: 8),
-                    Text('Market'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'weather',
-                child: Row(
-                  children: [
-                    Icon(Icons.wb_sunny, color: Colors.amber),
-                    SizedBox(width: 8),
-                    Text('Weather'),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem<String>(
-                value: 'settings',
-                child: Row(
-                  children: [
-                    Icon(Icons.settings, color: Colors.grey),
-                    SizedBox(width: 8),
-                    Text('Settings'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Status filters
-            Wrap(
+      body: Column(
+        children: [
+          // Status filters
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Wrap(
               spacing: 8,
               children: [
                 FilterChip(
                   label: const Text('All'),
-                  selected: true,
-                  onSelected: (selected) {},
+                  selected: _selectedFilter == 'All',
+                  onSelected: (selected) => _filterCases('All'),
                 ),
                 FilterChip(
-                  label: const Text('Pending'),
-                  onSelected: (selected) {},
+                  label: const Text('Assigned'),
+                  selected: _selectedFilter == 'Assigned',
+                  onSelected: (selected) => _filterCases('Assigned'),
                 ),
                 FilterChip(
                   label: const Text('In Progress'),
-                  onSelected: (selected) {},
+                  selected: _selectedFilter == 'In Progress',
+                  onSelected: (selected) => _filterCases('In Progress'),
                 ),
                 FilterChip(
                   label: const Text('Resolved'),
-                  onSelected: (selected) {},
+                  selected: _selectedFilter == 'Resolved',
+                  onSelected: (selected) => _filterCases('Resolved'),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            // Cases list
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.assignment, size: 80, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No cases assigned',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.grey[600],
+          ),
+          // Cases list
+          Expanded(
+            child: _filteredCases.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.assignment, size: 80, color: Colors.grey[400]),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No cases found',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                color: Colors.grey[600],
+                              ),
                         ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Cases assigned to you will appear here',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[500],
+                        const SizedBox(height: 8),
+                        Text(
+                          'No cases match the selected filter',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Colors.grey[500],
+                              ),
                         ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    itemCount: _filteredCases.length,
+                    itemBuilder: (context, index) {
+                      final caseItem = _filteredCases[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: _getStatusColor(caseItem['status']),
+                            child: PlaceholderImage(
+                              networkUrl: caseItem['image'],
+                              placeholderIcon: Icons.report_problem,
+                              width: 40,
+                              height: 40,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                          title: Text(caseItem['caseId']),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(caseItem['livestock']),
+                              Text(
+                                'Farmer: ${caseItem['farmer']} • ${caseItem['symptoms']}',
+                                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                              ),
+                            ],
+                          ),
+                          trailing: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: _getStatusColor(caseItem['status']).withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  caseItem['status'].toString().replaceAll('_', ' ').toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    color: _getStatusColor(caseItem['status']),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 1),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: _getUrgencyColor(caseItem['urgency']).withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  caseItem['urgency'].toString().toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    color: _getUrgencyColor(caseItem['urgency']),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          isThreeLine: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CaseDetailScreen(caseId: caseItem['id']),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
                   ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -482,7 +634,9 @@ class _VetCasesTab extends StatelessWidget {
 
 // Vet Community Tab (same as farmer)
 class _VetCommunityTab extends StatelessWidget {
-  const _VetCommunityTab();
+  final GlobalKey<ScaffoldState> scaffoldKey;
+  
+  const _VetCommunityTab({required this.scaffoldKey});
 
   @override
   Widget build(BuildContext context) {
@@ -490,65 +644,12 @@ class _VetCommunityTab extends StatelessWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () {},
+          onPressed: () => scaffoldKey.currentState?.openDrawer(),
         ),
         title: const Text('Community'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person_outline),
-            onPressed: () {},
-          ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {},
-            itemBuilder: (BuildContext context) => [
-              const PopupMenuItem<String>(
-                value: 'livestock',
-                child: Row(
-                  children: [
-                    Icon(Icons.pets, color: Colors.green),
-                    SizedBox(width: 8),
-                    Text('Livestock'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'market',
-                child: Row(
-                  children: [
-                    Icon(Icons.store, color: Colors.orange),
-                    SizedBox(width: 8),
-                    Text('Market'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'weather',
-                child: Row(
-                  children: [
-                    Icon(Icons.wb_sunny, color: Colors.amber),
-                    SizedBox(width: 8),
-                    Text('Weather'),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem<String>(
-                value: 'settings',
-                child: Row(
-                  children: [
-                    Icon(Icons.settings, color: Colors.grey),
-                    SizedBox(width: 8),
-                    Text('Settings'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
       body: const Center(
         child: Text('Community Feed - Same as Farmer'),
@@ -559,7 +660,9 @@ class _VetCommunityTab extends StatelessWidget {
 
 // Vet Profile Tab
 class _VetProfileTab extends StatelessWidget {
-  const _VetProfileTab();
+  final GlobalKey<ScaffoldState> scaffoldKey;
+  
+  const _VetProfileTab({required this.scaffoldKey});
 
   @override
   Widget build(BuildContext context) {
@@ -567,61 +670,12 @@ class _VetProfileTab extends StatelessWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () {},
+          onPressed: () => scaffoldKey.currentState?.openDrawer(),
         ),
         title: const Text('Profile'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {},
-            itemBuilder: (BuildContext context) => [
-              const PopupMenuItem<String>(
-                value: 'livestock',
-                child: Row(
-                  children: [
-                    Icon(Icons.pets, color: Colors.green),
-                    SizedBox(width: 8),
-                    Text('Livestock'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'market',
-                child: Row(
-                  children: [
-                    Icon(Icons.store, color: Colors.orange),
-                    SizedBox(width: 8),
-                    Text('Market'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'weather',
-                child: Row(
-                  children: [
-                    Icon(Icons.wb_sunny, color: Colors.amber),
-                    SizedBox(width: 8),
-                    Text('Weather'),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem<String>(
-                value: 'settings',
-                child: Row(
-                  children: [
-                    Icon(Icons.settings, color: Colors.grey),
-                    SizedBox(width: 8),
-                    Text('Settings'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
@@ -646,27 +700,62 @@ class _VetProfileTab extends StatelessWidget {
                 ),
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.orange[50],
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.orange[200]!),
+            ),
+            child: const Text(
+              'Pending Approval',
+              style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+          ),
           const SizedBox(height: 32),
           ListTile(
             leading: const Icon(Icons.edit),
             title: const Text('Edit Profile'),
-            onTap: () {},
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Edit Profile feature coming soon')),
+              );
+            },
           ),
           ListTile(
             leading: const Icon(Icons.assignment),
             title: const Text('My Cases'),
-            onTap: () {},
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Navigate to Cases tab')),
+              );
+            },
           ),
           ListTile(
             leading: const Icon(Icons.people),
             title: const Text('My Farmers'),
-            onTap: () {},
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('My Farmers feature coming soon')),
+              );
+            },
           ),
           ListTile(
             leading: const Icon(Icons.settings),
             title: const Text('Settings'),
-            onTap: () {},
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Settings feature coming soon')),
+              );
+            },
           ),
+          const Divider(),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text('Logout', style: TextStyle(color: Colors.red)),
@@ -679,4 +768,3 @@ class _VetProfileTab extends StatelessWidget {
     );
   }
 }
-
