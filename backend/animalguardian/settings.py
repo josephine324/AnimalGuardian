@@ -162,7 +162,13 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:8081",  # React Native Metro
+    "https://animalguards.netlify.app",  # Production frontend
 ]
+
+# Allow CORS from environment variable (for Railway/production)
+CORS_ALLOWED_ORIGINS_ENV = config('CORS_ALLOWED_ORIGINS', default='')
+if CORS_ALLOWED_ORIGINS_ENV:
+    CORS_ALLOWED_ORIGINS.extend([origin.strip() for origin in CORS_ALLOWED_ORIGINS_ENV.split(',')])
 
 CORS_ALLOW_CREDENTIALS = True
 
