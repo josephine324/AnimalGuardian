@@ -12,12 +12,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // Navigate to welcome screen after 2 seconds
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        context.go('/welcome');
-      }
-    });
+    // Auto-navigate removed - user can click buttons to proceed
   }
 
   @override
@@ -48,7 +43,7 @@ class _SplashScreenState extends State<SplashScreen> {
               width: 200,
               child: ElevatedButton(
                 onPressed: () {
-                  context.go('/welcome');
+                  context.go('/login');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,
@@ -73,7 +68,7 @@ class _SplashScreenState extends State<SplashScreen> {
               width: 200,
               child: OutlinedButton(
                 onPressed: () {
-                  context.go('/register');
+                  context.go('/login');
                 },
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.white,
