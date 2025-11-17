@@ -49,7 +49,7 @@ class ApiService {
     try {
       final headers = await _getHeaders();
       final response = await http.get(
-        Uri.parse('$baseUrl/cases/?page=$page'),
+        Uri.parse('$baseUrl/cases/reports/?page=$page'),
         headers: headers,
       ).timeout(AppConstants.connectionTimeout);
 
@@ -70,7 +70,7 @@ class ApiService {
   Future<CaseReport> getCaseById(int id) async {
     final headers = await _getHeaders();
     final response = await http.get(
-      Uri.parse('$baseUrl/cases/$id/'),
+      Uri.parse('$baseUrl/cases/reports/$id/'),
       headers: headers,
     ).timeout(AppConstants.connectionTimeout);
 
@@ -81,7 +81,7 @@ class ApiService {
   Future<CaseReport> createCase(Map<String, dynamic> payload) async {
     final headers = await _getHeaders();
     final response = await http.post(
-      Uri.parse('$baseUrl/cases/'),
+      Uri.parse('$baseUrl/cases/reports/'),
       headers: headers,
       body: json.encode(payload),
     ).timeout(AppConstants.connectionTimeout);
@@ -93,7 +93,7 @@ class ApiService {
   Future<CaseReport> updateCase(int id, Map<String, dynamic> payload) async {
     final headers = await _getHeaders();
     final response = await http.patch(
-      Uri.parse('$baseUrl/cases/$id/'),
+      Uri.parse('$baseUrl/cases/reports/$id/'),
       headers: headers,
       body: json.encode(payload),
     ).timeout(AppConstants.connectionTimeout);
