@@ -227,37 +227,136 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
           ),
+          // Main Navigation Tabs
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Text(
+              'Main Navigation',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.home, color: Colors.blue),
+            title: const Text('Home'),
+            onTap: () {
+              Navigator.pop(context); // Close drawer
+              // Pop back to dashboard if on pushed screen
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              }
+              Future.delayed(const Duration(milliseconds: 100), () {
+                if (mounted) changeTab(0);
+              });
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.report_problem, color: Colors.red),
+            title: const Text('Cases'),
+            onTap: () {
+              Navigator.pop(context); // Close drawer
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              }
+              Future.delayed(const Duration(milliseconds: 100), () {
+                if (mounted) changeTab(1);
+              });
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.people, color: Colors.purple),
+            title: const Text('Community'),
+            onTap: () {
+              Navigator.pop(context); // Close drawer
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              }
+              Future.delayed(const Duration(milliseconds: 100), () {
+                if (mounted) changeTab(2);
+              });
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.person, color: Colors.teal),
+            title: const Text('Profile'),
+            onTap: () {
+              Navigator.pop(context); // Close drawer
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              }
+              Future.delayed(const Duration(milliseconds: 100), () {
+                if (mounted) changeTab(3);
+              });
+            },
+          ),
+          const Divider(),
+          // Additional Features
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Text(
+              'Features',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+            ),
+          ),
           ListTile(
             leading: const Icon(Icons.pets, color: Colors.green),
             title: const Text('Livestock'),
             onTap: () {
-              Navigator.pop(context);
-              _navigateToLivestock(context);
+              Navigator.pop(context); // Close drawer
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              }
+              Future.delayed(const Duration(milliseconds: 100), () {
+                if (mounted) _navigateToLivestock(context);
+              });
             },
           ),
           ListTile(
             leading: const Icon(Icons.store, color: Colors.orange),
             title: const Text('Market'),
             onTap: () {
-              Navigator.pop(context);
-              _navigateToMarket(context);
+              Navigator.pop(context); // Close drawer
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              }
+              Future.delayed(const Duration(milliseconds: 100), () {
+                if (mounted) _navigateToMarket(context);
+              });
             },
           ),
           ListTile(
             leading: const Icon(Icons.wb_sunny, color: Colors.amber),
             title: const Text('Weather'),
             onTap: () {
-              Navigator.pop(context);
-              _navigateToWeather(context);
+              Navigator.pop(context); // Close drawer
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              }
+              Future.delayed(const Duration(milliseconds: 100), () {
+                if (mounted) _navigateToWeather(context);
+              });
             },
           ),
           const Divider(),
+          // Settings
           ListTile(
             leading: const Icon(Icons.settings, color: Colors.grey),
             title: const Text('Settings'),
             onTap: () {
-              Navigator.pop(context);
-              _navigateToSettings(context);
+              Navigator.pop(context); // Close drawer
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              }
+              Future.delayed(const Duration(milliseconds: 100), () {
+                if (mounted) _navigateToSettings(context);
+              });
             },
           ),
         ],
