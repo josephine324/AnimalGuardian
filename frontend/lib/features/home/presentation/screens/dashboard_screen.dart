@@ -28,7 +28,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _HomeTab(scaffoldKey: _scaffoldKey),
       _CasesTab(scaffoldKey: _scaffoldKey),
       _CommunityTab(scaffoldKey: _scaffoldKey),
-      _ProfileTab(scaffoldKey: _scaffoldKey),
+      _ProfileTab(scaffoldKey: _scaffoldKey, onTabChanged: changeTab),
     ]);
   }
 
@@ -2057,8 +2057,48 @@ class _HourlyForecast extends StatelessWidget {
 // Profile Tab
 class _ProfileTab extends StatelessWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
+  final Function(int)? onTabChanged;
   
-  const _ProfileTab({required this.scaffoldKey});
+  const _ProfileTab({required this.scaffoldKey, this.onTabChanged});
+
+  Widget _buildBottomNavigationBarForChild(BuildContext context) {
+    return BottomNavigationBar(
+      currentIndex: 3, // Profile tab index
+      onTap: (index) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        // Use callback if provided to change tab
+        if (onTabChanged != null) {
+          Future.delayed(const Duration(milliseconds: 100), () {
+            onTabChanged!(index);
+          });
+        } else {
+          // Fallback: navigate to dashboard
+          context.go('/dashboard');
+        }
+      },
+      type: BottomNavigationBarType.fixed,
+      selectedItemColor: Theme.of(context).colorScheme.primary,
+      unselectedItemColor: Colors.grey,
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home),
+          label: 'Home',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.report_problem),
+          label: 'Cases',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.people),
+          label: 'Community',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person),
+          label: 'Profile',
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2111,7 +2151,12 @@ class _ProfileTab extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => _SettingsTab(scaffoldKey: scaffoldKey)),
+                MaterialPageRoute(
+                  builder: (context) => _SettingsTab(
+                    scaffoldKey: scaffoldKey,
+                    bottomNavBar: _buildBottomNavigationBarForChild(context),
+                  ),
+                ),
               );
             },
           ),
@@ -2138,23 +2183,31 @@ class _ProfileTab extends StatelessWidget {
 }
 
 // Settings Tab
-class _SettingsTab extends StatelessWidget {
+class _SettingsTab extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final Widget? bottomNavBar;
   
   const _SettingsTab({required this.scaffoldKey, this.bottomNavBar});
 
   @override
+  State<_SettingsTab> createState() => _SettingsTabState();
+}
+
+class _SettingsTabState extends State<_SettingsTab> {
+  bool _notificationsEnabled = true;
+  bool _darkModeEnabled = false;
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      bottomNavigationBar: bottomNavBar,
+      bottomNavigationBar: widget.bottomNavBar,
       appBar: AppBar(
         title: const Text('Settings'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () => scaffoldKey.currentState?.openDrawer(),
+          onPressed: () => widget.scaffoldKey.currentState?.openDrawer(),
         ),
       ),
       body: ListView(
@@ -2177,7 +2230,7 @@ class _SettingsTab extends StatelessWidget {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Feature coming soon!')),
+                      const SnackBar(content: Text('Edit profile feature coming soon!')),
                     );
                   },
                 ),
@@ -2188,7 +2241,7 @@ class _SettingsTab extends StatelessWidget {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Feature coming soon!')),
+                      const SnackBar(content: Text('Change password feature coming soon!')),
                     );
                   },
                 ),
@@ -2211,8 +2264,18 @@ class _SettingsTab extends StatelessWidget {
                   leading: const Icon(Icons.notifications),
                   title: const Text('Notifications'),
                   trailing: Switch(
-                    value: true,
-                    onChanged: (value) {},
+                    value: _notificationsEnabled,
+                    onChanged: (value) {
+                      setState(() {
+                        _notificationsEnabled = value;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Notifications ${value ? 'enabled' : 'disabled'}'),
+                          duration: const Duration(seconds: 1),
+                        ),
+                      );
+                    },
                   ),
                 ),
                 const Divider(height: 1),
@@ -2223,7 +2286,7 @@ class _SettingsTab extends StatelessWidget {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Feature coming soon!')),
+                      const SnackBar(content: Text('Language selection coming soon!')),
                     );
                   },
                 ),
@@ -2232,8 +2295,18 @@ class _SettingsTab extends StatelessWidget {
                   leading: const Icon(Icons.dark_mode),
                   title: const Text('Dark Mode'),
                   trailing: Switch(
-                    value: false,
-                    onChanged: (value) {},
+                    value: _darkModeEnabled,
+                    onChanged: (value) {
+                      setState(() {
+                        _darkModeEnabled = value;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Dark mode ${value ? 'enabled' : 'disabled'}'),
+                          duration: const Duration(seconds: 1),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
