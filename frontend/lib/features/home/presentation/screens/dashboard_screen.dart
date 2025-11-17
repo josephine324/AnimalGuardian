@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/services/mock_data_service.dart';
 import '../../../../shared/presentation/widgets/placeholder_image.dart';
 import '../../../cases/presentation/screens/report_case_screen.dart';
+import '../../../cases/presentation/screens/case_detail_screen.dart';
 import '../../../livestock/presentation/screens/add_livestock_screen.dart';
 import '../../../livestock/presentation/screens/livestock_detail_screen.dart';
 import '../../../community/presentation/screens/create_post_screen.dart';
@@ -319,7 +320,11 @@ class _HomeTabState extends State<_HomeTab> {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            onPressed: () {},
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Search functionality coming soon!')),
+              );
+            },
           ),
         ],
       ),
@@ -530,23 +535,70 @@ class _HomeTabState extends State<_HomeTab> {
 }
 
 // Livestock Tab
-class _LivestockTab extends StatelessWidget {
+class _LivestockTab extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final Widget? bottomNavBar;
   
   const _LivestockTab({required this.scaffoldKey, this.bottomNavBar});
 
   @override
+  State<_LivestockTab> createState() => _LivestockTabState();
+}
+
+class _LivestockTabState extends State<_LivestockTab> {
+  final TextEditingController _searchController = TextEditingController();
+  String _selectedFilter = 'All';
+  List<Map<String, dynamic>> _livestock = MockDataService.getMockLivestock();
+  List<Map<String, dynamic>> _filteredLivestock = MockDataService.getMockLivestock();
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredLivestock = _livestock;
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterLivestock(String filter) {
+    setState(() {
+      _selectedFilter = filter;
+      if (filter == 'All') {
+        _filteredLivestock = _livestock;
+      } else {
+        _filteredLivestock = _livestock.where((item) => item['type'].toString().toLowerCase() == filter.toLowerCase()).toList();
+      }
+    });
+  }
+
+  void _searchLivestock(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredLivestock = _livestock;
+      } else {
+        _filteredLivestock = _livestock.where((item) {
+          return item['name'].toString().toLowerCase().contains(query.toLowerCase()) ||
+                 item['type'].toString().toLowerCase().contains(query.toLowerCase()) ||
+                 item['breed'].toString().toLowerCase().contains(query.toLowerCase());
+        }).toList();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      bottomNavigationBar: bottomNavBar,
+      bottomNavigationBar: widget.bottomNavBar,
       appBar: AppBar(
         title: const Text('My Livestock'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () => scaffoldKey.currentState?.openDrawer(),
+          onPressed: () => widget.scaffoldKey.currentState?.openDrawer(),
         ),
         actions: [
           IconButton(
@@ -564,6 +616,8 @@ class _LivestockTab extends StatelessWidget {
           children: [
             // Search bar
             TextField(
+              controller: _searchController,
+              onChanged: _searchLivestock,
               decoration: InputDecoration(
                 hintText: 'Search livestock...',
                 prefixIcon: const Icon(Icons.search),
@@ -581,63 +635,93 @@ class _LivestockTab extends StatelessWidget {
               children: [
                 FilterChip(
                   label: const Text('All'),
-                  selected: true,
-                  onSelected: (selected) {},
+                  selected: _selectedFilter == 'All',
+                  onSelected: (selected) => _filterLivestock('All'),
                 ),
                 FilterChip(
                   label: const Text('Cattle'),
-                  onSelected: (selected) {},
+                  selected: _selectedFilter == 'Cattle',
+                  onSelected: (selected) => _filterLivestock('Cattle'),
                 ),
                 FilterChip(
                   label: const Text('Goats'),
-                  onSelected: (selected) {},
+                  selected: _selectedFilter == 'Goats',
+                  onSelected: (selected) => _filterLivestock('Goats'),
                 ),
                 FilterChip(
                   label: const Text('Sheep'),
-                  onSelected: (selected) {},
+                  selected: _selectedFilter == 'Sheep',
+                  onSelected: (selected) => _filterLivestock('Sheep'),
                 ),
                 FilterChip(
                   label: const Text('Pigs'),
-                  onSelected: (selected) {},
+                  selected: _selectedFilter == 'Pigs',
+                  onSelected: (selected) => _filterLivestock('Pigs'),
                 ),
               ],
             ),
             const SizedBox(height: 24),
-            // Livestock list placeholder
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.pets,
-                    size: 80,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No livestock yet',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.grey[600],
+            // Livestock list
+            _filteredLivestock.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.pets,
+                          size: 80,
+                          color: Colors.grey[400],
                         ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Add your first livestock to get started',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[500],
+                        const SizedBox(height: 16),
+                        Text(
+                          'No livestock found',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                color: Colors.grey[600],
+                              ),
                         ),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      context.push('/livestock/add');
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _filteredLivestock.length,
+                    itemBuilder: (context, index) {
+                      final livestock = _filteredLivestock[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: livestock['status'] == 'healthy' ? Colors.green : Colors.orange,
+                            child: PlaceholderImage(
+                              assetPath: livestock['image'],
+                              placeholderIcon: Icons.pets,
+                              width: 40,
+                              height: 40,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                          title: Text(livestock['name']),
+                          subtitle: Text('${livestock['type']} - ${livestock['breed']}'),
+                          trailing: Chip(
+                            label: Text(
+                              livestock['status'],
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            backgroundColor: livestock['status'] == 'healthy' ? Colors.green[100] : Colors.orange[100],
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => LivestockDetailScreen(livestockId: livestock['id']),
+                              ),
+                            );
+                          },
+                        ),
+                      );
                     },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add Livestock'),
                   ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
@@ -646,10 +730,62 @@ class _LivestockTab extends StatelessWidget {
 }
 
 // Cases Tab
-class _CasesTab extends StatelessWidget {
+class _CasesTab extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   
   const _CasesTab({required this.scaffoldKey});
+
+  @override
+  State<_CasesTab> createState() => _CasesTabState();
+}
+
+class _CasesTabState extends State<_CasesTab> {
+  String _selectedFilter = 'All';
+  List<Map<String, dynamic>> _cases = MockDataService.getMockCases();
+  List<Map<String, dynamic>> _filteredCases = MockDataService.getMockCases();
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredCases = _cases;
+  }
+
+  void _filterCases(String filter) {
+    setState(() {
+      _selectedFilter = filter;
+      if (filter == 'All') {
+        _filteredCases = _cases;
+      } else {
+        _filteredCases = _cases.where((item) => item['status'] == filter.toLowerCase().replaceAll(' ', '_')).toList();
+      }
+    });
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'pending':
+        return Colors.orange;
+      case 'under_review':
+        return Colors.blue;
+      case 'resolved':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Color _getUrgencyColor(String urgency) {
+    switch (urgency) {
+      case 'high':
+        return Colors.red;
+      case 'medium':
+        return Colors.orange;
+      case 'low':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -660,7 +796,7 @@ class _CasesTab extends StatelessWidget {
         foregroundColor: Colors.white,
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () => scaffoldKey.currentState?.openDrawer(),
+          onPressed: () => widget.scaffoldKey.currentState?.openDrawer(),
         ),
         actions: [
           IconButton(
@@ -682,59 +818,117 @@ class _CasesTab extends StatelessWidget {
               children: [
                 FilterChip(
                   label: const Text('All'),
-                  selected: true,
-                  onSelected: (selected) {},
+                  selected: _selectedFilter == 'All',
+                  onSelected: (selected) => _filterCases('All'),
                 ),
                 FilterChip(
                   label: const Text('Pending'),
-                  onSelected: (selected) {},
+                  selected: _selectedFilter == 'Pending',
+                  onSelected: (selected) => _filterCases('Pending'),
                 ),
                 FilterChip(
                   label: const Text('Under Review'),
-                  onSelected: (selected) {},
+                  selected: _selectedFilter == 'Under Review',
+                  onSelected: (selected) => _filterCases('Under Review'),
                 ),
                 FilterChip(
                   label: const Text('Resolved'),
-                  onSelected: (selected) {},
+                  selected: _selectedFilter == 'Resolved',
+                  onSelected: (selected) => _filterCases('Resolved'),
                 ),
               ],
             ),
             const SizedBox(height: 24),
-            // Cases list placeholder
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.report_problem,
-                    size: 80,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No cases yet',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.grey[600],
+            // Cases list
+            _filteredCases.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.report_problem,
+                          size: 80,
+                          color: Colors.grey[400],
                         ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Report a case to get veterinary help',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[500],
+                        const SizedBox(height: 16),
+                        Text(
+                          'No cases found',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                color: Colors.grey[600],
+                              ),
                         ),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      context.push('/cases/report');
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            context.push('/cases/report');
+                          },
+                          icon: const Icon(Icons.add),
+                          label: const Text('Report Case'),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _filteredCases.length,
+                    itemBuilder: (context, index) {
+                      final caseItem = _filteredCases[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: _getStatusColor(caseItem['status']),
+                            child: PlaceholderImage(
+                              assetPath: caseItem['image'],
+                              placeholderIcon: Icons.report_problem,
+                              width: 40,
+                              height: 40,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                          title: Text(caseItem['caseId']),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(caseItem['livestock']),
+                              Text(caseItem['symptoms'], style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                            ],
+                          ),
+                          trailing: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Chip(
+                                label: Text(
+                                  caseItem['status'].toString().replaceAll('_', ' ').toUpperCase(),
+                                  style: const TextStyle(fontSize: 10),
+                                ),
+                                backgroundColor: _getStatusColor(caseItem['status']).withOpacity(0.2),
+                              ),
+                              const SizedBox(height: 4),
+                              Chip(
+                                label: Text(
+                                  caseItem['urgency'].toString().toUpperCase(),
+                                  style: const TextStyle(fontSize: 10),
+                                ),
+                                backgroundColor: _getUrgencyColor(caseItem['urgency']).withOpacity(0.2),
+                              ),
+                            ],
+                          ),
+                          isThreeLine: true,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CaseDetailScreen(caseId: caseItem['id']),
+                              ),
+                            );
+                          },
+                        ),
+                      );
                     },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Report Case'),
                   ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
@@ -818,7 +1012,11 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
         actions: [
           IconButton(
             icon: const Icon(Icons.person_outline),
-            onPressed: () {},
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Profile feature coming soon!')),
+              );
+            },
           ),
         ],
       ),
@@ -1225,7 +1423,14 @@ class _VideoPostCard extends StatelessWidget {
                   'Market View: $marketView',
                   style: TextStyle(color: Colors.grey[600], fontStyle: FontStyle.italic),
                 ),
-                TextButton(onPressed: () {}, child: const Text('See More')),
+                TextButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('See more posts coming soon!')),
+                    );
+                  },
+                  child: const Text('See More'),
+                ),
               ],
             ),
           ),
@@ -1277,8 +1482,13 @@ class _ChatListItem extends StatelessWidget {
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: Colors.green,
-        backgroundImage: avatarPath != null ? AssetImage(avatarPath!) : null,
-        child: avatarPath == null ? const Icon(Icons.person, color: Colors.white) : null,
+        child: PlaceholderImage(
+          assetPath: avatarPath,
+          placeholderIcon: Icons.person,
+          width: 40,
+          height: 40,
+          borderRadius: BorderRadius.circular(20),
+        ),
       ),
       title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
       subtitle: Row(
@@ -1304,7 +1514,11 @@ class _ChatListItem extends StatelessWidget {
           ),
         ],
       ),
-      onTap: () {},
+      onTap: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Opening chat with $name')),
+        );
+      },
     );
   }
 }
@@ -1405,7 +1619,11 @@ class _MarketTabState extends State<_MarketTab> {
         actions: [
           IconButton(
             icon: const Icon(Icons.person_outline),
-            onPressed: () {},
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Profile feature coming soon!')),
+              );
+            },
           ),
         ],
       ),
@@ -1558,7 +1776,11 @@ class _WeatherTabState extends State<_WeatherTab> {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Notifications coming soon!')),
+              );
+            },
           ),
         ],
       ),
@@ -1877,7 +2099,11 @@ class _ProfileTab extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.edit),
             title: const Text('Edit Profile'),
-            onTap: () {},
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Edit profile feature coming soon!')),
+              );
+            },
           ),
           ListTile(
             leading: const Icon(Icons.settings),
@@ -1892,7 +2118,11 @@ class _ProfileTab extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.help),
             title: const Text('Help & Support'),
-            onTap: () {},
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Help & Support coming soon!')),
+              );
+            },
           ),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
@@ -1945,14 +2175,22 @@ class _SettingsTab extends StatelessWidget {
                   leading: const Icon(Icons.person),
                   title: const Text('Edit Profile'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Feature coming soon!')),
+                    );
+                  },
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.lock),
                   title: const Text('Change Password'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Feature coming soon!')),
+                    );
+                  },
                 ),
               ],
             ),
@@ -1983,7 +2221,11 @@ class _SettingsTab extends StatelessWidget {
                   title: const Text('Language'),
                   subtitle: const Text('English'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Feature coming soon!')),
+                    );
+                  },
                 ),
                 const Divider(height: 1),
                 ListTile(
@@ -2019,21 +2261,33 @@ class _SettingsTab extends StatelessWidget {
                   leading: const Icon(Icons.help),
                   title: const Text('Help & Support'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Feature coming soon!')),
+                    );
+                  },
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.privacy_tip),
                   title: const Text('Privacy Policy'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Feature coming soon!')),
+                    );
+                  },
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.description),
                   title: const Text('Terms of Service'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Feature coming soon!')),
+                    );
+                  },
                 ),
               ],
             ),

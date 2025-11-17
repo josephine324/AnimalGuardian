@@ -158,5 +158,74 @@ class MockDataService {
       },
     ];
   }
+
+  // Mock Livestock Data
+  static List<Map<String, dynamic>> getMockLivestock() {
+    return [
+      {
+        'id': 1,
+        'name': 'Bella',
+        'type': 'Cow',
+        'breed': 'Holstein',
+        'status': 'healthy',
+        'age': '3 years',
+        'image': 'assets/images/cow_1.jpg',
+      },
+      {
+        'id': 2,
+        'name': 'Max',
+        'type': 'Goat',
+        'breed': 'Boer',
+        'status': 'healthy',
+        'age': '2 years',
+        'image': 'assets/images/goat_1.jpg',
+      },
+      {
+        'id': 3,
+        'name': 'Luna',
+        'type': 'Sheep',
+        'breed': 'Dorper',
+        'status': 'sick',
+        'age': '1 year',
+        'image': 'assets/images/sheep_1.jpg',
+      },
+    ];
+  }
+
+  // Mock Cases Data
+  static List<Map<String, dynamic>> getMockCases() {
+    return [
+      {
+        'id': 1,
+        'caseId': 'CASE-001',
+        'livestock': 'Bella (Cow)',
+        'symptoms': 'Loss of appetite, lethargy',
+        'status': 'pending',
+        'urgency': 'high',
+        'date': '2024-01-15',
+        'image': 'assets/images/case_1.jpg',
+      },
+      {
+        'id': 2,
+        'caseId': 'CASE-002',
+        'livestock': 'Luna (Sheep)',
+        'symptoms': 'Coughing, nasal discharge',
+        'status': 'under_review',
+        'urgency': 'medium',
+        'date': '2024-01-14',
+        'image': 'assets/images/case_2.jpg',
+      },
+      {
+        'id': 3,
+        'caseId': 'CASE-003',
+        'livestock': 'Max (Goat)',
+        'symptoms': 'Lameness in left leg',
+        'status': 'resolved',
+        'urgency': 'low',
+        'date': '2024-01-10',
+        'image': 'assets/images/case_3.jpg',
+      },
+    ];
+  }
 }
 
