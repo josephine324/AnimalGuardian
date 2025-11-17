@@ -7,6 +7,12 @@ import '../../../cases/presentation/screens/case_detail_screen.dart';
 import '../../../livestock/presentation/screens/add_livestock_screen.dart';
 import '../../../livestock/presentation/screens/livestock_detail_screen.dart';
 import '../../../community/presentation/screens/create_post_screen.dart';
+import '../../../settings/presentation/screens/edit_profile_screen.dart';
+import '../../../settings/presentation/screens/change_password_screen.dart';
+import '../../../settings/presentation/screens/language_screen.dart';
+import '../../../settings/presentation/screens/help_support_screen.dart';
+import '../../../settings/presentation/screens/privacy_policy_screen.dart';
+import '../../../settings/presentation/screens/terms_of_service_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -388,7 +394,14 @@ class _HomeTab extends StatefulWidget {
 class _HomeTabState extends State<_HomeTab> {
   String _selectedFilter = 'All';
   final TextEditingController _searchController = TextEditingController();
-  final List<Map<String, dynamic>> _homeFeed = MockDataService.getMockHomeFeed();
+  List<Map<String, dynamic>> _homeFeed = MockDataService.getMockHomeFeed();
+  List<Map<String, dynamic>> _filteredFeed = MockDataService.getMockHomeFeed();
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredFeed = _homeFeed;
+  }
 
   @override
   void dispose() {
@@ -396,11 +409,28 @@ class _HomeTabState extends State<_HomeTab> {
     super.dispose();
   }
 
-  void _handleSearch(String query) {
-    // Filter home feed based on search query
+  void _handleFilter(String filter) {
     setState(() {
-      // In a real app, this would filter the feed
-      // For now, just trigger a rebuild
+      _selectedFilter = filter;
+      _filteredFeed = MockDataService.getMockHomeFeed(filter: filter);
+    });
+  }
+
+  void _handleSearch(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredFeed = MockDataService.getMockHomeFeed(filter: _selectedFilter);
+      } else {
+        _filteredFeed = _homeFeed.where((item) {
+          if (item['type'] == 'news') {
+            return item['data']['title'].toString().toLowerCase().contains(query.toLowerCase()) ||
+                   item['data']['location'].toString().toLowerCase().contains(query.toLowerCase());
+          } else {
+            return item['title'].toString().toLowerCase().contains(query.toLowerCase()) ||
+                   item['description'].toString().toLowerCase().contains(query.toLowerCase());
+          }
+        }).toList();
+      }
     });
   }
 
@@ -438,7 +468,7 @@ class _HomeTabState extends State<_HomeTab> {
                 controller: _searchController,
                 onChanged: _handleSearch,
                 decoration: InputDecoration(
-                  hintText: 'Search farming, breeding tips, or friends',
+                  hintText: 'Search livestock, breeding tips, or friends',
                   prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -457,26 +487,32 @@ class _HomeTabState extends State<_HomeTab> {
                   _FilterChip(
                     label: 'All',
                     isSelected: _selectedFilter == 'All',
-                    onTap: () => setState(() => _selectedFilter = 'All'),
+                    onTap: () => _handleFilter('All'),
                   ),
                   const SizedBox(width: 8),
                   _FilterChip(
                     label: 'Livestock',
                     isSelected: _selectedFilter == 'Livestock',
-                    onTap: () => setState(() => _selectedFilter = 'Livestock'),
+                    onTap: () => _handleFilter('Livestock'),
                   ),
                   const SizedBox(width: 8),
                   _FilterChip(
-                    label: 'Community',
-                    isSelected: _selectedFilter == 'Community',
-                    onTap: () => setState(() => _selectedFilter = 'Community'),
+                    label: 'Market',
+                    isSelected: _selectedFilter == 'Market',
+                    onTap: () => _handleFilter('Market'),
+                  ),
+                  const SizedBox(width: 8),
+                  _FilterChip(
+                    label: 'Tutorial',
+                    isSelected: _selectedFilter == 'Tutorial',
+                    onTap: () => _handleFilter('Tutorial'),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
             // Home Feed Cards (from mock data)
-            ..._homeFeed.map((item) {
+            ..._filteredFeed.map((item) {
               if (item['type'] == 'card') {
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -563,7 +599,7 @@ class _HomeTabState extends State<_HomeTab> {
                           child: Row(
                             children: [
                               PlaceholderImage(
-                                assetPath: news['image'],
+                                networkUrl: news['image'],
                                 placeholderIcon: Icons.image,
                                 width: 80,
                                 height: 80,
@@ -665,25 +701,50 @@ class _LivestockTabState extends State<_LivestockTab> {
   void _filterLivestock(String filter) {
     setState(() {
       _selectedFilter = filter;
-      if (filter == 'All') {
-        _filteredLivestock = _livestock;
-      } else {
-        _filteredLivestock = _livestock.where((item) => item['type'].toString().toLowerCase() == filter.toLowerCase()).toList();
+      String searchQuery = _searchController.text;
+      List<Map<String, dynamic>> filtered = _livestock;
+      
+      // Apply type filter
+      if (filter != 'All') {
+        String filterType = filter;
+        if (filter == 'Cattle') filterType = 'Cow';
+        filtered = filtered.where((item) => item['type'].toString().toLowerCase() == filterType.toLowerCase()).toList();
       }
+      
+      // Apply search filter
+      if (searchQuery.isNotEmpty) {
+        filtered = filtered.where((item) {
+          return item['name'].toString().toLowerCase().contains(searchQuery.toLowerCase()) ||
+                 item['type'].toString().toLowerCase().contains(searchQuery.toLowerCase()) ||
+                 item['breed'].toString().toLowerCase().contains(searchQuery.toLowerCase());
+        }).toList();
+      }
+      
+      _filteredLivestock = filtered;
     });
   }
 
   void _searchLivestock(String query) {
     setState(() {
-      if (query.isEmpty) {
-        _filteredLivestock = _livestock;
-      } else {
-        _filteredLivestock = _livestock.where((item) {
+      List<Map<String, dynamic>> filtered = _livestock;
+      
+      // Apply type filter
+      if (_selectedFilter != 'All') {
+        String filterType = _selectedFilter;
+        if (_selectedFilter == 'Cattle') filterType = 'Cow';
+        filtered = filtered.where((item) => item['type'].toString().toLowerCase() == filterType.toLowerCase()).toList();
+      }
+      
+      // Apply search filter
+      if (query.isNotEmpty) {
+        filtered = filtered.where((item) {
           return item['name'].toString().toLowerCase().contains(query.toLowerCase()) ||
                  item['type'].toString().toLowerCase().contains(query.toLowerCase()) ||
                  item['breed'].toString().toLowerCase().contains(query.toLowerCase());
         }).toList();
       }
+      
+      _filteredLivestock = filtered;
     });
   }
 
@@ -793,7 +854,7 @@ class _LivestockTabState extends State<_LivestockTab> {
                           leading: CircleAvatar(
                             backgroundColor: livestock['status'] == 'healthy' ? Colors.green : Colors.orange,
                             child: PlaceholderImage(
-                              assetPath: livestock['image'],
+                              networkUrl: livestock['image'],
                               placeholderIcon: Icons.pets,
                               width: 40,
                               height: 40,
@@ -979,7 +1040,7 @@ class _CasesTabState extends State<_CasesTab> {
                           leading: CircleAvatar(
                             backgroundColor: _getStatusColor(caseItem['status']),
                             child: PlaceholderImage(
-                              assetPath: caseItem['image'],
+                              networkUrl: caseItem['image'],
                               placeholderIcon: Icons.report_problem,
                               width: 40,
                               height: 40,
@@ -997,25 +1058,43 @@ class _CasesTabState extends State<_CasesTab> {
                           trailing: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Chip(
-                                label: Text(
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: _getStatusColor(caseItem['status']).withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
                                   caseItem['status'].toString().replaceAll('_', ' ').toUpperCase(),
-                                  style: const TextStyle(fontSize: 10),
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    color: _getStatusColor(caseItem['status']),
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                                backgroundColor: _getStatusColor(caseItem['status']).withOpacity(0.2),
                               ),
-                              const SizedBox(height: 4),
-                              Chip(
-                                label: Text(
-                                  caseItem['urgency'].toString().toUpperCase(),
-                                  style: const TextStyle(fontSize: 10),
+                              const SizedBox(height: 1),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: _getUrgencyColor(caseItem['urgency']).withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                                backgroundColor: _getUrgencyColor(caseItem['urgency']).withOpacity(0.2),
+                                child: Text(
+                                  caseItem['urgency'].toString().toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    color: _getUrgencyColor(caseItem['urgency']),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
                           isThreeLine: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           onTap: () {
                             Navigator.push(
                               context,
@@ -1049,9 +1128,13 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
   late TabController _tabController;
   String _selectedTab = 'Community';
   final TextEditingController _searchController = TextEditingController();
-  final List<Map<String, dynamic>> _communityCards = MockDataService.getMockCommunityCards();
-  final List<Map<String, dynamic>> _posts = MockDataService.getMockPosts();
-  final List<Map<String, dynamic>> _chats = MockDataService.getMockChats();
+  List<Map<String, dynamic>> _communityCards = MockDataService.getMockCommunityCards();
+  List<Map<String, dynamic>> _posts = MockDataService.getMockPosts();
+  List<Map<String, dynamic>> _chats = MockDataService.getMockChats();
+  
+  List<Map<String, dynamic>> _filteredCommunityCards = [];
+  List<Map<String, dynamic>> _filteredPosts = [];
+  List<Map<String, dynamic>> _filteredChats = [];
 
   @override
   void initState() {
@@ -1063,6 +1146,9 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
         _selectedTab = tabs[_tabController.index];
       });
     });
+    _filteredCommunityCards = _communityCards;
+    _filteredPosts = _posts;
+    _filteredChats = _chats;
   }
 
   @override
@@ -1074,7 +1160,28 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
 
   void _handleSearch(String query) {
     setState(() {
-      // Filter based on search query
+      if (query.isEmpty) {
+        _filteredCommunityCards = _communityCards;
+        _filteredPosts = _posts;
+        _filteredChats = _chats;
+      } else {
+        _filteredCommunityCards = _communityCards.where((card) {
+          return card['title'].toString().toLowerCase().contains(query.toLowerCase()) ||
+                 card['description'].toString().toLowerCase().contains(query.toLowerCase());
+        }).toList();
+        
+        _filteredPosts = _posts.where((post) {
+          return post['author'].toString().toLowerCase().contains(query.toLowerCase()) ||
+                 post['content'].toString().toLowerCase().contains(query.toLowerCase()) ||
+                 post['location'].toString().toLowerCase().contains(query.toLowerCase()) ||
+                 (post['tags'] as List).any((tag) => tag.toString().toLowerCase().contains(query.toLowerCase()));
+        }).toList();
+        
+        _filteredChats = _chats.where((chat) {
+          return chat['name'].toString().toLowerCase().contains(query.toLowerCase()) ||
+                 chat['lastMessage'].toString().toLowerCase().contains(query.toLowerCase());
+        }).toList();
+      }
     });
   }
 
@@ -1175,8 +1282,15 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
   Widget _buildCommunityFeed() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: _communityCards.map((card) {
+      child: _filteredCommunityCards.isEmpty
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32.0),
+                child: Text('No community cards found'),
+              ),
+            )
+          : Column(
+              children: _filteredCommunityCards.map((card) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
             child: _CommunityCard(
@@ -1192,11 +1306,18 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
   }
 
   Widget _buildPostFeed() {
-    final postItems = _posts.where((p) => p['type'] == 'post').toList();
+    final postItems = _filteredPosts.where((p) => p['type'] == 'post').toList();
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: postItems.map((post) {
+      child: postItems.isEmpty
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32.0),
+                child: Text('No posts found'),
+              ),
+            )
+          : Column(
+              children: postItems.map((post) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
             child: _PostCard(
@@ -1223,11 +1344,18 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
   }
 
   Widget _buildVideoFeed() {
-    final videoItems = _posts.where((p) => p['type'] == 'video').toList();
+    final videoItems = _filteredPosts.where((p) => p['type'] == 'video').toList();
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: videoItems.map((video) {
+      child: videoItems.isEmpty
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32.0),
+                child: Text('No videos found'),
+              ),
+            )
+          : Column(
+              children: videoItems.map((video) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
             child: _VideoPostCard(
@@ -1255,11 +1383,18 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
   }
 
   Widget _buildChatsList() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16.0),
-      itemCount: _chats.length * 4, // Repeat to show 8 items
-      itemBuilder: (context, index) {
-        final chat = _chats[index % _chats.length];
+    return _filteredChats.isEmpty
+        ? const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: Text('No chats found'),
+            ),
+          )
+        : ListView.builder(
+            padding: const EdgeInsets.all(16.0),
+            itemCount: _filteredChats.length,
+            itemBuilder: (context, index) {
+              final chat = _filteredChats[index];
         return _ChatListItem(
           name: chat['name'],
           lastMessage: chat['lastMessage'],
@@ -1292,7 +1427,7 @@ class _CommunityCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           PlaceholderImage(
-            assetPath: imagePath,
+            networkUrl: imagePath,
             placeholderIcon: placeholderIcon,
             width: double.infinity,
             height: 200,
@@ -1382,7 +1517,7 @@ class _PostCard extends StatelessWidget {
             ),
           if (tags.isNotEmpty) const SizedBox(height: 12),
           PlaceholderImage(
-            assetPath: imagePath,
+            networkUrl: imagePath,
             placeholderIcon: placeholderIcon,
             width: double.infinity,
             height: 200,
@@ -1582,7 +1717,7 @@ class _ChatListItem extends StatelessWidget {
       leading: CircleAvatar(
         backgroundColor: Colors.green,
         child: PlaceholderImage(
-          assetPath: avatarPath,
+          networkUrl: avatarPath,
           placeholderIcon: Icons.person,
           width: 40,
           height: 40,
@@ -1674,9 +1809,10 @@ class _MarketTab extends StatefulWidget {
 }
 
 class _MarketTabState extends State<_MarketTab> {
-  String _selectedCategory = 'Vegetables';
+  String _selectedCategory = 'Cattle';
   final TextEditingController _searchController = TextEditingController();
-  List<Map<String, dynamic>> _products = MockDataService.getMockProducts(category: 'Vegetables');
+  List<Map<String, dynamic>> _products = [];
+  List<Map<String, dynamic>> _filteredProducts = [];
 
   @override
   void initState() {
@@ -1693,12 +1829,24 @@ class _MarketTabState extends State<_MarketTab> {
   void _updateProducts() {
     setState(() {
       _products = MockDataService.getMockProducts(category: _selectedCategory);
+      _applyFilters();
     });
+  }
+
+  void _applyFilters() {
+    String query = _searchController.text;
+    if (query.isEmpty) {
+      _filteredProducts = _products;
+    } else {
+      _filteredProducts = _products.where((product) {
+        return product['name'].toString().toLowerCase().contains(query.toLowerCase());
+      }).toList();
+    }
   }
 
   void _handleSearch(String query) {
     setState(() {
-      // Filter products based on search
+      _applyFilters();
     });
   }
 
@@ -1749,28 +1897,28 @@ class _MarketTabState extends State<_MarketTab> {
             Row(
               children: [
                 _CategoryTab(
-                  label: 'Vegetables',
-                  isSelected: _selectedCategory == 'Vegetables',
+                  label: 'Cattle',
+                  isSelected: _selectedCategory == 'Cattle',
                   onTap: () {
-                    setState(() => _selectedCategory = 'Vegetables');
+                    setState(() => _selectedCategory = 'Cattle');
                     _updateProducts();
                   },
                 ),
                 const SizedBox(width: 8),
                 _CategoryTab(
-                  label: 'Fruits',
-                  isSelected: _selectedCategory == 'Fruits',
+                  label: 'Goats',
+                  isSelected: _selectedCategory == 'Goats',
                   onTap: () {
-                    setState(() => _selectedCategory = 'Fruits');
+                    setState(() => _selectedCategory = 'Goats');
                     _updateProducts();
                   },
                 ),
                 const SizedBox(width: 8),
                 _CategoryTab(
-                  label: 'Grains',
-                  isSelected: _selectedCategory == 'Grains',
+                  label: 'Sheep',
+                  isSelected: _selectedCategory == 'Sheep',
                   onTap: () {
-                    setState(() => _selectedCategory = 'Grains');
+                    setState(() => _selectedCategory = 'Sheep');
                     _updateProducts();
                   },
                 ),
@@ -1778,14 +1926,21 @@ class _MarketTabState extends State<_MarketTab> {
             ),
             const SizedBox(height: 24),
             // Product Grid
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.75,
-              children: _products.map<Widget>((product) {
+            _filteredProducts.isEmpty
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: Text('No products found'),
+                    ),
+                  )
+                : GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 0.75,
+                    children: _filteredProducts.map<Widget>((product) {
                 return _ProductCard(
                   name: product['name'],
                   price: product['price'],
@@ -1938,7 +2093,7 @@ class _WeatherTabState extends State<_WeatherTab> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _weatherData['location'] ?? 'Vellore, Tamil Nadu',
+                    _weatherData['location'] ?? 'Nyagatare, Rwanda',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.white70,
                         ),
@@ -2014,7 +2169,7 @@ class _WeatherTabState extends State<_WeatherTab> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      _weatherData['location'] ?? 'Vellore, Tamil Nadu',
+                      _weatherData['location'] ?? 'Nyagatare, Rwanda',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.primary,
                           ),
@@ -2328,8 +2483,11 @@ class _SettingsTabState extends State<_SettingsTab> {
                   title: const Text('Edit Profile'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Edit profile feature coming soon!')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const EditProfileScreen(),
+                      ),
                     );
                   },
                 ),
@@ -2339,8 +2497,11 @@ class _SettingsTabState extends State<_SettingsTab> {
                   title: const Text('Change Password'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Change password feature coming soon!')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ChangePasswordScreen(),
+                      ),
                     );
                   },
                 ),
@@ -2384,8 +2545,11 @@ class _SettingsTabState extends State<_SettingsTab> {
                   subtitle: const Text('English'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Language selection coming soon!')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LanguageScreen(),
+                      ),
                     );
                   },
                 ),
@@ -2434,8 +2598,11 @@ class _SettingsTabState extends State<_SettingsTab> {
                   title: const Text('Help & Support'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Feature coming soon!')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const HelpSupportScreen(),
+                      ),
                     );
                   },
                 ),
@@ -2445,8 +2612,11 @@ class _SettingsTabState extends State<_SettingsTab> {
                   title: const Text('Privacy Policy'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Feature coming soon!')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PrivacyPolicyScreen(),
+                      ),
                     );
                   },
                 ),
@@ -2456,8 +2626,11 @@ class _SettingsTabState extends State<_SettingsTab> {
                   title: const Text('Terms of Service'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Feature coming soon!')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const TermsOfServiceScreen(),
+                      ),
                     );
                   },
                 ),
@@ -2645,7 +2818,7 @@ class _ProductCard extends StatelessWidget {
         children: [
           Expanded(
             child: PlaceholderImage(
-              assetPath: imagePath,
+              networkUrl: imagePath,
               placeholderIcon: placeholderIcon,
               width: double.infinity,
               height: double.infinity,
