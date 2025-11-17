@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { notificationsAPI } from '../services/api';
+import { notificationsAPI, broadcastAPI } from '../services/api';
 
 const NotificationsPage = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+  const [broadcastData, setBroadcastData] = useState({
+    title: '',
+    message: '',
+    language: 'en',
+    channels: ['in_app'],
+    target_districts: [],
+    target_sectors: [],
+  });
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     fetchNotifications();
@@ -80,6 +90,39 @@ const NotificationsPage = () => {
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
+  const handleSendBroadcast = async (e) => {
+    e.preventDefault();
+    if (!broadcastData.title || !broadcastData.message) {
+      alert('Please fill in title and message');
+      return;
+    }
+
+    try {
+      setSending(true);
+      // Create broadcast
+      const broadcast = await broadcastAPI.create(broadcastData);
+      // Send broadcast
+      await broadcastAPI.send(broadcast.id);
+      alert('Broadcast sent successfully!');
+      setShowBroadcastModal(false);
+      setBroadcastData({
+        title: '',
+        message: '',
+        language: 'en',
+        channels: ['in_app'],
+        target_districts: [],
+        target_sectors: [],
+      });
+      // Refresh notifications
+      await fetchNotifications();
+    } catch (err) {
+      console.error('Error sending broadcast:', err);
+      alert(err.response?.data?.error || err.response?.data?.detail || 'Failed to send broadcast');
+    } finally {
+      setSending(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -121,7 +164,10 @@ const NotificationsPage = () => {
           <h1 className="text-3xl font-bold text-gray-900">Notifications</h1>
           <p className="text-gray-600 mt-1">Stay updated with system activities and alerts</p>
         </div>
-        <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition-colors flex items-center">
+        <button 
+          onClick={() => setShowBroadcastModal(true)}
+          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition-colors flex items-center"
+        >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
           </svg>
@@ -217,6 +263,125 @@ const NotificationsPage = () => {
           ))}
         </div>
       </div>
+
+      {/* Send Broadcast Modal */}
+      {showBroadcastModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Send Broadcast Message</h2>
+              <button
+                onClick={() => {
+                  setShowBroadcastModal(false);
+                  setBroadcastData({
+                    title: '',
+                    message: '',
+                    language: 'en',
+                    channels: ['in_app'],
+                    target_districts: [],
+                    target_sectors: [],
+                  });
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <form onSubmit={handleSendBroadcast} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={broadcastData.title}
+                  onChange={(e) => setBroadcastData({ ...broadcastData, title: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Enter broadcast title"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Message *</label>
+                <textarea
+                  required
+                  value={broadcastData.message}
+                  onChange={(e) => setBroadcastData({ ...broadcastData, message: e.target.value })}
+                  rows={6}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Enter broadcast message"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Language</label>
+                <select
+                  value={broadcastData.language}
+                  onChange={(e) => setBroadcastData({ ...broadcastData, language: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="en">English</option>
+                  <option value="rw">Kinyarwanda</option>
+                  <option value="fr">French</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Channels</label>
+                <div className="space-y-2">
+                  {['in_app', 'sms', 'email', 'push'].map((channel) => (
+                    <label key={channel} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={broadcastData.channels.includes(channel)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setBroadcastData({
+                              ...broadcastData,
+                              channels: [...broadcastData.channels, channel],
+                            });
+                          } else {
+                            setBroadcastData({
+                              ...broadcastData,
+                              channels: broadcastData.channels.filter((c) => c !== channel),
+                            });
+                          }
+                        }}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-gray-700 capitalize">{channel.replace('_', ' ')}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBroadcastModal(false);
+                    setBroadcastData({
+                      title: '',
+                      message: '',
+                      language: 'en',
+                      channels: ['in_app'],
+                      target_districts: [],
+                      target_sectors: [],
+                    });
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={sending}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {sending ? 'Sending...' : 'Send Broadcast'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

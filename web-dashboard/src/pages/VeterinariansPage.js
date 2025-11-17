@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { usersAPI } from '../services/api';
+import { usersAPI, casesAPI } from '../services/api';
 
 const VeterinariansPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -7,6 +7,12 @@ const VeterinariansPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [selectedVet, setSelectedVet] = useState(null);
+  const [cases, setCases] = useState([]);
+  const [selectedCaseId, setSelectedCaseId] = useState('');
+  const [assigning, setAssigning] = useState(false);
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -23,7 +29,18 @@ const VeterinariansPage = () => {
 
   useEffect(() => {
     fetchVeterinarians();
+    fetchCases();
   }, []);
+
+  const fetchCases = async () => {
+    try {
+      const data = await casesAPI.getAll();
+      const casesList = data.results || (Array.isArray(data) ? data : []);
+      setCases(Array.isArray(casesList) ? casesList : []);
+    } catch (err) {
+      console.error('Error fetching cases:', err);
+    }
+  };
 
   const fetchVeterinarians = async () => {
     try {
@@ -116,12 +133,48 @@ const VeterinariansPage = () => {
     }
   };
 
+  const handleViewProfile = (vet) => {
+    setSelectedVet(vet);
+    setShowProfileModal(true);
+  };
+
+  const handleAssignCase = (vet) => {
+    setSelectedVet(vet);
+    setSelectedCaseId('');
+    setShowAssignModal(true);
+  };
+
+  const handleAssignCaseToVet = async () => {
+    if (!selectedCaseId || !selectedVet) {
+      alert('Please select a case to assign');
+      return;
+    }
+
+    try {
+      setAssigning(true);
+      await casesAPI.assign(selectedCaseId, selectedVet.id);
+      alert('Case assigned successfully!');
+      setShowAssignModal(false);
+      setSelectedVet(null);
+      setSelectedCaseId('');
+      await fetchCases(); // Refresh cases list
+    } catch (err) {
+      console.error('Error assigning case:', err);
+      alert(err.response?.data?.error || err.response?.data?.detail || 'Failed to assign case');
+    } finally {
+      setAssigning(false);
+    }
+  };
+
   const stats = {
     total: veterinarians.length,
     available: veterinarians.filter(v => v.veterinarian_profile?.status === 'available' || v.is_active).length,
     busy: veterinarians.filter(v => v.veterinarian_profile?.status === 'busy').length,
     offline: veterinarians.filter(v => !v.is_active).length,
   };
+
+  // Get unassigned cases for assignment
+  const unassignedCases = cases.filter(c => !c.assigned_veterinarian);
 
   if (loading) {
     return (
@@ -291,10 +344,16 @@ const VeterinariansPage = () => {
                   </div>
                 </div>
               <div className="pt-3 flex space-x-2">
-                <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm font-medium transition-colors">
+                <button 
+                  onClick={() => handleViewProfile(vet)}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+                >
                   View Profile
                 </button>
-                <button className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors">
+                <button 
+                  onClick={() => handleAssignCase(vet)}
+                  className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors"
+                >
                   Assign Case
                 </button>
               </div>
@@ -445,6 +504,159 @@ const VeterinariansPage = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Profile Modal */}
+      {showProfileModal && selectedVet && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Veterinarian Profile</h2>
+              <button
+                onClick={() => {
+                  setShowProfileModal(false);
+                  setSelectedVet(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex items-center space-x-4">
+                <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-3xl">
+                  {selectedVet.first_name?.charAt(0) || selectedVet.username?.charAt(0) || 'V'}
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    Dr. {selectedVet.first_name} {selectedVet.last_name || ''}
+                  </h3>
+                  <p className="text-gray-600">{selectedVet.veterinarian_profile?.license_number || 'No license'}</p>
+                  <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(selectedVet.veterinarian_profile?.status || (selectedVet.is_active ? 'available' : 'offline'))}`}>
+                    {selectedVet.veterinarian_profile?.status || (selectedVet.is_active ? 'available' : 'offline')}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                <div>
+                  <p className="text-sm text-gray-600">Specialization</p>
+                  <p className="text-lg font-semibold text-gray-900">{selectedVet.veterinarian_profile?.specialization || 'General Practice'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">User Type</p>
+                  <p className="text-lg font-semibold text-gray-900">{selectedVet.user_type || 'vet'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Phone</p>
+                  <p className="text-lg font-semibold text-gray-900">{selectedVet.phone_number || 'No phone'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Email</p>
+                  <p className="text-lg font-semibold text-gray-900">{selectedVet.email || 'No email'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Sector</p>
+                  <p className="text-lg font-semibold text-gray-900">{selectedVet.sector || 'Not specified'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">District</p>
+                  <p className="text-lg font-semibold text-gray-900">{selectedVet.district || 'Not specified'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Joined</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {selectedVet.created_at ? new Date(selectedVet.created_at).toLocaleDateString() : 'N/A'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Status</p>
+                  <p className={`text-lg font-semibold ${selectedVet.is_active ? 'text-green-600' : 'text-gray-600'}`}>
+                    {selectedVet.is_active ? 'Active' : 'Inactive'}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => {
+                  setShowProfileModal(false);
+                  setSelectedVet(null);
+                }}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Case Modal */}
+      {showAssignModal && selectedVet && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Assign Case to Dr. {selectedVet.first_name} {selectedVet.last_name}</h2>
+              <button
+                onClick={() => {
+                  setShowAssignModal(false);
+                  setSelectedVet(null);
+                  setSelectedCaseId('');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Select Case to Assign</label>
+                <select
+                  value={selectedCaseId}
+                  onChange={(e) => setSelectedCaseId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="">-- Select a case --</option>
+                  {unassignedCases.map((case_) => (
+                    <option key={case_.id} value={case_.id}>
+                      Case #{case_.id} - {case_.symptoms_observed?.substring(0, 50) || 'No description'}... 
+                      ({case_.urgency || 'medium'})
+                    </option>
+                  ))}
+                </select>
+                {unassignedCases.length === 0 && (
+                  <p className="mt-2 text-sm text-gray-500">No unassigned cases available</p>
+                )}
+              </div>
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAssignModal(false);
+                    setSelectedVet(null);
+                    setSelectedCaseId('');
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAssignCaseToVet}
+                  disabled={assigning || !selectedCaseId || unassignedCases.length === 0}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {assigning ? 'Assigning...' : 'Assign Case'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -85,7 +85,13 @@ const SettingsPage = () => {
                     <input type="text" defaultValue="Administrator" disabled className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" />
                   </div>
                 </div>
-                <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium">
+                <button 
+                  onClick={() => {
+                    // TODO: Implement profile update API call
+                    alert('Profile settings saved! (Demo mode - API integration needed)');
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium"
+                >
                   Save Changes
                 </button>
               </div>
@@ -173,9 +179,15 @@ const SettingsPage = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
                       <input type="password" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" />
                     </div>
-                    <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium">
-                      Update Password
-                    </button>
+                <button 
+                  onClick={() => {
+                    // TODO: Implement password change API call
+                    alert('Password update functionality coming soon!');
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium"
+                >
+                  Update Password
+                </button>
                   </div>
                 </div>
                 <div className="border-t border-gray-200 pt-6">
@@ -243,7 +255,14 @@ const SettingsPage = () => {
                     </div>
                   </div>
                 </div>
-                <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium">
+                <button 
+                  onClick={() => {
+                    // Save settings to localStorage (or API in production)
+                    localStorage.setItem('userSettings', JSON.stringify(settings));
+                    alert('Settings saved successfully!');
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium"
+                >
                   Save Settings
                 </button>
               </div>

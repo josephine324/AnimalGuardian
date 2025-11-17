@@ -4,6 +4,7 @@ from . import views
 
 router = DefaultRouter()
 router.register(r'notifications', views.NotificationViewSet, basename='notification')
+router.register(r'broadcasts', views.BroadcastMessageViewSet, basename='broadcast')
 
 urlpatterns = [
     path('', include(router.urls)),
