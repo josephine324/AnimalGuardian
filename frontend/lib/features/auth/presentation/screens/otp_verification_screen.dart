@@ -69,35 +69,11 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
             children: [
               const SizedBox(height: 40),
               // AGRO Logo
-              Container(
+              Image.asset(
+                'assets/images/agrologo.png',
                 width: 120,
                 height: 120,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.green, width: 2),
-                ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Icon(
-                      Icons.agriculture,
-                      size: 50,
-                      color: Colors.brown[700],
-                    ),
-                    Positioned(
-                      bottom: 20,
-                      child: Text(
-                        'AGRO',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                fit: BoxFit.contain,
               ),
               const SizedBox(height: 48),
               Text(
