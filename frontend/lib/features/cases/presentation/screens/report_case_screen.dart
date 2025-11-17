@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -295,39 +296,74 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
                     scrollDirection: Axis.horizontal,
                     itemCount: _selectedImages.length,
                     itemBuilder: (context, index) {
-                      return Stack(
-                        children: [
-                          Container(
-                            width: 100,
-                            height: 100,
-                            margin: const EdgeInsets.only(right: 8),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.file(
-                                File(_selectedImages[index].path),
-                                fit: BoxFit.cover,
+                      return FutureBuilder<Uint8List?>(
+                        future: _selectedImages[index].readAsBytes(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return Container(
+                              width: 100,
+                              height: 100,
+                              margin: const EdgeInsets.only(right: 8),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey),
                               ),
-                            ),
-                          ),
-                          Positioned(
-                            top: 4,
-                            right: 4,
-                            child: CircleAvatar(
-                              radius: 12,
-                              backgroundColor: Colors.red,
-                              child: IconButton(
-                                padding: EdgeInsets.zero,
-                                iconSize: 16,
-                                icon: const Icon(Icons.close, color: Colors.white),
-                                onPressed: () => _removeImage(index),
+                              child: const Center(
+                                child: CircularProgressIndicator(),
                               ),
-                            ),
-                          ),
-                        ],
+                            );
+                          }
+                          
+                          if (snapshot.hasError || !snapshot.hasData) {
+                            return Container(
+                              width: 100,
+                              height: 100,
+                              margin: const EdgeInsets.only(right: 8),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey),
+                              ),
+                              child: const Center(
+                                child: Icon(Icons.error, color: Colors.red),
+                              ),
+                            );
+                          }
+
+                          return Stack(
+                            children: [
+                              Container(
+                                width: 100,
+                                height: 100,
+                                margin: const EdgeInsets.only(right: 8),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.grey),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.memory(
+                                    snapshot.data!,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 4,
+                                right: 4,
+                                child: CircleAvatar(
+                                  radius: 12,
+                                  backgroundColor: Colors.red,
+                                  child: IconButton(
+                                    padding: EdgeInsets.zero,
+                                    iconSize: 16,
+                                    icon: const Icon(Icons.close, color: Colors.white),
+                                    onPressed: () => _removeImage(index),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       );
                     },
                   ),
