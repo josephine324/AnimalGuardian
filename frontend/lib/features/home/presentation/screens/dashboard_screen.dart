@@ -1404,7 +1404,7 @@ class _MarketTabState extends State<_MarketTab> {
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
               childAspectRatio: 0.75,
-              children: _products.map((product) {
+              children: _products.map<Widget>((product) {
                 return _ProductCard(
                   name: product['name'],
                   price: product['price'],
@@ -1421,10 +1421,61 @@ class _MarketTabState extends State<_MarketTab> {
 }
 
 // Weather Tab
-class _WeatherTab extends StatelessWidget {
+class _WeatherTab extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   
   const _WeatherTab({required this.scaffoldKey});
+
+  @override
+  State<_WeatherTab> createState() => _WeatherTabState();
+}
+
+class _WeatherTabState extends State<_WeatherTab> {
+  final TextEditingController _searchController = TextEditingController();
+  Map<String, dynamic> _weatherData = MockDataService.getMockWeather();
+  bool _isRefreshing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWeather();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadWeather() async {
+    setState(() {
+      _weatherData = MockDataService.getMockWeather();
+    });
+  }
+
+  Future<void> _handleRefresh() async {
+    setState(() {
+      _isRefreshing = true;
+    });
+    await Future.delayed(const Duration(seconds: 1));
+    await _loadWeather();
+    if (mounted) {
+      setState(() {
+        _isRefreshing = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Weather data refreshed!')),
+      );
+    }
+  }
+
+  void _handleSearch(String query) {
+    if (query.isNotEmpty) {
+      setState(() {
+        _weatherData = MockDataService.getMockWeather(location: query);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1432,7 +1483,7 @@ class _WeatherTab extends StatelessWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () => scaffoldKey.currentState?.openDrawer(),
+          onPressed: () => widget.scaffoldKey.currentState?.openDrawer(),
         ),
         title: const Text('Weather'),
         backgroundColor: Colors.white,
@@ -1452,6 +1503,8 @@ class _WeatherTab extends StatelessWidget {
           children: [
             // Search Bar
             TextField(
+              controller: _searchController,
+              onChanged: _handleSearch,
               decoration: InputDecoration(
                 hintText: 'Search for a Farm\'s Location',
                 prefixIcon: const Icon(Icons.search),
@@ -2080,12 +2133,14 @@ class _CategoryTab extends StatelessWidget {
 class _ProductCard extends StatelessWidget {
   final String name;
   final String price;
-  final IconData image;
+  final String? imagePath;
+  final IconData placeholderIcon;
 
   const _ProductCard({
     required this.name,
     required this.price,
-    required this.image,
+    this.imagePath,
+    this.placeholderIcon = Icons.eco,
   });
 
   @override
