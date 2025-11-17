@@ -23,13 +23,16 @@ RUN pip install --upgrade pip && \
 # Copy project files
 COPY . /app/
 
+# Copy and make startup script executable
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
 # Collect static files
 RUN python manage.py collectstatic --noinput || true
 
 # Expose port
 EXPOSE 8000
 
-# Run migrations and start server
-CMD python manage.py migrate --noinput && \
-    gunicorn animalguardian.wsgi:application --bind 0.0.0.0:$PORT
+# Run startup script
+CMD ["/app/start.sh"]
 

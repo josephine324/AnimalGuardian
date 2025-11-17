@@ -1,2 +1,2 @@
-web: gunicorn animalguardian.wsgi:application --bind 0.0.0.0:$PORT
+web: sh start.sh
 worker: python keep_alive.py 5
