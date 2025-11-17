@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/services/mock_data_service.dart';
+import '../../../../shared/presentation/widgets/placeholder_image.dart';
 import '../../../cases/presentation/screens/report_case_screen.dart';
 import '../../../livestock/presentation/screens/add_livestock_screen.dart';
 import '../../../livestock/presentation/screens/livestock_detail_screen.dart';
@@ -14,13 +16,20 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  final List<Widget> _screens = [
-    const _HomeTab(),
-    const _CasesTab(),
-    const _CommunityTab(),
-    const _ProfileTab(),
-  ];
+  final List<Widget> _screens = [];
+  
+  @override
+  void initState() {
+    super.initState();
+    _screens.addAll([
+      _HomeTab(scaffoldKey: _scaffoldKey),
+      _CasesTab(scaffoldKey: _scaffoldKey),
+      _CommunityTab(scaffoldKey: _scaffoldKey),
+      _ProfileTab(scaffoldKey: _scaffoldKey),
+    ]);
+  }
 
   void changeTab(int index) {
     setState(() {
@@ -72,7 +81,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Navigate to livestock screen
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const _LivestockTab()),
+      MaterialPageRoute(builder: (context) => _LivestockTab(scaffoldKey: _scaffoldKey)),
     );
   }
 
@@ -80,7 +89,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Navigate to market screen
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const _MarketTab()),
+      MaterialPageRoute(builder: (context) => _MarketTab(scaffoldKey: _scaffoldKey)),
     );
   }
 
@@ -88,13 +97,90 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Navigate to weather screen
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const _WeatherTab()),
+      MaterialPageRoute(builder: (context) => _WeatherTab(scaffoldKey: _scaffoldKey)),
+    );
+  }
+
+  void _navigateToSettings(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => _SettingsTab(scaffoldKey: _scaffoldKey)),
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Icon(
+                  Icons.pets,
+                  size: 48,
+                  color: Colors.white,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'AnimalGuardian',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.pets, color: Colors.green),
+            title: const Text('Livestock'),
+            onTap: () {
+              Navigator.pop(context);
+              _navigateToLivestock(context);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.store, color: Colors.orange),
+            title: const Text('Market'),
+            onTap: () {
+              Navigator.pop(context);
+              _navigateToMarket(context);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.wb_sunny, color: Colors.amber),
+            title: const Text('Weather'),
+            onTap: () {
+              Navigator.pop(context);
+              _navigateToWeather(context);
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.settings, color: Colors.grey),
+            title: const Text('Settings'),
+            onTap: () {
+              Navigator.pop(context);
+              _navigateToSettings(context);
+            },
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: _buildDrawer(context),
       body: _screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -131,7 +217,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 // Home Tab
 class _HomeTab extends StatefulWidget {
-  const _HomeTab();
+  final GlobalKey<ScaffoldState> scaffoldKey;
+  
+  const _HomeTab({required this.scaffoldKey});
 
   @override
   State<_HomeTab> createState() => _HomeTabState();
@@ -139,97 +227,39 @@ class _HomeTab extends StatefulWidget {
 
 class _HomeTabState extends State<_HomeTab> {
   String _selectedFilter = 'All';
+  final TextEditingController _searchController = TextEditingController();
+  final List<Map<String, dynamic>> _homeFeed = MockDataService.getMockHomeFeed();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _handleSearch(String query) {
+    // Filter home feed based on search query
+    setState(() {
+      // In a real app, this would filter the feed
+      // For now, just trigger a rebuild
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+      return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () {},
-        ),
         title: const Text('Farmzi'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => widget.scaffoldKey.currentState?.openDrawer(),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () {},
-          ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              switch (value) {
-                case 'livestock':
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const _LivestockTab()),
-                  );
-                  break;
-                case 'market':
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const _MarketTab()),
-                  );
-                  break;
-                case 'weather':
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const _WeatherTab()),
-                  );
-                  break;
-                case 'settings':
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const _SettingsTab()),
-                  );
-                  break;
-              }
-            },
-            itemBuilder: (BuildContext context) => [
-              const PopupMenuItem<String>(
-                value: 'livestock',
-                child: Row(
-                  children: [
-                    Icon(Icons.pets, color: Colors.green),
-                    SizedBox(width: 8),
-                    Text('Livestock'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'market',
-                child: Row(
-                  children: [
-                    Icon(Icons.store, color: Colors.orange),
-                    SizedBox(width: 8),
-                    Text('Market'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'weather',
-                child: Row(
-                  children: [
-                    Icon(Icons.wb_sunny, color: Colors.amber),
-                    SizedBox(width: 8),
-                    Text('Weather'),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem<String>(
-                value: 'settings',
-                child: Row(
-                  children: [
-                    Icon(Icons.settings, color: Colors.grey),
-                    SizedBox(width: 8),
-                    Text('Settings'),
-                  ],
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -241,6 +271,8 @@ class _HomeTabState extends State<_HomeTab> {
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: TextField(
+                controller: _searchController,
+                onChanged: _handleSearch,
                 decoration: InputDecoration(
                   hintText: 'Search farming, breeding tips, or friends',
                   prefixIcon: const Icon(Icons.search),
@@ -279,180 +311,156 @@ class _HomeTabState extends State<_HomeTab> {
               ),
             ),
             const SizedBox(height: 16),
-            // How to use app card
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Card(
-                color: Colors.green[50],
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'How to use app',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).colorScheme.primary,
-                                  ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'learn about all the features of app',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Colors.grey[700],
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        Icons.play_circle_filled,
-                        size: 60,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Breeding Tips card
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Card(
-                color: Colors.green[50],
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Breeding Tips',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).colorScheme.primary,
-                                  ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'The best breeding advices for your livestock',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Colors.grey[700],
-                                  ),
-                            ),
-                            const SizedBox(height: 12),
-                            ElevatedButton(
-                              onPressed: () {},
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Theme.of(context).colorScheme.primary,
-                                foregroundColor: Colors.white,
-                              ),
-                              child: const Text('Get Call'),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        Icons.pets,
-                        size: 60,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            // Trending News
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Trending News',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.location_on, size: 16, color: Theme.of(context).colorScheme.primary),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Karangazi, Nyagatare',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
+            // Home Feed Cards (from mock data)
+            ..._homeFeed.map((item) {
+              if (item['type'] == 'card') {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: Card(
+                    color: Colors.green[50],
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Row(
                         children: [
-                          Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[200],
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(Icons.image, color: Colors.grey[400]),
-                          ),
-                          const SizedBox(width: 16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  '28°',
-                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  item['title'],
+                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                         fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).colorScheme.primary,
                                       ),
-                                ),
-                                Text(
-                                  'High: 30 / Low: 15',
-                                  style: Theme.of(context).textTheme.bodySmall,
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Nutritious Feeds',
+                                  item['description'],
                                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        color: Colors.orange,
-                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey[700],
                                       ),
                                 ),
+                                if (item['title'] == 'Breeding Tips') ...[
+                                  const SizedBox(height: 12),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Call feature coming soon!')),
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Theme.of(context).colorScheme.primary,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    child: const Text('Get Call'),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
-                          Column(
-                            children: [
-                              IconButton(
-                                icon: Icon(Icons.share, color: Theme.of(context).colorScheme.primary),
-                                onPressed: () {},
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.mic, color: Theme.of(context).colorScheme.primary),
-                                onPressed: () {},
-                              ),
-                            ],
+                          Icon(
+                            item['title'] == 'How to use app' ? Icons.play_circle_filled : Icons.pets,
+                            size: 60,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ],
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
+                );
+              } else if (item['type'] == 'news') {
+                final news = item['data'] as Map<String, dynamic>;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Trending News',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.location_on, size: 16, color: Theme.of(context).colorScheme.primary),
+                          const SizedBox(width: 4),
+                          Text(
+                            news['location'],
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Row(
+                            children: [
+                              PlaceholderImage(
+                                assetPath: news['image'],
+                                placeholderIcon: Icons.image,
+                                width: 80,
+                                height: 80,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${news['temperature']}°',
+                                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                    Text(
+                                      'High: ${news['high']} / Low: ${news['low']}',
+                                      style: Theme.of(context).textTheme.bodySmall,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      news['title'],
+                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                            color: Colors.orange,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Column(
+                                children: [
+                                  IconButton(
+                                    icon: Icon(Icons.share, color: Theme.of(context).colorScheme.primary),
+                                    onPressed: () {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Share feature coming soon!')),
+                                      );
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.mic, color: Theme.of(context).colorScheme.primary),
+                                    onPressed: () {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Voice feature coming soon!')),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            }).toList(),
             const SizedBox(height: 24),
           ],
         ),
@@ -463,7 +471,9 @@ class _HomeTabState extends State<_HomeTab> {
 
 // Livestock Tab
 class _LivestockTab extends StatelessWidget {
-  const _LivestockTab();
+  final GlobalKey<ScaffoldState> scaffoldKey;
+  
+  const _LivestockTab({required this.scaffoldKey});
 
   @override
   Widget build(BuildContext context) {
@@ -472,6 +482,10 @@ class _LivestockTab extends StatelessWidget {
         title: const Text('My Livestock'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => scaffoldKey.currentState?.openDrawer(),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -571,7 +585,9 @@ class _LivestockTab extends StatelessWidget {
 
 // Cases Tab
 class _CasesTab extends StatelessWidget {
-  const _CasesTab();
+  final GlobalKey<ScaffoldState> scaffoldKey;
+  
+  const _CasesTab({required this.scaffoldKey});
 
   @override
   Widget build(BuildContext context) {
@@ -580,74 +596,16 @@ class _CasesTab extends StatelessWidget {
         title: const Text('Case Reports'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => scaffoldKey.currentState?.openDrawer(),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
               context.push('/cases/report');
             },
-          ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              final dashboardState = context.findAncestorStateOfType<_DashboardScreenState>();
-              if (dashboardState != null) {
-                switch (value) {
-                  case 'livestock':
-                    dashboardState._navigateToLivestock(context);
-                    break;
-                  case 'market':
-                    dashboardState._navigateToMarket(context);
-                    break;
-                  case 'weather':
-                    dashboardState._navigateToWeather(context);
-                    break;
-                }
-              }
-            },
-            itemBuilder: (BuildContext context) => [
-              const PopupMenuItem<String>(
-                value: 'livestock',
-                child: Row(
-                  children: [
-                    Icon(Icons.pets, color: Colors.green),
-                    SizedBox(width: 8),
-                    Text('Livestock'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'market',
-                child: Row(
-                  children: [
-                    Icon(Icons.store, color: Colors.orange),
-                    SizedBox(width: 8),
-                    Text('Market'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'weather',
-                child: Row(
-                  children: [
-                    Icon(Icons.wb_sunny, color: Colors.amber),
-                    SizedBox(width: 8),
-                    Text('Weather'),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem<String>(
-                value: 'settings',
-                child: Row(
-                  children: [
-                    Icon(Icons.settings, color: Colors.grey),
-                    SizedBox(width: 8),
-                    Text('Settings'),
-                  ],
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -724,7 +682,9 @@ class _CasesTab extends StatelessWidget {
 
 // Community Tab
 class _CommunityTab extends StatefulWidget {
-  const _CommunityTab();
+  final GlobalKey<ScaffoldState> scaffoldKey;
+  
+  const _CommunityTab({required this.scaffoldKey});
 
   @override
   State<_CommunityTab> createState() => _CommunityTabState();
@@ -733,6 +693,10 @@ class _CommunityTab extends StatefulWidget {
 class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _selectedTab = 'Community';
+  final TextEditingController _searchController = TextEditingController();
+  final List<Map<String, dynamic>> _communityCards = MockDataService.getMockCommunityCards();
+  final List<Map<String, dynamic>> _posts = MockDataService.getMockPosts();
+  final List<Map<String, dynamic>> _chats = MockDataService.getMockChats();
 
   @override
   void initState() {
@@ -748,8 +712,33 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
 
   @override
   void dispose() {
+    _searchController.dispose();
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _handleSearch(String query) {
+    setState(() {
+      // Filter based on search query
+    });
+  }
+
+  void _handleLike(int postId) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Liked post $postId')),
+    );
+  }
+
+  void _handleComment(int postId) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Comment on post $postId')),
+    );
+  }
+
+  void _handleShare(int postId) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Share post $postId')),
+    );
   }
 
   @override
@@ -758,7 +747,7 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () {},
+          onPressed: () => widget.scaffoldKey.currentState?.openDrawer(),
         ),
         title: const Text('Community'),
         backgroundColor: Colors.white,
@@ -769,68 +758,6 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
             icon: const Icon(Icons.person_outline),
             onPressed: () {},
           ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              final dashboardState = context.findAncestorStateOfType<_DashboardScreenState>();
-              if (dashboardState != null) {
-                switch (value) {
-                  case 'livestock':
-                    dashboardState._navigateToLivestock(context);
-                    break;
-                  case 'market':
-                    dashboardState._navigateToMarket(context);
-                    break;
-                  case 'weather':
-                    dashboardState._navigateToWeather(context);
-                    break;
-                }
-              }
-            },
-            itemBuilder: (BuildContext context) => [
-              const PopupMenuItem<String>(
-                value: 'livestock',
-                child: Row(
-                  children: [
-                    Icon(Icons.pets, color: Colors.green),
-                    SizedBox(width: 8),
-                    Text('Livestock'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'market',
-                child: Row(
-                  children: [
-                    Icon(Icons.store, color: Colors.orange),
-                    SizedBox(width: 8),
-                    Text('Market'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'weather',
-                child: Row(
-                  children: [
-                    Icon(Icons.wb_sunny, color: Colors.amber),
-                    SizedBox(width: 8),
-                    Text('Weather'),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem<String>(
-                value: 'settings',
-                child: Row(
-                  children: [
-                    Icon(Icons.settings, color: Colors.grey),
-                    SizedBox(width: 8),
-                    Text('Settings'),
-                  ],
-                ),
-              ),
-            ],
-          ),
         ],
       ),
       body: Column(
@@ -839,6 +766,8 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
+              controller: _searchController,
+              onChanged: _handleSearch,
               decoration: InputDecoration(
                 hintText: 'Search Community Topics Or Members',
                 prefixIcon: const Icon(Icons.search),
@@ -888,63 +817,80 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
-        children: [
-          _CommunityCard(
-            image: Icons.agriculture,
-            title: 'Crop Rotation Techniques',
-            description: 'Join the discussion on best practices for crop rotation to enhance soil fertility.',
-          ),
-          const SizedBox(height: 16),
-          _CommunityCard(
-            image: Icons.people,
-            title: 'Pest Control Meetup',
-            description: 'Meet local experts and discuss organic pest control methods this Saturday.',
-          ),
-        ],
+        children: _communityCards.map((card) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: _CommunityCard(
+              imagePath: card['image'],
+              placeholderIcon: Icons.agriculture,
+              title: card['title'],
+              description: card['description'],
+            ),
+          );
+        }).toList(),
       ),
     );
   }
 
   Widget _buildPostFeed() {
+    final postItems = _posts.where((p) => p['type'] == 'post').toList();
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
-        children: [
-          _PostCard(
-            authorName: 'Rajendra Deshpande',
-            location: 'Latur, Maharashtra',
-            time: '21 Nov 09.30 am',
-            image: Icons.image,
-            content: 'I have 40 Acres of Wheat farming in Latur. I want to export my Wheat out of India. How can I grow faster and export quality?',
-            likes: 200,
-            comments: 100,
-            saves: 50,
-            shares: 25,
-          ),
-        ],
+        children: postItems.map((post) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: _PostCard(
+              postId: post['id'],
+              authorName: post['author'],
+              location: post['location'],
+              time: post['time'],
+              imagePath: post['image'],
+              placeholderIcon: Icons.image,
+              content: post['content'],
+              tags: List<String>.from(post['tags'] ?? []),
+              likes: post['likes'],
+              comments: post['comments'],
+              saves: post['saves'],
+              shares: post['shares'],
+              onLike: () => _handleLike(post['id']),
+              onComment: () => _handleComment(post['id']),
+              onShare: () => _handleShare(post['id']),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
 
   Widget _buildVideoFeed() {
+    final videoItems = _posts.where((p) => p['type'] == 'video').toList();
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
-        children: [
-          _VideoPostCard(
-            authorName: 'Farmzi Expert',
-            location: 'Yavatmal, Maharashtra',
-            time: '21 Nov 09.30 am',
-            videoTitle: 'Indian Agriculture',
-            duration: '20:17',
-            content: 'I have 40 Acres of Wheat farming in Latur. I want to export my Wheat out of India. How can I grow faster and export quality?',
-            marketView: 'Hi Kisan Brothers, Production of Soyabean this year is less than last years production...',
-            likes: 32,
-            comments: 4,
-            saves: 2,
-            shares: 0,
-          ),
-        ],
+        children: videoItems.map((video) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: _VideoPostCard(
+              postId: video['id'],
+              authorName: video['author'],
+              location: video['location'],
+              time: video['time'],
+              videoTitle: video['videoTitle'],
+              duration: video['duration'],
+              content: video['content'],
+              marketView: video['marketView'],
+              tags: List<String>.from(video['tags'] ?? []),
+              likes: video['likes'],
+              comments: video['comments'],
+              saves: video['saves'],
+              shares: video['shares'],
+              onLike: () => _handleLike(video['id']),
+              onComment: () => _handleComment(video['id']),
+              onShare: () => _handleShare(video['id']),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -952,14 +898,15 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
   Widget _buildChatsList() {
     return ListView.builder(
       padding: const EdgeInsets.all(16.0),
-      itemCount: 8,
+      itemCount: _chats.length * 4, // Repeat to show 8 items
       itemBuilder: (context, index) {
-        final isLatur = index % 2 == 0;
+        final chat = _chats[index % _chats.length];
         return _ChatListItem(
-          name: isLatur ? 'Latur Kisan Vibhag' : 'Ner Kisan Vibhag',
-          lastMessage: isLatur ? 'Please, Upload your docum...' : 'Photo',
-          date: '21/11/21',
-          unreadCount: 4,
+          name: chat['name'],
+          lastMessage: chat['lastMessage'],
+          date: chat['date'],
+          unreadCount: chat['unreadCount'],
+          avatarPath: chat['avatar'],
         );
       },
     );
@@ -967,12 +914,14 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
 }
 
 class _CommunityCard extends StatelessWidget {
-  final IconData image;
+  final String? imagePath;
+  final IconData placeholderIcon;
   final String title;
   final String description;
 
   const _CommunityCard({
-    required this.image,
+    this.imagePath,
+    required this.placeholderIcon,
     required this.title,
     required this.description,
   });
@@ -983,14 +932,12 @@ class _CommunityCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            height: 200,
+          PlaceholderImage(
+            assetPath: imagePath,
+            placeholderIcon: placeholderIcon,
             width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            ),
-            child: Icon(image, size: 80, color: Colors.grey[400]),
+            height: 200,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -1020,26 +967,38 @@ class _CommunityCard extends StatelessWidget {
 }
 
 class _PostCard extends StatelessWidget {
+  final int? postId;
   final String authorName;
   final String location;
   final String time;
-  final IconData image;
+  final String? imagePath;
+  final IconData placeholderIcon;
   final String content;
+  final List<String> tags;
   final int likes;
   final int comments;
   final int saves;
   final int shares;
+  final VoidCallback? onLike;
+  final VoidCallback? onComment;
+  final VoidCallback? onShare;
 
   const _PostCard({
+    this.postId,
     required this.authorName,
     required this.location,
     required this.time,
-    required this.image,
+    this.imagePath,
+    this.placeholderIcon = Icons.image,
     required this.content,
+    this.tags = const [],
     required this.likes,
     required this.comments,
     required this.saves,
     required this.shares,
+    this.onLike,
+    this.onComment,
+    this.onShare,
   });
 
   @override
@@ -1054,25 +1013,20 @@ class _PostCard extends StatelessWidget {
             subtitle: Text('$location • $time'),
             trailing: const Icon(Icons.more_vert),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Wrap(
-              spacing: 8,
-              children: [
-                _TagChip('Rain'),
-                _TagChip('Weather'),
-                _TagChip('Problem'),
-                _TagChip('Wheat'),
-                _TagChip('Export'),
-              ],
+          if (tags.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Wrap(
+                spacing: 8,
+                children: tags.map((tag) => _TagChip(tag)).toList(),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            height: 200,
+          if (tags.isNotEmpty) const SizedBox(height: 12),
+          PlaceholderImage(
+            assetPath: imagePath,
+            placeholderIcon: placeholderIcon,
             width: double.infinity,
-            color: Colors.grey[200],
-            child: Icon(image, size: 80, color: Colors.grey[400]),
+            height: 200,
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -1098,6 +1052,7 @@ class _PostCard extends StatelessWidget {
 }
 
 class _VideoPostCard extends StatelessWidget {
+  final int? postId;
   final String authorName;
   final String location;
   final String time;
@@ -1105,12 +1060,17 @@ class _VideoPostCard extends StatelessWidget {
   final String duration;
   final String content;
   final String marketView;
+  final List<String> tags;
   final int likes;
   final int comments;
   final int saves;
   final int shares;
+  final VoidCallback? onLike;
+  final VoidCallback? onComment;
+  final VoidCallback? onShare;
 
   const _VideoPostCard({
+    this.postId,
     required this.authorName,
     required this.location,
     required this.time,
@@ -1118,10 +1078,14 @@ class _VideoPostCard extends StatelessWidget {
     required this.duration,
     required this.content,
     required this.marketView,
+    this.tags = const [],
     required this.likes,
     required this.comments,
     required this.saves,
     required this.shares,
+    this.onLike,
+    this.onComment,
+    this.onShare,
   });
 
   @override
@@ -1139,20 +1103,15 @@ class _VideoPostCard extends StatelessWidget {
             subtitle: Text('$location • $time'),
             trailing: const Icon(Icons.more_vert),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Wrap(
-              spacing: 8,
-              children: [
-                _TagChip('Rain'),
-                _TagChip('Weather'),
-                _TagChip('Problem'),
-                _TagChip('Wheat'),
-                _TagChip('Export'),
-              ],
+          if (tags.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Wrap(
+                spacing: 8,
+                children: tags.map((tag) => _TagChip(tag)).toList(),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
+          if (tags.isNotEmpty) const SizedBox(height: 12),
           Stack(
             children: [
               Container(
@@ -1213,10 +1172,19 @@ class _VideoPostCard extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _EngagementButton(Icons.favorite, likes.toString(), Colors.green),
-                _EngagementButton(Icons.comment, comments.toString(), Colors.grey),
+                GestureDetector(
+                  onTap: onLike,
+                  child: _EngagementButton(Icons.favorite, likes.toString(), Colors.green),
+                ),
+                GestureDetector(
+                  onTap: onComment,
+                  child: _EngagementButton(Icons.comment, comments.toString(), Colors.grey),
+                ),
                 _EngagementButton(Icons.bookmark, saves.toString(), Colors.grey),
-                _EngagementButton(Icons.share, shares.toString(), Colors.grey),
+                GestureDetector(
+                  onTap: onShare,
+                  child: _EngagementButton(Icons.share, shares.toString(), Colors.grey),
+                ),
               ],
             ),
           ),
@@ -1232,20 +1200,23 @@ class _ChatListItem extends StatelessWidget {
   final String lastMessage;
   final String date;
   final int unreadCount;
+  final String? avatarPath;
 
   const _ChatListItem({
     required this.name,
     required this.lastMessage,
     required this.date,
     required this.unreadCount,
+    this.avatarPath,
   });
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: const CircleAvatar(
+      leading: CircleAvatar(
         backgroundColor: Colors.green,
-        child: Icon(Icons.person, color: Colors.white),
+        backgroundImage: avatarPath != null ? AssetImage(avatarPath!) : null,
+        child: avatarPath == null ? const Icon(Icons.person, color: Colors.white) : null,
       ),
       title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
       subtitle: Row(
@@ -1318,7 +1289,9 @@ class _EngagementButton extends StatelessWidget {
 
 // Market Tab
 class _MarketTab extends StatefulWidget {
-  const _MarketTab();
+  final GlobalKey<ScaffoldState> scaffoldKey;
+  
+  const _MarketTab({required this.scaffoldKey});
 
   @override
   State<_MarketTab> createState() => _MarketTabState();
@@ -1326,6 +1299,32 @@ class _MarketTab extends StatefulWidget {
 
 class _MarketTabState extends State<_MarketTab> {
   String _selectedCategory = 'Vegetables';
+  final TextEditingController _searchController = TextEditingController();
+  List<Map<String, dynamic>> _products = MockDataService.getMockProducts(category: 'Vegetables');
+
+  @override
+  void initState() {
+    super.initState();
+    _updateProducts();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _updateProducts() {
+    setState(() {
+      _products = MockDataService.getMockProducts(category: _selectedCategory);
+    });
+  }
+
+  void _handleSearch(String query) {
+    setState(() {
+      // Filter products based on search
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1333,7 +1332,7 @@ class _MarketTabState extends State<_MarketTab> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () {},
+          onPressed: () => widget.scaffoldKey.currentState?.openDrawer(),
         ),
         title: const Text('Market'),
         backgroundColor: Colors.white,
@@ -1371,19 +1370,28 @@ class _MarketTabState extends State<_MarketTab> {
                 _CategoryTab(
                   label: 'Vegetables',
                   isSelected: _selectedCategory == 'Vegetables',
-                  onTap: () => setState(() => _selectedCategory = 'Vegetables'),
+                  onTap: () {
+                    setState(() => _selectedCategory = 'Vegetables');
+                    _updateProducts();
+                  },
                 ),
                 const SizedBox(width: 8),
                 _CategoryTab(
                   label: 'Fruits',
                   isSelected: _selectedCategory == 'Fruits',
-                  onTap: () => setState(() => _selectedCategory = 'Fruits'),
+                  onTap: () {
+                    setState(() => _selectedCategory = 'Fruits');
+                    _updateProducts();
+                  },
                 ),
                 const SizedBox(width: 8),
                 _CategoryTab(
                   label: 'Grains',
                   isSelected: _selectedCategory == 'Grains',
-                  onTap: () => setState(() => _selectedCategory = 'Grains'),
+                  onTap: () {
+                    setState(() => _selectedCategory = 'Grains');
+                    _updateProducts();
+                  },
                 ),
               ],
             ),
@@ -1396,28 +1404,14 @@ class _MarketTabState extends State<_MarketTab> {
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
               childAspectRatio: 0.75,
-              children: [
-                _ProductCard(
-                  name: 'Tomatoes',
-                  price: '\$1.99/kg',
-                  image: Icons.eco,
-                ),
-                _ProductCard(
-                  name: 'Potatoes',
-                  price: '\$0.79/kg',
-                  image: Icons.eco,
-                ),
-                _ProductCard(
-                  name: 'Lettuce',
-                  price: '\$2.49/head',
-                  image: Icons.eco,
-                ),
-                _ProductCard(
-                  name: 'Carrots',
-                  price: '\$1.59/kg',
-                  image: Icons.eco,
-                ),
-              ],
+              children: _products.map((product) {
+                return _ProductCard(
+                  name: product['name'],
+                  price: product['price'],
+                  imagePath: product['image'],
+                  placeholderIcon: Icons.eco,
+                );
+              }).toList(),
             ),
           ],
         ),
@@ -1428,7 +1422,9 @@ class _MarketTabState extends State<_MarketTab> {
 
 // Weather Tab
 class _WeatherTab extends StatelessWidget {
-  const _WeatherTab();
+  final GlobalKey<ScaffoldState> scaffoldKey;
+  
+  const _WeatherTab({required this.scaffoldKey});
 
   @override
   Widget build(BuildContext context) {
@@ -1436,7 +1432,7 @@ class _WeatherTab extends StatelessWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () {},
+          onPressed: () => scaffoldKey.currentState?.openDrawer(),
         ),
         title: const Text('Weather'),
         backgroundColor: Colors.white,
@@ -1502,7 +1498,7 @@ class _WeatherTab extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Vellore, Tamil Nadu',
+                    _weatherData['location'] ?? 'Vellore, Tamil Nadu',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.white70,
                         ),
@@ -1515,14 +1511,14 @@ class _WeatherTab extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '28°',
+                            '${_weatherData['temperature'] ?? 28}°',
                             style: Theme.of(context).textTheme.displayLarge?.copyWith(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
                           ),
                           Text(
-                            'Partly Cloudy',
+                            _weatherData['condition'] ?? 'Partly Cloudy',
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                   color: Colors.white,
                                 ),
@@ -1534,15 +1530,31 @@ class _WeatherTab extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   // Hourly forecast
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _HourlyForecast(time: 'Now', icon: Icons.wb_sunny, temp: '28°'),
-                      _HourlyForecast(time: '12 PM', icon: Icons.wb_cloudy, temp: '30°'),
-                      _HourlyForecast(time: '3 PM', icon: Icons.wb_cloudy, temp: '29°'),
-                      _HourlyForecast(time: '6 PM', icon: Icons.nightlight_round, temp: '27°'),
-                    ],
-                  ),
+                  if (_weatherData['hourlyForecast'] != null)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: (_weatherData['hourlyForecast'] as List).map((forecast) {
+                        IconData icon;
+                        switch (forecast['icon']) {
+                          case 'sunny':
+                            icon = Icons.wb_sunny;
+                            break;
+                          case 'cloudy':
+                            icon = Icons.wb_cloudy;
+                            break;
+                          case 'night':
+                            icon = Icons.nightlight_round;
+                            break;
+                          default:
+                            icon = Icons.wb_sunny;
+                        }
+                        return _HourlyForecast(
+                          time: forecast['time'],
+                          icon: icon,
+                          temp: '${forecast['temp']}°',
+                        );
+                      }).toList(),
+                    ),
                 ],
               ),
             ),
@@ -1562,13 +1574,13 @@ class _WeatherTab extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Vellore, Tamil Nadu',
+                      _weatherData['location'] ?? 'Vellore, Tamil Nadu',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.primary,
                           ),
                     ),
                     Text(
-                      '28° Partly Cloudy',
+                      '${_weatherData['temperature'] ?? 28}° ${_weatherData['condition'] ?? 'Partly Cloudy'}',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.primary,
                           ),
@@ -1576,12 +1588,18 @@ class _WeatherTab extends StatelessWidget {
                   ],
                 ),
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: _isRefreshing ? null : _handleRefresh,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
                   ),
-                  child: const Text('Refresh'),
+                  child: _isRefreshing
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Refresh'),
                 ),
               ],
             ),
@@ -1602,7 +1620,7 @@ class _WeatherTab extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           LinearProgressIndicator(
-                            value: 0.65,
+                            value: (_weatherData['humidity'] ?? 65) / 100,
                             backgroundColor: Colors.grey[200],
                             valueColor: AlwaysStoppedAnimation<Color>(
                               Theme.of(context).colorScheme.primary,
@@ -1610,7 +1628,7 @@ class _WeatherTab extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            '65%',
+                            '${_weatherData['humidity'] ?? 65}%',
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -1638,7 +1656,7 @@ class _WeatherTab extends StatelessWidget {
                               Icon(Icons.air, color: Colors.orange, size: 32),
                               const SizedBox(width: 8),
                               Text(
-                                '12 km/h',
+                                '${_weatherData['windSpeed'] ?? 12} km/h',
                                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -1697,7 +1715,9 @@ class _HourlyForecast extends StatelessWidget {
 
 // Profile Tab
 class _ProfileTab extends StatelessWidget {
-  const _ProfileTab();
+  final GlobalKey<ScaffoldState> scaffoldKey;
+  
+  const _ProfileTab({required this.scaffoldKey});
 
   @override
   Widget build(BuildContext context) {
@@ -1706,82 +1726,10 @@ class _ProfileTab extends StatelessWidget {
         title: const Text('Profile'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              switch (value) {
-                case 'livestock':
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const _LivestockTab()),
-                  );
-                  break;
-                case 'market':
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const _MarketTab()),
-                  );
-                  break;
-                case 'weather':
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const _WeatherTab()),
-                  );
-                  break;
-                case 'settings':
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const _SettingsTab()),
-                  );
-                  break;
-              }
-            },
-            itemBuilder: (BuildContext context) => [
-              const PopupMenuItem<String>(
-                value: 'livestock',
-                child: Row(
-                  children: [
-                    Icon(Icons.pets, color: Colors.green),
-                    SizedBox(width: 8),
-                    Text('Livestock'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'market',
-                child: Row(
-                  children: [
-                    Icon(Icons.store, color: Colors.orange),
-                    SizedBox(width: 8),
-                    Text('Market'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'weather',
-                child: Row(
-                  children: [
-                    Icon(Icons.wb_sunny, color: Colors.amber),
-                    SizedBox(width: 8),
-                    Text('Weather'),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem<String>(
-                value: 'settings',
-                child: Row(
-                  children: [
-                    Icon(Icons.settings, color: Colors.grey),
-                    SizedBox(width: 8),
-                    Text('Settings'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => scaffoldKey.currentState?.openDrawer(),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
@@ -1818,7 +1766,7 @@ class _ProfileTab extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const _SettingsTab()),
+                MaterialPageRoute(builder: (context) => _SettingsTab(scaffoldKey: scaffoldKey)),
               );
             },
           ),
@@ -1842,7 +1790,9 @@ class _ProfileTab extends StatelessWidget {
 
 // Settings Tab
 class _SettingsTab extends StatelessWidget {
-  const _SettingsTab();
+  final GlobalKey<ScaffoldState> scaffoldKey;
+  
+  const _SettingsTab({required this.scaffoldKey});
 
   @override
   Widget build(BuildContext context) {
@@ -1851,6 +1801,10 @@ class _SettingsTab extends StatelessWidget {
         title: const Text('Settings'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => scaffoldKey.currentState?.openDrawer(),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
@@ -2141,13 +2095,12 @@ class _ProductCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: Container(
+            child: PlaceholderImage(
+              assetPath: imagePath,
+              placeholderIcon: placeholderIcon,
               width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              ),
-              child: Icon(image, size: 60, color: Colors.grey[400]),
+              height: double.infinity,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
             ),
           ),
           Padding(

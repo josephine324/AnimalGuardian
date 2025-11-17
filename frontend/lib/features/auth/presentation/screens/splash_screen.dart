@@ -28,14 +28,21 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // AGRO Logo
-            Image.asset(
-              'assets/images/agrologo.png',
-              width: 150,
-              height: 150,
-              fit: BoxFit.contain,
+            // AGRO Logo - Circular with no background
+            ClipOval(
+              child: Container(
+                width: 150,
+                height: 150,
+                color: Colors.transparent,
+                child: Image.asset(
+                  'assets/images/agrologo.png',
+                  width: 150,
+                  height: 150,
+                  fit: BoxFit.cover,
+                ),
+              ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 60),
             // Get Started Button
             SizedBox(
               width: 200,
@@ -53,6 +60,31 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
                 child: const Text(
                   'Get Started',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Create Account Button
+            SizedBox(
+              width: 200,
+              child: OutlinedButton(
+                onPressed: () {
+                  context.go('/register');
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Colors.white, width: 2),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Create Account',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

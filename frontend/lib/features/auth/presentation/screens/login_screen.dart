@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../shared/presentation/widgets/placeholder_image.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -63,26 +64,26 @@ class _LoginScreenState extends State<LoginScreen> {
               Container(
                 height: MediaQuery.of(context).size.height * 0.4,
                 width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                ),
                 child: Stack(
                   children: [
-                    // Placeholder for cow image
-                    Center(
-                      child: Icon(
-                        Icons.pets,
-                        size: 150,
-                        color: Colors.grey[400],
-                      ),
+                    // Cow image with placeholder
+                    PlaceholderImage(
+                      assetPath: 'assets/images/login_cow.jpg',
+                      placeholderIcon: Icons.pets,
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
                     ),
                     // Back button
                     Positioned(
                       top: 16,
                       left: 16,
                       child: IconButton(
-                        icon: const Icon(Icons.arrow_back),
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
                         onPressed: () => context.go('/welcome'),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.black54,
+                        ),
                       ),
                     ),
                   ],

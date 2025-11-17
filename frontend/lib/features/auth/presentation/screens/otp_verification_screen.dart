@@ -68,12 +68,19 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(height: 40),
-              // AGRO Logo
-              Image.asset(
-                'assets/images/agrologo.png',
-                width: 120,
-                height: 120,
-                fit: BoxFit.contain,
+              // AGRO Logo - Circular with no background
+              ClipOval(
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  color: Colors.transparent,
+                  child: Image.asset(
+                    'assets/images/agrologo.png',
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
               const SizedBox(height: 48),
               Text(

@@ -7,7 +7,7 @@ import '../models/community_model.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
-  final String baseUrl = AppConstants.apiBaseUrl;
+  final String baseUrl = AppConstants.baseUrl;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   // Get auth token from secure storage

@@ -1,6 +1,6 @@
 class AppConstants {
   // API Configuration
-  static const String apiBaseUrl = 'https://animalguardian-backend-production-b5a8.up.railway.app/api';
+  static const String baseUrl = 'https://animalguardian-backend-production-b5a8.up.railway.app/api';
   
   // Pagination
   static const int defaultPageSize = 20;
