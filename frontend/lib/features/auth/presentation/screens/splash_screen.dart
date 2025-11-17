@@ -29,59 +29,11 @@ class _SplashScreenState extends State<SplashScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // AGRO Logo
-            Container(
+            Image.asset(
+              'assets/images/agrologo.png',
               width: 150,
               height: 150,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 3),
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Cow icon
-                  Positioned(
-                    top: 20,
-                    child: Icon(
-                      Icons.agriculture,
-                      size: 60,
-                      color: Colors.brown[700],
-                    ),
-                  ),
-                  // Leaves
-                  Positioned(
-                    left: 20,
-                    top: 30,
-                    child: Icon(
-                      Icons.eco,
-                      size: 30,
-                      color: Colors.green[700],
-                    ),
-                  ),
-                  Positioned(
-                    right: 20,
-                    top: 30,
-                    child: Icon(
-                      Icons.eco,
-                      size: 30,
-                      color: Colors.green[700],
-                    ),
-                  ),
-                  // AGRO text
-                  Positioned(
-                    bottom: 30,
-                    child: Text(
-                      'AGRO',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF2E7D32),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              fit: BoxFit.contain,
             ),
             const SizedBox(height: 40),
             // Get Started Button
