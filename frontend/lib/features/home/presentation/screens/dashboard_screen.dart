@@ -77,11 +77,72 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Widget _buildBottomNavigationBar(BuildContext context, {bool isPushedScreen = false, Function(int)? onTabChanged}) {
+    return BottomNavigationBar(
+      currentIndex: _currentIndex,
+      onTap: (index) {
+        if (isPushedScreen) {
+          // If we're on a pushed screen, pop back to dashboard first
+          Navigator.of(context).pop();
+          // Use callback if provided, otherwise change tab after navigation
+          if (onTabChanged != null) {
+            Future.delayed(const Duration(milliseconds: 100), () {
+              onTabChanged(index);
+            });
+          } else {
+            Future.delayed(const Duration(milliseconds: 100), () {
+              if (mounted) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              }
+            });
+          }
+        } else {
+          // If we're on the main dashboard, just change the tab
+          setState(() {
+            _currentIndex = index;
+          });
+        }
+      },
+      type: BottomNavigationBarType.fixed,
+      selectedItemColor: Theme.of(context).colorScheme.primary,
+      unselectedItemColor: Colors.grey,
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home),
+          label: 'Home',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.report_problem),
+          label: 'Cases',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.people),
+          label: 'Community',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person),
+          label: 'Profile',
+        ),
+      ],
+    );
+  }
+
   void _navigateToLivestock(BuildContext context) {
     // Navigate to livestock screen
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => _LivestockTab(scaffoldKey: _scaffoldKey)),
+      MaterialPageRoute(
+        builder: (context) => _LivestockTab(
+          scaffoldKey: _scaffoldKey,
+          bottomNavBar: _buildBottomNavigationBar(
+            context,
+            isPushedScreen: true,
+            onTabChanged: (index) => changeTab(index),
+          ),
+        ),
+      ),
     );
   }
 
@@ -89,7 +150,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Navigate to market screen
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => _MarketTab(scaffoldKey: _scaffoldKey)),
+      MaterialPageRoute(
+        builder: (context) => _MarketTab(
+          scaffoldKey: _scaffoldKey,
+          bottomNavBar: _buildBottomNavigationBar(
+            context,
+            isPushedScreen: true,
+            onTabChanged: (index) => changeTab(index),
+          ),
+        ),
+      ),
     );
   }
 
@@ -97,14 +167,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Navigate to weather screen
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => _WeatherTab(scaffoldKey: _scaffoldKey)),
+      MaterialPageRoute(
+        builder: (context) => _WeatherTab(
+          scaffoldKey: _scaffoldKey,
+          bottomNavBar: _buildBottomNavigationBar(
+            context,
+            isPushedScreen: true,
+            onTabChanged: (index) => changeTab(index),
+          ),
+        ),
+      ),
     );
   }
 
   void _navigateToSettings(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => _SettingsTab(scaffoldKey: _scaffoldKey)),
+      MaterialPageRoute(
+        builder: (context) => _SettingsTab(
+          scaffoldKey: _scaffoldKey,
+          bottomNavBar: _buildBottomNavigationBar(
+            context,
+            isPushedScreen: true,
+            onTabChanged: (index) => changeTab(index),
+          ),
+        ),
+      ),
     );
   }
 
@@ -182,35 +270,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       key: _scaffoldKey,
       drawer: _buildDrawer(context),
       body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Theme.of(context).colorScheme.primary,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.report_problem),
-            label: 'Cases',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Community',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-      ),
+      bottomNavigationBar: _buildBottomNavigationBar(context),
     );
   }
 }
@@ -472,12 +532,14 @@ class _HomeTabState extends State<_HomeTab> {
 // Livestock Tab
 class _LivestockTab extends StatelessWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
+  final Widget? bottomNavBar;
   
-  const _LivestockTab({required this.scaffoldKey});
+  const _LivestockTab({required this.scaffoldKey, this.bottomNavBar});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: bottomNavBar,
       appBar: AppBar(
         title: const Text('My Livestock'),
         backgroundColor: Theme.of(context).colorScheme.primary,
@@ -1290,8 +1352,9 @@ class _EngagementButton extends StatelessWidget {
 // Market Tab
 class _MarketTab extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
+  final Widget? bottomNavBar;
   
-  const _MarketTab({required this.scaffoldKey});
+  const _MarketTab({required this.scaffoldKey, this.bottomNavBar});
 
   @override
   State<_MarketTab> createState() => _MarketTabState();
@@ -1329,6 +1392,7 @@ class _MarketTabState extends State<_MarketTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: widget.bottomNavBar,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
@@ -1423,8 +1487,9 @@ class _MarketTabState extends State<_MarketTab> {
 // Weather Tab
 class _WeatherTab extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
+  final Widget? bottomNavBar;
   
-  const _WeatherTab({required this.scaffoldKey});
+  const _WeatherTab({required this.scaffoldKey, this.bottomNavBar});
 
   @override
   State<_WeatherTab> createState() => _WeatherTabState();
@@ -1480,6 +1545,7 @@ class _WeatherTabState extends State<_WeatherTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: widget.bottomNavBar,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
@@ -1844,12 +1910,14 @@ class _ProfileTab extends StatelessWidget {
 // Settings Tab
 class _SettingsTab extends StatelessWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
+  final Widget? bottomNavBar;
   
-  const _SettingsTab({required this.scaffoldKey});
+  const _SettingsTab({required this.scaffoldKey, this.bottomNavBar});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: bottomNavBar,
       appBar: AppBar(
         title: const Text('Settings'),
         backgroundColor: Theme.of(context).colorScheme.primary,

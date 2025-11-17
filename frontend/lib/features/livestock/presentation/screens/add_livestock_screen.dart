@@ -115,6 +115,10 @@ class _AddLivestockScreenState extends ConsumerState<AddLivestockScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
         title: const Text('Add Livestock'),
       ),
       body: Form(
