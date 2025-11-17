@@ -22,6 +22,10 @@ class CaseDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: Text('Case ${caseReport.caseId}'),
         actions: [
           IconButton(
