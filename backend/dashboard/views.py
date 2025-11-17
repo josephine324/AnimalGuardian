@@ -49,38 +49,49 @@ def stats(request):
     total_cases = CaseReport.objects.count()
     pending_cases = CaseReport.objects.filter(status='pending').count()
     resolved_cases = CaseReport.objects.filter(status='resolved').count()
-    active_cases = CaseReport.objects.filter(status='active').count()
+    active_cases = CaseReport.objects.filter(
+        status__in=['pending', 'under_review', 'diagnosed', 'treated']
+    ).count()
     
     total_farmers = User.objects.filter(user_type='farmer').count()
     total_sector_vets = User.objects.filter(user_type='sector_vet').count()
     total_local_vets = User.objects.filter(user_type='local_vet').count()
     total_veterinarians = total_sector_vets + total_local_vets
     
+    # Active veterinarians (online/available)
+    from accounts.models import VeterinarianProfile
+    active_veterinarians = VeterinarianProfile.objects.filter(is_available=True).count()
+    
     total_livestock = Livestock.objects.count()
+    healthy_livestock = Livestock.objects.filter(status='healthy').count()
+    sick_livestock = Livestock.objects.filter(status='sick').count()
     
     # Get recent notifications count
+    from datetime import timedelta
     recent_notifications = Notification.objects.filter(
-        created_at__gte=timezone.now() - timezone.timedelta(days=7)
+        created_at__gte=timezone.now() - timedelta(days=7)
     ).count()
     
+    # Calculate resolution rate
+    resolution_rate = f"{(resolved_cases / total_cases * 100):.1f}%" if total_cases > 0 else "0%"
+    
+    # Return in format expected by frontend
     return Response({
-        'cases': {
-            'total': total_cases,
-            'pending': pending_cases,
-            'resolved': resolved_cases,
-            'active': active_cases,
-        },
-        'users': {
-            'total_farmers': total_farmers,
-            'total_sector_vets': total_sector_vets,
-            'total_local_vets': total_local_vets,
-            'total_veterinarians': total_veterinarians,
-        },
-        'livestock': {
-            'total': total_livestock,
-        },
-        'notifications': {
-            'recent_7_days': recent_notifications,
-        },
-        'timestamp': timezone.now().isoformat(),
+        'total_cases': total_cases,
+        'pending_cases': pending_cases,
+        'resolved_cases': resolved_cases,
+        'active_cases': active_cases,
+        'total_farmers': total_farmers,
+        'new_farmers_this_week': User.objects.filter(
+            user_type='farmer',
+            created_at__gte=timezone.now() - timedelta(days=7)
+        ).count(),
+        'total_veterinarians': total_veterinarians,
+        'active_veterinarians': active_veterinarians,
+        'total_livestock': total_livestock,
+        'healthy_livestock': healthy_livestock,
+        'sick_livestock': sick_livestock,
+        'vaccinations_due': 0,  # Can be calculated if VaccinationRecord model exists
+        'average_response_time': '0 hours',  # Can be calculated from consultations
+        'resolution_rate': resolution_rate,
     }, status=status.HTTP_200_OK)

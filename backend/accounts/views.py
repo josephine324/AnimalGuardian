@@ -52,16 +52,16 @@ class LoginView(generics.GenericAPIView):
                 pass
         
         if user:
-            # Check if user is verified (phone verification)
-            if not user.is_verified:
+            # Check if user is verified (phone verification) - only for farmers
+            if user.user_type == 'farmer' and not user.is_verified:
                 return Response({
                     'error': 'Your phone number is not verified. Please verify your phone number first.'
                 }, status=status.HTTP_403_FORBIDDEN)
             
-            # Check if user is approved by admin/vet
-            if not user.is_approved_by_admin:
+            # Check if farmer is approved by sector vet/admin (only farmers need approval)
+            if user.user_type == 'farmer' and not user.is_approved_by_admin:
                 return Response({
-                    'error': 'Your account is pending approval from an administrator or sector veterinarian. Please wait for approval before logging in.',
+                    'error': 'Your account is pending approval from a sector veterinarian. Please wait for approval before logging in.',
                     'pending_approval': True
                 }, status=status.HTTP_403_FORBIDDEN)
             
@@ -72,10 +72,19 @@ class LoginView(generics.GenericAPIView):
                 }, status=status.HTTP_403_FORBIDDEN)
             
             refresh = RefreshToken.for_user(user)
+            
+            # Determine redirect based on user type
+            redirect_to = 'admin_dashboard'
+            if user.user_type in ['local_vet', 'sector_vet']:
+                redirect_to = 'vet_dashboard'
+            elif user.user_type == 'farmer':
+                redirect_to = 'farmer_dashboard'
+            
             return Response({
                 'access': str(refresh.access_token),
                 'refresh': str(refresh),
-                'user': UserSerializer(user).data
+                'user': UserSerializer(user).data,
+                'redirect_to': redirect_to
             })
         else:
             return Response({
@@ -374,3 +383,35 @@ class VeterinarianViewSet(viewsets.ModelViewSet):
             return Response({
                 'error': 'Veterinarian profile not found.'
             }, status=status.HTTP_404_NOT_FOUND)
+    
+    @action(detail=True, methods=['post'])
+    def toggle_availability(self, request, pk=None):
+        """Toggle online/offline status for local veterinarians."""
+        profile = self.get_object()
+        user = request.user
+        
+        # Only the veterinarian themselves can toggle their availability
+        if profile.user != user:
+            return Response({
+                'error': 'You can only change your own availability status.'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Only local vets can toggle availability
+        if user.user_type != 'local_vet':
+            return Response({
+                'error': 'Only local veterinarians can toggle their availability status.'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Toggle availability
+        profile.is_available = not profile.is_available
+        profile.save()
+        
+        # Update user active status to match
+        user.is_active = profile.is_available
+        user.save(update_fields=['is_active'])
+        
+        return Response({
+            'message': f'You are now {"online" if profile.is_available else "offline"}',
+            'is_available': profile.is_available,
+            'profile': self.get_serializer(profile).data
+        }, status=status.HTTP_200_OK)

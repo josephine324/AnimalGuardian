@@ -17,10 +17,11 @@ const FarmersPage = () => {
     district: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  const [filterApproval, setFilterApproval] = useState('all'); // all, pending, approved
 
   useEffect(() => {
     fetchFarmers();
-  }, []);
+  }, [filterApproval]);
 
   const fetchFarmers = async () => {
     try {
@@ -33,7 +34,14 @@ const FarmersPage = () => {
         window.location.href = '/login';
         return;
       }
-      const data = await usersAPI.getFarmers();
+      const params = {};
+      if (filterApproval === 'pending') {
+        params.is_approved_by_admin = false;
+      } else if (filterApproval === 'approved') {
+        params.is_approved_by_admin = true;
+      }
+      
+      const data = await usersAPI.getFarmers(params);
       const farmersList = data.results || (Array.isArray(data) ? data : []);
       setFarmers(Array.isArray(farmersList) ? farmersList : []);
     } catch (err) {
@@ -89,6 +97,31 @@ const FarmersPage = () => {
       alert(err.response?.data?.error || err.response?.data?.detail || 'Failed to add farmer');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleApproveFarmer = async (farmerId) => {
+    try {
+      await usersAPI.approve(farmerId);
+      await fetchFarmers();
+      alert('Farmer approved successfully!');
+    } catch (err) {
+      console.error('Error approving farmer:', err);
+      alert(err.response?.data?.error || err.response?.data?.detail || 'Failed to approve farmer');
+    }
+  };
+
+  const handleRejectFarmer = async (farmerId) => {
+    if (!window.confirm('Are you sure you want to reject this farmer?')) {
+      return;
+    }
+    try {
+      await usersAPI.reject(farmerId);
+      await fetchFarmers();
+      alert('Farmer rejected.');
+    } catch (err) {
+      console.error('Error rejecting farmer:', err);
+      alert(err.response?.data?.error || err.response?.data?.detail || 'Failed to reject farmer');
     }
   };
 
@@ -197,8 +230,8 @@ const FarmersPage = () => {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="bg-white rounded-lg shadow p-4">
+      {/* Search and Filters */}
+      <div className="bg-white rounded-lg shadow p-4 space-y-4">
         <div className="relative">
           <input
             type="text"
@@ -210,6 +243,38 @@ const FarmersPage = () => {
           <svg className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setFilterApproval('all')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              filterApproval === 'all' 
+                ? 'bg-green-600 text-white' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            All Farmers
+          </button>
+          <button
+            onClick={() => setFilterApproval('pending')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              filterApproval === 'pending' 
+                ? 'bg-yellow-600 text-white' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Pending Approval
+          </button>
+          <button
+            onClick={() => setFilterApproval('approved')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              filterApproval === 'approved' 
+                ? 'bg-green-600 text-white' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Approved
+          </button>
         </div>
       </div>
 
@@ -254,17 +319,41 @@ const FarmersPage = () => {
                 </div>
                 <div className="pt-3 border-t border-gray-200 flex justify-between items-center">
                   <span className="text-xs text-gray-500">User Type: {farmer.user_type || 'farmer'}</span>
-                  <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
-                    {farmer.is_active ? 'Active' : 'Inactive'}
+                  <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                    farmer.is_approved_by_admin 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {farmer.is_approved_by_admin ? 'Approved' : 'Pending Approval'}
                   </span>
                 </div>
               <div className="pt-3 flex space-x-2">
-                <button className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm font-medium transition-colors">
-                  View Profile
-                </button>
-                <button className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors">
-                  Contact
-                </button>
+                {!farmer.is_approved_by_admin && (
+                  <>
+                    <button
+                      onClick={() => handleApproveFarmer(farmer.id)}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleRejectFarmer(farmer.id)}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Reject
+                    </button>
+                  </>
+                )}
+                {farmer.is_approved_by_admin && (
+                  <>
+                    <button className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm font-medium transition-colors">
+                      View Profile
+                    </button>
+                    <button className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors">
+                      Contact
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
