@@ -181,7 +181,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                 controller: _tagsController,
                 decoration: const InputDecoration(
                   labelText: 'Tags (comma-separated)',
-                  hintText: 'e.g., farming, livestock, tips',
+                  hintText: 'e.g., livestock, breeding, health tips',
                   prefixIcon: Icon(Icons.tag),
                 ),
               ),

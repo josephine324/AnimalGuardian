@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
-/// A placeholder image widget that can be easily replaced with actual assets
+/// A placeholder image widget that supports both assets and network images
 /// 
 /// Usage:
 /// ```dart
 /// PlaceholderImage(
 ///   assetPath: 'assets/images/cow.jpg',
+///   networkUrl: 'https://example.com/image.jpg',
 ///   placeholderIcon: Icons.pets,
 ///   width: 200,
 ///   height: 200,
@@ -13,6 +14,7 @@ import 'package:flutter/material.dart';
 /// ```
 class PlaceholderImage extends StatelessWidget {
   final String? assetPath;
+  final String? networkUrl;
   final IconData placeholderIcon;
   final double? width;
   final double? height;
@@ -24,6 +26,7 @@ class PlaceholderImage extends StatelessWidget {
   const PlaceholderImage({
     super.key,
     this.assetPath,
+    this.networkUrl,
     required this.placeholderIcon,
     this.width,
     this.height,
@@ -40,7 +43,34 @@ class PlaceholderImage extends StatelessWidget {
     
     Widget imageWidget;
     
-    if (assetPath != null) {
+    if (networkUrl != null && networkUrl!.isNotEmpty) {
+      // Try to load network image first
+      imageWidget = Image.network(
+        networkUrl!,
+        width: width,
+        height: height,
+        fit: fit,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return _buildPlaceholder(bgColor, iconClr);
+        },
+        errorBuilder: (context, error, stackTrace) {
+          // Fallback to asset if network fails
+          if (assetPath != null) {
+            return Image.asset(
+              assetPath!,
+              width: width,
+              height: height,
+              fit: fit,
+              errorBuilder: (context, error, stackTrace) {
+                return _buildPlaceholder(bgColor, iconClr);
+              },
+            );
+          }
+          return _buildPlaceholder(bgColor, iconClr);
+        },
+      );
+    } else if (assetPath != null && assetPath!.isNotEmpty) {
       // Try to load the asset, fallback to placeholder if it fails
       imageWidget = Image.asset(
         assetPath!,

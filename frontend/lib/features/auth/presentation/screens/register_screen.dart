@@ -116,7 +116,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     children: [
                       const SizedBox(height: 24),
                       Text(
-                        'Join the future of farming',
+                        'Join the future of livestock management',
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
