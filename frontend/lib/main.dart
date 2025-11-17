@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'shared/presentation/widgets/loading_screen.dart';
+import 'features/auth/presentation/screens/splash_screen.dart';
+import 'features/auth/presentation/screens/onboarding_screen.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/register_screen.dart';
+import 'features/auth/presentation/screens/otp_verification_screen.dart';
 import 'features/home/presentation/screens/dashboard_screen.dart';
 import 'features/cases/presentation/screens/report_case_screen.dart';
 import 'features/livestock/presentation/screens/add_livestock_screen.dart';
@@ -43,8 +46,18 @@ class AnimalGuardianApp extends StatelessWidget {
 
 // Router configuration with all routes
 final _router = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/splash',
   routes: [
+    // Splash screen
+    GoRoute(
+      path: '/splash',
+      builder: (context, state) => const SplashScreen(),
+    ),
+    // Onboarding
+    GoRoute(
+      path: '/welcome',
+      builder: (context, state) => const OnboardingScreen(),
+    ),
     // Welcome/Home screen
     GoRoute(
       path: '/',
@@ -58,6 +71,13 @@ final _router = GoRouter(
     GoRoute(
       path: '/register',
       builder: (context, state) => const RegisterScreen(),
+    ),
+    GoRoute(
+      path: '/otp-verify',
+      builder: (context, state) {
+        final phoneNumber = state.uri.queryParameters['phone'] ?? '+250********';
+        return OTPVerificationScreen(phoneNumber: phoneNumber);
+      },
     ),
     // Main dashboard with bottom navigation
     GoRoute(
