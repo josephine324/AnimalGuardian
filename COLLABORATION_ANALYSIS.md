@@ -442,14 +442,252 @@ This document analyzes the collaboration between the web dashboard (React.js) an
 
 ---
 
+---
+
+## 11. 📞 USSD Service Collaboration
+
+### Overview
+The USSD (Unstructured Supplementary Service Data) service enables farmers with basic phones (non-smartphones) to access AnimalGuardian features via USSD codes and SMS commands.
+
+### USSD Service Flow
+
+#### **Service Architecture**
+- **Technology:** Flask (Python)
+- **Location:** `ussd-service/app.py`
+- **Deployment:** Can be deployed to Railway or run locally
+- **API Integration:** Connects to Backend API at `BACKEND_API_URL`
+
+#### **User Verification (USSD Service → Backend)**
+- **Endpoint:** `GET /api/accounts/users/?phone_number={phone}`
+- **Location:** `ussd-service/app.py` - `get_farmer_by_phone()`
+- **Verification Steps:**
+  1. Checks if user exists in backend
+  2. Verifies `user_type == 'farmer'` (only farmers can use USSD)
+  3. Checks `is_approved_by_admin == True` (must be approved)
+  4. Checks `is_verified == True` (phone must be verified)
+- **Error Messages:**
+  - "This service is only available for farmers"
+  - "Your account is pending approval. Please wait for approval from a sector veterinarian"
+  - "Please verify your phone number first before using this service"
+
+#### **USSD Menu Flow**
+```
+Step 0: Welcome Menu
+├─ 1. Report Animal Disease
+├─ 2. Get Veterinary Advice
+├─ 3. Check Vaccination Schedule
+├─ 4. Weather Alerts
+├─ 5. Contact Support
+└─ 6. Exit
+
+Step 1: Report Animal Disease
+└─ Select animal type (Cattle, Goat, Sheep, Pig, Chicken, Other)
+
+Step 2: Describe Symptoms
+└─ User enters symptom description via text
+
+Step 3: Case Created
+└─ Case report sent to backend API
+```
+
+#### **Case Reporting (USSD → Backend → Web Dashboard)**
+- **Endpoint:** `POST /api/cases/reports/`
+- **Location:** `ussd-service/app.py` - `create_case_report()`
+- **Data Sent:**
+  ```json
+  {
+    "reporter": farmer_id,
+    "livestock_type": "Cattle",
+    "symptoms_observed": "Loss of appetite, lethargy",
+    "urgency": "medium",
+    "reported_via": "ussd"
+  }
+  ```
+- **Backend Processing:**
+  - Case created with `status='pending'`
+  - Case appears in web dashboard (same as mobile app cases)
+  - Sector Vet can assign to Local Vet
+  - Local Vet sees in mobile app
+
+#### **SMS Commands (USSD Service → Backend)**
+- **SMS Handler:** `ussd-service/app.py` - `SMSHandler`
+- **Available Commands:**
+  - `HELP` - Show available commands
+  - `STATUS` - Check livestock status
+  - `VACCINE` - Get vaccination info
+  - `WEATHER` - Get weather alerts
+  - `REPORT <symptoms>` - Report disease via SMS
+  - `ADVICE` - Get health advice
+  - `CONTACT` - Get support info
+- **Case Reporting via SMS:**
+  - User sends: `REPORT loss of appetite lethargy`
+  - USSD service creates case via `POST /api/cases/reports/`
+  - `reported_via: 'sms'` in case data
+
+### USSD ↔ Backend API Flow
+
+```
+┌─────────────────┐
+│  Basic Phone    │
+│  (USSD/SMS)     │
+└────────┬────────┘
+         │
+         │ 1. Dial USSD Code
+         │ OR Send SMS Command
+         ▼
+┌─────────────────┐
+│  USSD Service   │
+│  (Flask)        │
+│  - Verify User  │
+│  - Process Menu │
+└────────┬────────┘
+         │
+         │ 2. Get Farmer Info
+         │ GET /api/accounts/users/
+         │ ?phone_number=+250...
+         ▼
+┌─────────────────┐
+│  Backend API    │
+│  (Django)       │
+│  Returns User   │
+│  Data           │
+└────────┬────────┘
+         │
+         │ 3. Create Case Report
+         │ POST /api/cases/reports/
+         │ {reporter, symptoms, reported_via: 'ussd'}
+         ▼
+┌─────────────────┐
+│  Backend API    │
+│  Case Created   │
+│  status=pending │
+└────────┬────────┘
+         │
+         │ 4. Case Appears in
+         │ Web Dashboard
+         ▼
+┌─────────────────┐
+│  Web Dashboard  │
+│  Sector Vet     │
+│  Assigns Case   │
+└─────────────────┘
+```
+
+### USSD Service Features
+
+#### **✅ Working Features**
+1. ✅ **User Verification**
+   - Checks if user is farmer
+   - Verifies approval status
+   - Verifies phone verification status
+
+2. ✅ **Case Reporting**
+   - Create case reports via USSD menu
+   - Create case reports via SMS commands
+   - Cases appear in backend same as mobile app cases
+
+3. ✅ **Backend Integration**
+   - Fetches farmer data from backend API
+   - Creates cases in backend API
+   - Uses same endpoints as mobile app
+
+4. ✅ **SMS Functionality**
+   - Sends SMS via Africa's Talking
+   - Processes SMS commands
+   - Responds with relevant information
+
+#### **⚠️ Needs Improvement**
+
+1. ⚠️ **Vaccination Schedule**
+   - **Current:** Returns hardcoded mock data
+   - **Should:** Fetch from backend API `GET /api/livestock/{farmer_id}/vaccinations/`
+   - **Endpoint:** `ussd-service/app.py` - `get_vaccination_schedule()`
+
+2. ⚠️ **Weather Alerts**
+   - **Current:** Returns hardcoded mock data
+   - **Should:** Fetch from backend API `GET /api/weather/?location={sector}`
+   - **Endpoint:** `ussd-service/app.py` - `get_weather_alerts()`
+
+3. ⚠️ **Livestock Status (SMS)**
+   - **Current:** Returns hardcoded mock data
+   - **Should:** Fetch from backend API `GET /api/livestock/?owner={farmer_id}`
+   - **Endpoint:** `ussd-service/app.py` - `get_livestock_status()`
+
+4. ⚠️ **Authentication**
+   - **Current:** No authentication token required for USSD service
+   - **Should:** USSD service may need API key or service authentication
+   - **Note:** This might be intentional for USSD (no user tokens)
+
+### USSD Service Configuration
+
+#### **Environment Variables**
+```env
+BACKEND_API_URL=http://localhost:8000/api  # or production URL
+AFRICASTALKING_USERNAME=your_username
+AFRICASTALKING_API_KEY=your_api_key
+```
+
+#### **Endpoints**
+- `POST /ussd` - Handle USSD requests
+- `POST /sms` - Handle SMS requests
+- `GET /health` - Health check
+
+#### **Deployment Status**
+- ⚠️ **Local:** Can run on `http://localhost:5000`
+- ⚠️ **Production:** Needs deployment to Railway or similar
+- ⚠️ **Note:** USSD codes must be configured with telecom provider (Africa's Talking)
+
+### Integration with Mobile App & Web Dashboard
+
+#### **Case Reporting Flow**
+1. **Farmer (Basic Phone)** → USSD Service → Backend API → Case Created
+2. **Sector Vet (Web Dashboard)** → Sees Case → Assigns to Local Vet
+3. **Local Vet (Mobile App)** → Sees Assigned Case → Updates Status
+
+**All cases from USSD/SMS appear in the same system as mobile app cases!**
+
+#### **User Management**
+- Farmers registered via USSD service still need approval
+- Sector Vets approve via web dashboard (same process)
+- Once approved, farmers can use USSD service
+
+### USSD Service Limitations
+
+1. **User Type Restriction:**
+   - Only Farmers can use USSD service
+   - Local Vets, Sector Vets, Admins cannot access via USSD
+   - Must use mobile app (Local Vets) or web dashboard (Sector Vets/Admins)
+
+2. **Features Available:**
+   - ✅ Case reporting (limited format - text only)
+   - ✅ Basic information queries
+   - ❌ No photos/videos (unlike mobile app)
+   - ❌ No real-time chat (unlike mobile app)
+   - ❌ No community features (unlike mobile app)
+
+3. **Data Format:**
+   - Text-only input/output
+   - Limited menu navigation
+   - Character limits on descriptions
+
+---
+
 ## Conclusion
 
-The collaboration between web dashboard and mobile app is **well-structured** with proper API endpoints and backend logic. The main areas needing attention are:
+The collaboration between **web dashboard**, **mobile app**, and **USSD service** is **well-structured** with proper API endpoints and backend logic. All three platforms share the same backend API:
 
-1. ✅ **Fixed:** API endpoint paths corrected
-2. ⚠️ **Pending:** Integration of real API calls in vet dashboard (currently uses mock data)
-3. ⚠️ **Pending:** Real-time approval status checking in mobile app
-4. ⚠️ **Pending:** Case status update functionality for local vets
+### ✅ **Working Well**
+1. ✅ **API Endpoint Paths:** Corrected (`/cases/reports/`)
+2. ✅ **User Registration & Approval:** Works across all platforms
+3. ✅ **Case Reporting:** Unified flow from USSD/Mobile → Backend → Web Dashboard
+4. ✅ **Case Assignment:** Web Dashboard → Backend → Mobile App
+5. ✅ **USSD Integration:** Connects to backend API correctly
 
-The backend already handles all the filtering and permissions correctly. The mobile app just needs to connect to the real API instead of using mock data.
+### ⚠️ **Needs Improvement**
+1. ⚠️ **Vet Dashboard:** Integration of real API calls (currently uses mock data)
+2. ⚠️ **Approval Status:** Real-time checking in mobile app
+3. ⚠️ **USSD Features:** Integration with backend for vaccination/weather/livestock data
+4. ⚠️ **Case Updates:** Status update functionality for local vets in mobile app
+
+The backend already handles all the filtering and permissions correctly across all three platforms. The main work needed is connecting frontend clients (mobile app, USSD service) to real API endpoints instead of using mock data.
 
