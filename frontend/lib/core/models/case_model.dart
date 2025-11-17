@@ -1,0 +1,253 @@
+import 'dart:convert';
+
+enum CaseStatus {
+  pending,
+  underReview,
+  diagnosed,
+  treated,
+  resolved,
+  escalated,
+}
+
+enum CaseUrgency {
+  low,
+  medium,
+  high,
+  urgent,
+}
+
+extension CaseStatusExtension on CaseStatus {
+  String get name {
+    switch (this) {
+      case CaseStatus.pending:
+        return 'Pending Review';
+      case CaseStatus.underReview:
+        return 'Under Review';
+      case CaseStatus.diagnosed:
+        return 'Diagnosed';
+      case CaseStatus.treated:
+        return 'Treated';
+      case CaseStatus.resolved:
+        return 'Resolved';
+      case CaseStatus.escalated:
+        return 'Escalated';
+    }
+  }
+  
+  String get apiValue {
+    switch (this) {
+      case CaseStatus.pending:
+        return 'pending';
+      case CaseStatus.underReview:
+        return 'under_review';
+      case CaseStatus.diagnosed:
+        return 'diagnosed';
+      case CaseStatus.treated:
+        return 'treated';
+      case CaseStatus.resolved:
+        return 'resolved';
+      case CaseStatus.escalated:
+        return 'escalated';
+    }
+  }
+  
+  static CaseStatus fromApiValue(String value) {
+    switch (value) {
+      case 'pending':
+        return CaseStatus.pending;
+      case 'under_review':
+        return CaseStatus.underReview;
+      case 'diagnosed':
+        return CaseStatus.diagnosed;
+      case 'treated':
+        return CaseStatus.treated;
+      case 'resolved':
+        return CaseStatus.resolved;
+      case 'escalated':
+        return CaseStatus.escalated;
+      default:
+        return CaseStatus.pending;
+    }
+  }
+}
+
+extension CaseUrgencyExtension on CaseUrgency {
+  String get name {
+    switch (this) {
+      case CaseUrgency.low:
+        return 'Low';
+      case CaseUrgency.medium:
+        return 'Medium';
+      case CaseUrgency.high:
+        return 'High';
+      case CaseUrgency.urgent:
+        return 'Urgent';
+    }
+  }
+  
+  String get apiValue {
+    switch (this) {
+      case CaseUrgency.low:
+        return 'low';
+      case CaseUrgency.medium:
+        return 'medium';
+      case CaseUrgency.high:
+        return 'high';
+      case CaseUrgency.urgent:
+        return 'urgent';
+    }
+  }
+  
+  static CaseUrgency fromApiValue(String value) {
+    switch (value) {
+      case 'low':
+        return CaseUrgency.low;
+      case 'medium':
+        return CaseUrgency.medium;
+      case 'high':
+        return CaseUrgency.high;
+      case 'urgent':
+        return CaseUrgency.urgent;
+      default:
+        return CaseUrgency.medium;
+    }
+  }
+}
+
+class CaseReport {
+  final int id;
+  final String caseId;
+  final int reporterId;
+  final int livestockId;
+  final CaseStatus status;
+  final CaseUrgency urgency;
+  final String symptomsObserved;
+  final String? durationOfSymptoms;
+  final int numberOfAffectedAnimals;
+  final int? suspectedDiseaseId;
+  final List<String> photos;
+  final List<String> videos;
+  final List<String> audioNotes;
+  final String? locationNotes;
+  final DateTime reportedAt;
+  final DateTime updatedAt;
+  
+  // Related data (populated from API)
+  final String? livestockName;
+  final String? livestockType;
+  final String? reporterName;
+
+  const CaseReport({
+    required this.id,
+    required this.caseId,
+    required this.reporterId,
+    required this.livestockId,
+    required this.status,
+    required this.urgency,
+    required this.symptomsObserved,
+    this.durationOfSymptoms,
+    required this.numberOfAffectedAnimals,
+    this.suspectedDiseaseId,
+    this.photos = const [],
+    this.videos = const [],
+    this.audioNotes = const [],
+    this.locationNotes,
+    required this.reportedAt,
+    required this.updatedAt,
+    this.livestockName,
+    this.livestockType,
+    this.reporterName,
+  });
+
+  factory CaseReport.fromMap(Map<String, dynamic> map) {
+    return CaseReport(
+      id: map['id'] ?? 0,
+      caseId: map['case_id'] ?? '',
+      reporterId: map['reporter'] is int ? map['reporter'] : int.tryParse(map['reporter']?.toString() ?? '0') ?? 0,
+      livestockId: map['livestock'] is int ? map['livestock'] : int.tryParse(map['livestock']?.toString() ?? '0') ?? 0,
+      status: CaseStatusExtension.fromApiValue(map['status'] ?? 'pending'),
+      urgency: CaseUrgencyExtension.fromApiValue(map['urgency'] ?? 'medium'),
+      symptomsObserved: map['symptoms_observed'] ?? '',
+      durationOfSymptoms: map['duration_of_symptoms'],
+      numberOfAffectedAnimals: map['number_of_affected_animals'] ?? 1,
+      suspectedDiseaseId: map['suspected_disease'],
+      photos: List<String>.from(map['photos'] ?? []),
+      videos: List<String>.from(map['videos'] ?? []),
+      audioNotes: List<String>.from(map['audio_notes'] ?? []),
+      locationNotes: map['location_notes'],
+      reportedAt: map['reported_at'] != null 
+          ? DateTime.parse(map['reported_at']) 
+          : DateTime.now(),
+      updatedAt: map['updated_at'] != null 
+          ? DateTime.parse(map['updated_at']) 
+          : DateTime.now(),
+      livestockName: map['livestock_name'],
+      livestockType: map['livestock_type'],
+      reporterName: map['reporter_name'],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'livestock': livestockId,
+      'status': status.apiValue,
+      'urgency': urgency.apiValue,
+      'symptoms_observed': symptomsObserved,
+      'duration_of_symptoms': durationOfSymptoms,
+      'number_of_affected_animals': numberOfAffectedAnimals,
+      'suspected_disease': suspectedDiseaseId,
+      'photos': photos,
+      'videos': videos,
+      'audio_notes': audioNotes,
+      'location_notes': locationNotes,
+    };
+  }
+
+  String toJson() => json.encode(toMap());
+  factory CaseReport.fromJson(String source) => CaseReport.fromMap(json.decode(source));
+
+  CaseReport copyWith({
+    int? id,
+    String? caseId,
+    int? reporterId,
+    int? livestockId,
+    CaseStatus? status,
+    CaseUrgency? urgency,
+    String? symptomsObserved,
+    String? durationOfSymptoms,
+    int? numberOfAffectedAnimals,
+    int? suspectedDiseaseId,
+    List<String>? photos,
+    List<String>? videos,
+    List<String>? audioNotes,
+    String? locationNotes,
+    DateTime? reportedAt,
+    DateTime? updatedAt,
+    String? livestockName,
+    String? livestockType,
+    String? reporterName,
+  }) {
+    return CaseReport(
+      id: id ?? this.id,
+      caseId: caseId ?? this.caseId,
+      reporterId: reporterId ?? this.reporterId,
+      livestockId: livestockId ?? this.livestockId,
+      status: status ?? this.status,
+      urgency: urgency ?? this.urgency,
+      symptomsObserved: symptomsObserved ?? this.symptomsObserved,
+      durationOfSymptoms: durationOfSymptoms ?? this.durationOfSymptoms,
+      numberOfAffectedAnimals: numberOfAffectedAnimals ?? this.numberOfAffectedAnimals,
+      suspectedDiseaseId: suspectedDiseaseId ?? this.suspectedDiseaseId,
+      photos: photos ?? this.photos,
+      videos: videos ?? this.videos,
+      audioNotes: audioNotes ?? this.audioNotes,
+      locationNotes: locationNotes ?? this.locationNotes,
+      reportedAt: reportedAt ?? this.reportedAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      livestockName: livestockName ?? this.livestockName,
+      livestockType: livestockType ?? this.livestockType,
+      reporterName: reporterName ?? this.reporterName,
+    );
+  }
+}
+
