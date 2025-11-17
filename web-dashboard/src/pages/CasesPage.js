@@ -169,10 +169,37 @@ const CasesPage = () => {
     }
   };
 
-  const openAssignModal = (case_) => {
+  const openAssignModal = async (case_) => {
     setSelectedCase(case_);
     setAssignVetId(case_.assigned_veterinarian || '');
     setShowAssignModal(true);
+    
+    // Fetch available vets by location if case has location info
+    if (case_.reporter_sector || case_.reporter_district) {
+      try {
+        const data = await casesAPI.getAvailableVetsByLocation(
+          case_.reporter_sector,
+          case_.reporter_district
+        );
+        if (data.available_veterinarians && data.available_veterinarians.length > 0) {
+          setLocalVets(data.available_veterinarians.map(vet => ({
+            id: vet.id,
+            first_name: vet.name.split(' ')[0] || vet.name,
+            last_name: vet.name.split(' ').slice(1).join(' ') || '',
+            phone_number: vet.phone,
+            sector: vet.sector,
+            district: vet.district,
+          })));
+        }
+      } catch (err) {
+        console.error('Error fetching available vets by location:', err);
+        // Fallback to all local vets if location-based fetch fails
+        fetchLocalVets();
+      }
+    } else {
+      // If no location info, fetch all local vets
+      fetchLocalVets();
+    }
   };
 
   const handleAddCase = async (e) => {

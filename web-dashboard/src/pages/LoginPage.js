@@ -30,6 +30,21 @@ const LoginPage = ({ onLogin }) => {
       localStorage.setItem('refreshToken', response.refresh);
       localStorage.setItem('userData', JSON.stringify(response.user));
 
+      // Handle redirect based on user type
+      const userType = response.user?.user_type;
+      const redirectTo = response.redirect_to || 
+        (userType === 'farmer' ? 'farmer_dashboard' : 
+         (userType === 'local_vet' || userType === 'sector_vet' ? 'vet_dashboard' : 'admin_dashboard'));
+      
+      // For web dashboard, only sector_vet and admin should access
+      if (userType === 'local_vet' || userType === 'farmer') {
+        setError('This is the admin dashboard. Please use the mobile app to access your dashboard.');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userData');
+        return;
+      }
+
       // Call onLogin callback with all tokens
       onLogin(response.user, response.access, response.refresh);
     } catch (err) {
