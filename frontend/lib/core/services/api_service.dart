@@ -317,7 +317,7 @@ class ApiService {
   Future<Map<String, dynamic>> getWeather({String? location}) async {
     try {
       final headers = await _getHeaders();
-      final queryParams = location != null ? {'location': location} : {};
+      final Map<String, String> queryParams = location != null ? {'location': location} : {};
       final uri = Uri.parse('$baseUrl/weather/').replace(queryParameters: queryParams);
       
       final response = await http.get(
