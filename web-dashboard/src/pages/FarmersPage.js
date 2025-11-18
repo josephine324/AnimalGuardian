@@ -10,6 +10,7 @@ const FarmersPage = () => {
 
   useEffect(() => {
     fetchFarmers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterApproval]);
 
   const fetchFarmers = async () => {
