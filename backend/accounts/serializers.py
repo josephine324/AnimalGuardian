@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
+from django.utils.text import slugify
+import secrets
 from .models import User, VeterinarianProfile, FarmerProfile
 
 class UserSerializer(serializers.ModelSerializer):
@@ -36,14 +38,20 @@ class UserSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         # Only validate password on create
         if self.instance is None:
-            if 'password' not in attrs or 'password_confirm' not in attrs:
-                raise serializers.ValidationError("Password and password confirmation are required.")
+            if 'password' not in attrs:
+                raise serializers.ValidationError("Password is required.")
+            # Auto-fill password_confirm from password if not provided (for admin-created users)
+            if 'password_confirm' not in attrs:
+                attrs['password_confirm'] = attrs['password']
             if attrs['password'] != attrs['password_confirm']:
                 raise serializers.ValidationError("Passwords don't match.")
         elif 'password' in attrs or 'password_confirm' in attrs:
             # Update password
-            if 'password' not in attrs or 'password_confirm' not in attrs:
-                raise serializers.ValidationError("Both password and password confirmation are required to change password.")
+            if 'password' not in attrs:
+                raise serializers.ValidationError("Password is required to change password.")
+            # Auto-fill password_confirm from password if not provided
+            if 'password_confirm' not in attrs:
+                attrs['password_confirm'] = attrs['password']
             if attrs['password'] != attrs['password_confirm']:
                 raise serializers.ValidationError("Passwords don't match.")
         return attrs
@@ -51,6 +59,29 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('password_confirm', None)
         password = validated_data.pop('password')
+        
+        # Generate username if not provided
+        if 'username' not in validated_data or not validated_data.get('username'):
+            email = validated_data.get('email', '')
+            phone_number = validated_data.get('phone_number', '')
+            
+            if email:
+                username_input = email.split('@')[0]
+            elif phone_number:
+                username_input = phone_number.replace('+', '').replace('-', '').replace(' ', '')
+            else:
+                username_input = 'user'
+            
+            base_username = slugify(username_input) or 'user'
+            candidate_username = base_username
+            # Ensure username is unique
+            while User.objects.filter(username=candidate_username).exists():
+                candidate_username = f"{base_username}-{secrets.token_hex(3)}"
+            validated_data['username'] = candidate_username
+        
+        # Set default values for optional fields
+        validated_data.setdefault('preferred_language', 'en')
+        
         user = User.objects.create_user(password=password, **validated_data)
         return user
     
