@@ -14,11 +14,20 @@ const UserApprovalPage = () => {
   const fetchPendingUsers = async () => {
     try {
       setLoading(true);
-      const data = await usersAPI.getPendingApprovals();
-      setPendingUsers(data);
       setError('');
+      const data = await usersAPI.getPendingApprovals();
+      // Handle both array and object with results property
+      const usersList = Array.isArray(data) ? data : (data.results || []);
+      // Filter to show only farmers and local_vets (not sector_vets or admins)
+      // Backend returns users with is_verified=True and is_approved_by_admin=False
+      const filteredUsers = Array.isArray(usersList) 
+        ? usersList.filter(user => user.user_type === 'farmer' || user.user_type === 'local_vet')
+        : [];
+      setPendingUsers(filteredUsers);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to load pending users');
+      console.error('Error fetching pending users:', err);
+      setError(err.response?.data?.error || err.response?.data?.detail || 'Failed to load pending users');
+      setPendingUsers([]);
     } finally {
       setLoading(false);
     }
@@ -28,11 +37,12 @@ const UserApprovalPage = () => {
     try {
       setActionLoading({ ...actionLoading, [userId]: true });
       await usersAPI.approveUser(userId, notes);
-      // Remove approved user from list
-      setPendingUsers(pendingUsers.filter(user => user.id !== userId));
+      // Refresh the list to get updated data from backend
+      await fetchPendingUsers();
       alert('User approved successfully!');
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to approve user');
+      console.error('Error approving user:', err);
+      alert(err.response?.data?.error || err.response?.data?.detail || 'Failed to approve user');
     } finally {
       setActionLoading({ ...actionLoading, [userId]: false });
     }
@@ -46,11 +56,12 @@ const UserApprovalPage = () => {
     try {
       setActionLoading({ ...actionLoading, [userId]: true });
       await usersAPI.rejectUser(userId, notes);
-      // Remove rejected user from list
-      setPendingUsers(pendingUsers.filter(user => user.id !== userId));
+      // Refresh the list to get updated data from backend
+      await fetchPendingUsers();
       alert('User rejected.');
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to reject user');
+      console.error('Error rejecting user:', err);
+      alert(err.response?.data?.error || err.response?.data?.detail || 'Failed to reject user');
     } finally {
       setActionLoading({ ...actionLoading, [userId]: false });
     }
