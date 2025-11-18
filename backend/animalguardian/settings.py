@@ -20,26 +20,27 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS_STR = config('ALLOWED_HOSTS', default='localhost,127.0.0.1')
 ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_STR.split(',') if host.strip()]
 
-# Add Railway domain automatically if RAILWAY_PUBLIC_DOMAIN is set
+# Add Railway domain automatically (Railway sets RAILWAY_PUBLIC_DOMAIN)
 RAILWAY_PUBLIC_DOMAIN = config('RAILWAY_PUBLIC_DOMAIN', default=None)
 if RAILWAY_PUBLIC_DOMAIN:
-    if RAILWAY_PUBLIC_DOMAIN not in ALLOWED_HOSTS:
-        ALLOWED_HOSTS.append(RAILWAY_PUBLIC_DOMAIN)
-    
-    # Also add without port if it includes a port
     domain_without_port = RAILWAY_PUBLIC_DOMAIN.split(':')[0]
     if domain_without_port not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(domain_without_port)
 
-# Add common Railway patterns (Railway automatically sets these)
-if config('RAILWAY_ENVIRONMENT', default=None):
-    # Add Railway production domain pattern
+# If running on Railway, also add the service URL pattern
+# Railway sets RAILWAY_ENVIRONMENT and provides the public domain
+if config('RAILWAY_ENVIRONMENT', default=None) or config('RAILWAY_PUBLIC_DOMAIN', default=None):
+    # Add common Railway subdomain pattern
+    # Check if we're on Railway by looking for Railway-specific env vars
     railway_domain = config('RAILWAY_PUBLIC_DOMAIN', default='')
-    if railway_domain and railway_domain not in ALLOWED_HOSTS:
-        ALLOWED_HOSTS.append(railway_domain)
+    if railway_domain:
+        domain_without_port = railway_domain.split(':')[0]
+        if domain_without_port not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(domain_without_port)
     
-    # Also allow *.up.railway.app pattern
-    ALLOWED_HOSTS.append('*.up.railway.app')
+    # Add the specific Railway production domain
+    if 'animalguardian-backend-production.up.railway.app' not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append('animalguardian-backend-production.up.railway.app')
 
 # Application definition
 DJANGO_APPS = [
