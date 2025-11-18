@@ -84,7 +84,7 @@ class User(AbstractUser):
     approval_notes = models.TextField(blank=True, help_text="Notes from admin/vet about approval")
     
     # Password reset
-    password_reset_code = models.CharField(max_length=6, blank=True)
+    password_reset_token = models.CharField(max_length=100, blank=True, null=True, unique=True)
     password_reset_expires_at = models.DateTimeField(null=True, blank=True)
     
     # Timestamps

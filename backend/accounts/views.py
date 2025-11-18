@@ -7,9 +7,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils import timezone
 from datetime import timedelta
 import random
+import logging
+import traceback
 from django.conf import settings
 from .models import User, VeterinarianProfile, FarmerProfile
 from .serializers import UserSerializer, VeterinarianProfileSerializer, FarmerProfileSerializer
+
+logger = logging.getLogger(__name__)
 
 class RegisterView(generics.CreateAPIView):
     """Register a new user."""
@@ -31,65 +35,109 @@ class LoginView(generics.GenericAPIView):
     permission_classes = [AllowAny]
     
     def post(self, request):
-        phone_number = request.data.get('phone_number')
-        email = request.data.get('email')
-        password = request.data.get('password')
-        
-        if not password:
-            return Response({
-                'error': 'Password is required.'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Try to authenticate with phone number first, then email
-        user = None
-        if phone_number:
-            user = authenticate(username=phone_number, password=password)
-        elif email:
-            try:
-                user_obj = User.objects.get(email=email)
-                user = authenticate(username=user_obj.phone_number, password=password)
-            except User.DoesNotExist:
-                pass
-        
-        if user:
-            # Check if user is verified (phone verification) - only for farmers
-            if user.user_type == 'farmer' and not user.is_verified:
+        try:
+            phone_number = request.data.get('phone_number')
+            email = request.data.get('email')
+            password = request.data.get('password')
+            
+            if not password:
                 return Response({
-                    'error': 'Your phone number is not verified. Please verify your phone number first.'
-                }, status=status.HTTP_403_FORBIDDEN)
+                    'error': 'Password is required.'
+                }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Check if farmer is approved by sector vet/admin (only farmers need approval)
-            if user.user_type == 'farmer' and not user.is_approved_by_admin:
+            # Try to authenticate with phone number first, then email
+            user = None
+            if phone_number:
+                try:
+                    user = authenticate(username=phone_number, password=password)
+                except Exception as e:
+                    logger.error(f'Error authenticating with phone number: {str(e)}', exc_info=True)
+            elif email:
+                try:
+                    # Use filter().first() to avoid MultipleObjectsReturned exception
+                    user_obj = User.objects.filter(email=email).first()
+                    if user_obj:
+                        logger.info(f'Login attempt for email: {email}, found user: {user_obj.id}, phone: {user_obj.phone_number}, active: {user_obj.is_active}')
+                        if user_obj.phone_number:
+                            user = authenticate(username=user_obj.phone_number, password=password)
+                            if not user:
+                                logger.warning(f'Authentication failed for email: {email}, phone: {user_obj.phone_number}')
+                                # Check if password is correct but authentication still failed
+                                if user_obj.check_password(password):
+                                    logger.warning(f'Password check passed but authenticate() returned None for user: {user_obj.id}')
+                        else:
+                            logger.warning(f'User with email {email} found but has no phone_number set')
+                    else:
+                        logger.warning(f'No user found with email: {email}')
+                except Exception as e:
+                    logger.error(f'Error during email authentication: {str(e)}', exc_info=True)
+            
+            if user:
+                # Check if user is verified (phone verification) - only for farmers
+                if user.user_type == 'farmer' and not user.is_verified:
+                    return Response({
+                        'error': 'Your phone number is not verified. Please verify your phone number first.'
+                    }, status=status.HTTP_403_FORBIDDEN)
+                
+                # Check if farmer is approved by sector vet/admin (only farmers need approval)
+                if user.user_type == 'farmer' and not user.is_approved_by_admin:
+                    return Response({
+                        'error': 'Your account is pending approval from a sector veterinarian. Please wait for approval before logging in.',
+                        'pending_approval': True
+                    }, status=status.HTTP_403_FORBIDDEN)
+                
+                # Check if user is active
+                if not user.is_active:
+                    return Response({
+                        'error': 'Your account has been deactivated. Please contact support.'
+                    }, status=status.HTTP_403_FORBIDDEN)
+                
+                try:
+                    refresh = RefreshToken.for_user(user)
+                except Exception as e:
+                    logger.error(f'Error generating refresh token: {str(e)}', exc_info=True)
+                    return Response({
+                        'error': 'An error occurred during authentication. Please try again.'
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+                # Determine redirect based on user type
+                redirect_to = 'admin_dashboard'
+                if user.user_type in ['local_vet', 'sector_vet']:
+                    redirect_to = 'vet_dashboard'
+                elif user.user_type == 'farmer':
+                    redirect_to = 'farmer_dashboard'
+                
+                try:
+                    user_data = UserSerializer(user).data
+                except Exception as e:
+                    logger.error(f'Error serializing user data: {str(e)}', exc_info=True)
+                    return Response({
+                        'error': 'An error occurred while processing your request. Please try again.'
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
                 return Response({
-                    'error': 'Your account is pending approval from a sector veterinarian. Please wait for approval before logging in.',
-                    'pending_approval': True
-                }, status=status.HTTP_403_FORBIDDEN)
-            
-            # Check if user is active
-            if not user.is_active:
+                    'access': str(refresh.access_token),
+                    'refresh': str(refresh),
+                    'user': user_data,
+                    'redirect_to': redirect_to
+                })
+            else:
                 return Response({
-                    'error': 'Your account has been deactivated. Please contact support.'
-                }, status=status.HTTP_403_FORBIDDEN)
+                    'error': 'Invalid credentials.'
+                }, status=status.HTTP_401_UNAUTHORIZED)
+        except Exception as e:
+            # Catch any unexpected errors and return a proper error response
+            error_traceback = traceback.format_exc()
+            logger.error(f'Unexpected error in LoginView: {str(e)}\n{error_traceback}')
             
-            refresh = RefreshToken.for_user(user)
-            
-            # Determine redirect based on user type
-            redirect_to = 'admin_dashboard'
-            if user.user_type in ['local_vet', 'sector_vet']:
-                redirect_to = 'vet_dashboard'
-            elif user.user_type == 'farmer':
-                redirect_to = 'farmer_dashboard'
+            # In DEBUG mode, include more details
+            error_message = 'An unexpected error occurred. Please try again later.'
+            if settings.DEBUG:
+                error_message = f'Error: {str(e)}'
             
             return Response({
-                'access': str(refresh.access_token),
-                'refresh': str(refresh),
-                'user': UserSerializer(user).data,
-                'redirect_to': redirect_to
-            })
-        else:
-            return Response({
-                'error': 'Invalid credentials.'
-            }, status=status.HTTP_401_UNAUTHORIZED)
+                'error': error_message
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class VerifyOTPView(generics.GenericAPIView):
     """Verify OTP for phone number."""
@@ -143,7 +191,7 @@ class RequestPasswordResetView(generics.GenericAPIView):
         
         # Generate 6-digit OTP
         otp_code = str(random.randint(100000, 999999))
-        user.password_reset_code = otp_code
+        user.password_reset_token = otp_code
         user.password_reset_expires_at = timezone.now() + timedelta(minutes=15)
         user.save()
         
@@ -204,8 +252,6 @@ AnimalGuardian Team
                     )
         except Exception as e:
             # Log the error but don't expose it to user for security
-            import logging
-            logger = logging.getLogger(__name__)
             logger.error(f'Error sending password reset email/SMS: {str(e)}')
             # Still return success message for security (don't reveal if email failed)
         
@@ -243,7 +289,7 @@ class VerifyPasswordResetOTPView(generics.GenericAPIView):
             }, status=status.HTTP_404_NOT_FOUND)
         
         # Check if OTP is valid and not expired
-        if user.password_reset_code != otp_code:
+        if user.password_reset_token != otp_code:
             return Response({
                 'error': 'Invalid OTP code.'
             }, status=status.HTTP_400_BAD_REQUEST)
@@ -300,7 +346,7 @@ class ResetPasswordView(generics.GenericAPIView):
             }, status=status.HTTP_404_NOT_FOUND)
         
         # Verify OTP
-        if not otp_code or user.password_reset_code != otp_code:
+        if not otp_code or user.password_reset_token != otp_code:
             return Response({
                 'error': 'Invalid or missing OTP code.'
             }, status=status.HTTP_400_BAD_REQUEST)
@@ -312,7 +358,7 @@ class ResetPasswordView(generics.GenericAPIView):
         
         # Reset password
         user.set_password(new_password)
-        user.password_reset_code = ''
+        user.password_reset_token = ''
         user.password_reset_expires_at = None
         user.save()
         
