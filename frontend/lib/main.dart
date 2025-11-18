@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'shared/presentation/widgets/loading_screen.dart';
 import 'features/auth/presentation/screens/splash_screen.dart';
 import 'features/auth/presentation/screens/onboarding_screen.dart';
@@ -13,7 +14,17 @@ import 'features/cases/presentation/screens/report_case_screen.dart';
 import 'features/livestock/presentation/screens/add_livestock_screen.dart';
 import 'features/community/presentation/screens/create_post_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Load .env file (if it exists)
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    // .env file not found, use default values from AppConstants
+    debugPrint('Warning: .env file not found, using default API URL');
+  }
+  
   runApp(
     const ProviderScope(
       child: AnimalGuardianApp(),

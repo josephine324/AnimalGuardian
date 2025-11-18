@@ -1,6 +1,11 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class AppConstants {
-  // API Configuration
-  static const String baseUrl = 'https://animalguardian-backend-production-b5a8.up.railway.app/api';
+  // API Configuration - Read from .env or use default
+  static String get baseUrl {
+    return dotenv.env['API_BASE_URL'] ?? 
+           'https://animalguardian-backend-production-b5a8.up.railway.app/api';
+  }
   
   // Pagination
   static const int defaultPageSize = 20;

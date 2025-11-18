@@ -62,8 +62,8 @@ class ApiService {
       }
       return [];
     } catch (e) {
-      // Return empty list on error for demo purposes
-      return [];
+      // Re-throw error so provider can handle it
+      throw Exception('Failed to fetch cases: ${e.toString()}');
     }
   }
 
