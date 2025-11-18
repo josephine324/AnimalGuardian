@@ -147,16 +147,70 @@ class RequestPasswordResetView(generics.GenericAPIView):
         user.password_reset_expires_at = timezone.now() + timedelta(minutes=15)
         user.save()
         
-        # TODO: Send OTP via SMS/Email using Africa's Talking
-        # For now, in development, we'll just return it (remove in production!)
-        if settings.DEBUG:
-            return Response({
-                'message': 'Password reset code sent. Check your phone/email.',
-                'otp_code': otp_code  # Remove this in production!
-            }, status=status.HTTP_200_OK)
+        # Send OTP via Email or SMS
+        from django.core.mail import send_mail
+        
+        try:
+            if email:
+                # Send email with OTP code
+                subject = 'AnimalGuardian - Password Reset Code'
+                message = f'''
+Hello {user.get_full_name() or user.username},
+
+You have requested to reset your password for your AnimalGuardian account.
+
+Your password reset code is: {otp_code}
+
+This code will expire in 15 minutes.
+
+If you did not request this password reset, please ignore this email.
+
+Best regards,
+AnimalGuardian Team
+'''
+                send_mail(
+                    subject=subject,
+                    message=message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=False,
+                )
+            elif phone_number:
+                # Send SMS via Africa's Talking (if configured)
+                # TODO: Implement SMS sending using Africa's Talking API
+                # For now, email will be used if available
+                if user.email:
+                    subject = 'AnimalGuardian - Password Reset Code'
+                    message = f'''
+Hello {user.get_full_name() or user.username},
+
+You have requested to reset your password using phone number {phone_number}.
+
+Your password reset code is: {otp_code}
+
+This code will expire in 15 minutes.
+
+If you did not request this password reset, please ignore this message.
+
+Best regards,
+AnimalGuardian Team
+'''
+                    send_mail(
+                        subject=subject,
+                        message=message,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[user.email],
+                        fail_silently=False,
+                    )
+        except Exception as e:
+            # Log the error but don't expose it to user for security
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f'Error sending password reset email/SMS: {str(e)}')
+            # Still return success message for security (don't reveal if email failed)
         
         return Response({
-            'message': 'Password reset code sent. Check your phone/email.'
+            'message': 'Password reset code sent. Please check your email or phone for the 6-digit code.'
         }, status=status.HTTP_200_OK)
 
 
