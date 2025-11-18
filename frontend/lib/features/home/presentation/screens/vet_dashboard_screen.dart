@@ -6,6 +6,15 @@ import '../../../../shared/presentation/widgets/placeholder_image.dart';
 import '../../../cases/presentation/screens/case_detail_screen.dart';
 import '../../../cases/providers/cases_provider.dart';
 import '../../../../core/models/case_model.dart';
+import '../../../settings/presentation/screens/edit_profile_screen.dart';
+import '../../../settings/presentation/screens/change_password_screen.dart';
+import '../../../settings/presentation/screens/language_screen.dart';
+import '../../../settings/presentation/screens/help_support_screen.dart';
+import '../../../settings/presentation/screens/privacy_policy_screen.dart';
+import '../../../settings/presentation/screens/terms_of_service_screen.dart';
+import '../../../livestock/presentation/screens/livestock_detail_screen.dart';
+import '../../../livestock/providers/livestock_provider.dart';
+import '../../../../core/models/livestock_model.dart';
 
 class VetDashboardScreen extends StatefulWidget {
   const VetDashboardScreen({super.key});
@@ -147,8 +156,15 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
             title: const Text('Livestock'),
             onTap: () {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Livestock feature coming soon')),
+              // Navigate to livestock screen (vet can view assigned farmers' livestock)
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => _VetLivestockTab(
+                    scaffoldKey: _scaffoldKey,
+                    bottomNavBar: _buildBottomNavigationBar(context),
+                  ),
+                ),
               );
             },
           ),
@@ -157,8 +173,14 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
             title: const Text('Market'),
             onTap: () {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Market feature coming soon')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => _VetMarketTab(
+                    scaffoldKey: _scaffoldKey,
+                    bottomNavBar: _buildBottomNavigationBar(context),
+                  ),
+                ),
               );
             },
           ),
@@ -167,8 +189,14 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
             title: const Text('Weather'),
             onTap: () {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Weather feature coming soon')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => _VetWeatherTab(
+                    scaffoldKey: _scaffoldKey,
+                    bottomNavBar: _buildBottomNavigationBar(context),
+                  ),
+                ),
               );
             },
           ),
@@ -178,8 +206,14 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
             title: const Text('Settings'),
             onTap: () {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Settings feature coming soon')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => _VetSettingsTab(
+                    scaffoldKey: _scaffoldKey,
+                    bottomNavBar: _buildBottomNavigationBar(context),
+                  ),
+                ),
               );
             },
           ),
@@ -759,8 +793,11 @@ class _VetProfileTab extends StatelessWidget {
             title: const Text('Edit Profile'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Edit Profile feature coming soon')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const EditProfileScreen(),
+                ),
               );
             },
           ),
@@ -769,9 +806,10 @@ class _VetProfileTab extends StatelessWidget {
             title: const Text('My Cases'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Navigate to Cases tab')),
-              );
+              Navigator.pop(context);
+              // Navigate to cases tab
+              final state = context.findAncestorStateOfType<_VetDashboardScreenState>();
+              state?.changeTab(1);
             },
           ),
           ListTile(
@@ -779,8 +817,9 @@ class _VetProfileTab extends StatelessWidget {
             title: const Text('My Farmers'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
+              // Show farmers from assigned cases
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('My Farmers feature coming soon')),
+                const SnackBar(content: Text('View farmers from your assigned cases')),
               );
             },
           ),
@@ -789,8 +828,14 @@ class _VetProfileTab extends StatelessWidget {
             title: const Text('Settings'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Settings feature coming soon')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => _VetSettingsTab(
+                    scaffoldKey: _scaffoldKey,
+                    bottomNavBar: _buildBottomNavigationBar(context),
+                  ),
+                ),
               );
             },
           ),
@@ -800,6 +845,334 @@ class _VetProfileTab extends StatelessWidget {
             title: const Text('Logout', style: TextStyle(color: Colors.red)),
             onTap: () {
               context.go('/login');
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Vet Livestock Tab
+class _VetLivestockTab extends ConsumerStatefulWidget {
+  final GlobalKey<ScaffoldState> scaffoldKey;
+  final Widget? bottomNavBar;
+  
+  const _VetLivestockTab({required this.scaffoldKey, this.bottomNavBar});
+
+  @override
+  ConsumerState<_VetLivestockTab> createState() => _VetLivestockTabState();
+}
+
+class _VetLivestockTabState extends ConsumerState<_VetLivestockTab> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(livestockProvider.notifier).loadLivestock(refresh: true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final livestockState = ref.watch(livestockProvider);
+    
+    return Scaffold(
+      bottomNavigationBar: widget.bottomNavBar,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => widget.scaffoldKey.currentState?.openDrawer(),
+        ),
+        title: const Text('Livestock'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+      ),
+      body: livestockState.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : livestockState.error != null
+              ? Center(child: Text('Error: ${livestockState.error}'))
+              : livestockState.filteredLivestock.isEmpty
+                  ? const Center(child: Text('No livestock found'))
+                  : ListView.builder(
+                      itemCount: livestockState.filteredLivestock.length,
+                      itemBuilder: (context, index) {
+                        final livestock = livestockState.filteredLivestock[index];
+                        return ListTile(
+                          leading: PlaceholderImage(
+                            networkUrl: livestock.photos.isNotEmpty ? livestock.photos.first : null,
+                            placeholderIcon: Icons.pets,
+                            width: 50,
+                            height: 50,
+                          ),
+                          title: Text(livestock.name ?? 'Unnamed'),
+                          subtitle: Text('${livestock.livestockType?.name ?? 'Unknown'} - ${livestock.status?.displayName ?? 'Unknown'}'),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => LivestockDetailScreen(livestockId: livestock.id),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+    );
+  }
+}
+
+// Vet Market Tab
+class _VetMarketTab extends StatelessWidget {
+  final GlobalKey<ScaffoldState> scaffoldKey;
+  final Widget? bottomNavBar;
+  
+  const _VetMarketTab({required this.scaffoldKey, this.bottomNavBar});
+
+  @override
+  Widget build(BuildContext context) {
+    final products = MockDataService.getMockProducts();
+    
+    return Scaffold(
+      bottomNavigationBar: bottomNavBar,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => scaffoldKey.currentState?.openDrawer(),
+        ),
+        title: const Text('Market'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+      ),
+      body: GridView.builder(
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 0.75,
+        ),
+        itemCount: products.length,
+        itemBuilder: (context, index) {
+          final product = products[index];
+          return Card(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: PlaceholderImage(
+                    networkUrl: product['image'],
+                    placeholderIcon: Icons.eco,
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        product['name'],
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        product['price'],
+                        style: TextStyle(color: Theme.of(context).colorScheme.primary),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// Vet Weather Tab
+class _VetWeatherTab extends StatelessWidget {
+  final GlobalKey<ScaffoldState> scaffoldKey;
+  final Widget? bottomNavBar;
+  
+  const _VetWeatherTab({required this.scaffoldKey, this.bottomNavBar});
+
+  @override
+  Widget build(BuildContext context) {
+    final weather = MockDataService.getMockWeather();
+    
+    return Scaffold(
+      bottomNavigationBar: bottomNavBar,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => scaffoldKey.currentState?.openDrawer(),
+        ),
+        title: const Text('Weather'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                Text(
+                  weather['location'] ?? 'Nyagatare, Rwanda',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '${weather['temperature']}°C',
+                  style: Theme.of(context).textTheme.displayLarge,
+                ),
+                Text(
+                  weather['condition'] ?? 'Sunny',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    Column(
+                      children: [
+                        const Icon(Icons.water_drop),
+                        Text('${weather['humidity']}%'),
+                        const Text('Humidity'),
+                      ],
+                    ),
+                    Column(
+                      children: [
+                        const Icon(Icons.air),
+                        Text('${weather['windSpeed']} km/h'),
+                        const Text('Wind'),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Vet Settings Tab
+class _VetSettingsTab extends StatelessWidget {
+  final GlobalKey<ScaffoldState> scaffoldKey;
+  final Widget? bottomNavBar;
+  
+  const _VetSettingsTab({required this.scaffoldKey, this.bottomNavBar});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      bottomNavigationBar: bottomNavBar,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => scaffoldKey.currentState?.openDrawer(),
+        ),
+        title: const Text('Settings'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          ListTile(
+            leading: const Icon(Icons.person),
+            title: const Text('Edit Profile'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const EditProfileScreen(),
+                ),
+              );
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.lock),
+            title: const Text('Change Password'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ChangePasswordScreen(),
+                ),
+              );
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.language),
+            title: const Text('Language'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LanguageScreen(),
+                ),
+              );
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.help),
+            title: const Text('Help & Support'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HelpSupportScreen(),
+                ),
+              );
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.privacy_tip),
+            title: const Text('Privacy Policy'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PrivacyPolicyScreen(),
+                ),
+              );
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.description),
+            title: const Text('Terms of Service'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const TermsOfServiceScreen(),
+                ),
+              );
             },
           ),
         ],

@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/presentation/widgets/placeholder_image.dart';
+import '../../../../core/services/api_service.dart';
 
-class RegisterScreen extends StatefulWidget {
+class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
+  final ApiService _apiService = ApiService();
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -50,23 +53,67 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _isLoading = true;
     });
 
-    // TODO: Implement actual registration logic with API
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      // Parse name into first_name and last_name
+      final nameParts = _nameController.text.trim().split(' ');
+      final firstName = nameParts.isNotEmpty ? nameParts.first : '';
+      final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
 
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Registration successful! (Demo mode)'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      
-      // Navigate to OTP verification with user type
-      context.go('/otp-verify?phone=${_phoneController.text}&user_type=${_selectedUserType}');
+      // Prepare registration data
+      final registrationData = {
+        'phone_number': _phoneController.text.trim(),
+        'password': _passwordController.text,
+        'password_confirm': _confirmPasswordController.text,
+        'user_type': _selectedUserType,
+        'first_name': firstName,
+        'last_name': lastName.isNotEmpty ? lastName : firstName, // Use first name as last name if not provided
+      };
+
+      // Add email if provided
+      if (_emailController.text.trim().isNotEmpty) {
+        registrationData['email'] = _emailController.text.trim();
+      }
+
+      // Call registration API
+      final response = await _apiService.register(registrationData);
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Registration successful! Please verify your phone number.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Navigate to OTP verification with user type
+        context.go('/otp-verify?phone=${_phoneController.text}&user_type=${_selectedUserType}');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        String errorMessage = 'Registration failed. Please try again.';
+        if (e.toString().contains('phone_number')) {
+          errorMessage = 'This phone number is already registered.';
+        } else if (e.toString().contains('email')) {
+          errorMessage = 'This email is already registered.';
+        } else if (e.toString().isNotEmpty) {
+          errorMessage = e.toString().replaceAll('Exception: ', '');
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

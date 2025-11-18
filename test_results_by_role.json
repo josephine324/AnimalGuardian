@@ -1,0 +1,131 @@
+{
+  "sector_vet": {
+    "passed": [
+      {
+        "name": "Get Marketplace Categories",
+        "status": "PASS",
+        "message": "",
+        "timestamp": "2025-11-18T15:04:47.370142"
+      },
+      {
+        "name": "Get Marketplace Products",
+        "status": "PASS",
+        "message": "",
+        "timestamp": "2025-11-18T15:04:48.538014"
+      }
+    ],
+    "failed": [
+      {
+        "name": "Get Livestock Types",
+        "status": "FAIL",
+        "message": "Expected 200, got 401: {\"detail\":\"Authentication credentials were not provided.\"}",
+        "timestamp": "2025-11-18T15:04:43.961756"
+      },
+      {
+        "name": "Get Breeds",
+        "status": "FAIL",
+        "message": "Expected 200, got 401: {\"detail\":\"Authentication credentials were not provided.\"}",
+        "timestamp": "2025-11-18T15:04:45.052322"
+      },
+      {
+        "name": "Get Diseases",
+        "status": "FAIL",
+        "message": "Expected 200, got 401: {\"detail\":\"Authentication credentials were not provided.\"}",
+        "timestamp": "2025-11-18T15:04:46.276286"
+      },
+      {
+        "name": "Login for sector_vet",
+        "status": "FAIL",
+        "message": "Status 401: {\"error\":\"Invalid credentials.\"}",
+        "timestamp": "2025-11-18T15:05:02.302115"
+      }
+    ],
+    "skipped": []
+  },
+  "local_vet": {
+    "passed": [
+      {
+        "name": "Get Marketplace Categories",
+        "status": "PASS",
+        "message": "",
+        "timestamp": "2025-11-18T15:04:53.158603"
+      },
+      {
+        "name": "Get Marketplace Products",
+        "status": "PASS",
+        "message": "",
+        "timestamp": "2025-11-18T15:04:54.321453"
+      }
+    ],
+    "failed": [
+      {
+        "name": "Get Livestock Types",
+        "status": "FAIL",
+        "message": "Expected 200, got 401: {\"detail\":\"Authentication credentials were not provided.\"}",
+        "timestamp": "2025-11-18T15:04:49.759714"
+      },
+      {
+        "name": "Get Breeds",
+        "status": "FAIL",
+        "message": "Expected 200, got 401: {\"detail\":\"Authentication credentials were not provided.\"}",
+        "timestamp": "2025-11-18T15:04:50.902206"
+      },
+      {
+        "name": "Get Diseases",
+        "status": "FAIL",
+        "message": "Expected 200, got 401: {\"detail\":\"Authentication credentials were not provided.\"}",
+        "timestamp": "2025-11-18T15:04:52.062179"
+      },
+      {
+        "name": "Login for local_vet",
+        "status": "FAIL",
+        "message": "Status 401: {\"error\":\"Invalid credentials.\"}",
+        "timestamp": "2025-11-18T15:05:03.574559"
+      }
+    ],
+    "skipped": []
+  },
+  "farmer": {
+    "passed": [
+      {
+        "name": "Get Marketplace Categories",
+        "status": "PASS",
+        "message": "",
+        "timestamp": "2025-11-18T15:04:59.400343"
+      },
+      {
+        "name": "Get Marketplace Products",
+        "status": "PASS",
+        "message": "",
+        "timestamp": "2025-11-18T15:05:00.812994"
+      }
+    ],
+    "failed": [
+      {
+        "name": "Get Livestock Types",
+        "status": "FAIL",
+        "message": "Expected 200, got 401: {\"detail\":\"Authentication credentials were not provided.\"}",
+        "timestamp": "2025-11-18T15:04:55.495981"
+      },
+      {
+        "name": "Get Breeds",
+        "status": "FAIL",
+        "message": "Expected 200, got 401: {\"detail\":\"Authentication credentials were not provided.\"}",
+        "timestamp": "2025-11-18T15:04:56.664318"
+      },
+      {
+        "name": "Get Diseases",
+        "status": "FAIL",
+        "message": "Expected 200, got 401: {\"detail\":\"Authentication credentials were not provided.\"}",
+        "timestamp": "2025-11-18T15:04:58.118775"
+      },
+      {
+        "name": "Login for farmer",
+        "status": "FAIL",
+        "message": "Status 401: {\"error\":\"Invalid credentials.\"}",
+        "timestamp": "2025-11-18T15:05:04.944155"
+      }
+    ],
+    "skipped": []
+  }
+}

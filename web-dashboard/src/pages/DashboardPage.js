@@ -393,12 +393,7 @@ const DashboardPage = () => {
       {/* Quick Actions */}
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Link to="/cases" className="bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white p-6 rounded-lg text-center transition-all transform hover:scale-105 shadow-md">
-            <div className="text-3xl mb-2">📝</div>
-            <div className="font-semibold">New Case</div>
-            <div className="text-xs opacity-90 mt-1">Report new case</div>
-          </Link>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <Link to="/veterinarians" className="bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white p-6 rounded-lg text-center transition-all transform hover:scale-105 shadow-md">
             <div className="text-3xl mb-2">👨‍⚕️</div>
             <div className="font-semibold">Assign Vet</div>
