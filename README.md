@@ -4913,3 +4913,1540 @@ The collaboration between **web dashboard**, **mobile app**, and **USSD service*
 The backend already handles all the filtering and permissions correctly across all three platforms. The main work needed is connecting frontend clients (mobile app, USSD service) to real API endpoints instead of using mock data.
 
 
+
+
+---
+
+# Endpoint Testing Guide
+
+# AnimalGuardian Endpoint Testing Guide
+
+## Overview
+This document provides a comprehensive guide for testing all API endpoints for Sector Vet, Local Vet, and Farmer roles.
+
+## Test Script
+Run the automated test script:
+```bash
+python test_endpoints_by_role.py
+```
+
+**Note:** Before running, update `TEST_CREDENTIALS` in the script with real test account credentials.
+
+---
+
+## Endpoint Permissions by Role
+
+### 1. PUBLIC ENDPOINTS (No Authentication Required)
+All roles can access these endpoints:
+
+- `GET /api/livestock/types/` - Get livestock types
+- `GET /api/livestock/breeds/` - Get breeds
+- `GET /api/cases/diseases/` - Get diseases
+- `GET /api/marketplace/categories/` - Get marketplace categories
+- `GET /api/marketplace/products/` - Get marketplace products
+
+---
+
+### 2. FARMER ENDPOINTS
+
+#### Authentication
+- `POST /api/auth/register/` - Register new farmer
+- `POST /api/auth/login/` - Login
+- `POST /api/auth/verify-otp/` - Verify OTP
+
+#### Livestock Management
+- ✅ `GET /api/livestock/` - **View own livestock only**
+- ✅ `POST /api/livestock/` - **Create livestock** (Only farmers can create)
+- ✅ `GET /api/livestock/{id}/` - View livestock details
+- ✅ `PATCH /api/livestock/{id}/` - Update own livestock
+- ✅ `DELETE /api/livestock/{id}/` - Delete own livestock
+
+#### Case Management
+- ✅ `GET /api/cases/reports/` - **View own cases only**
+- ✅ `POST /api/cases/reports/` - **Create case report** (Only farmers can create)
+- ✅ `GET /api/cases/reports/{id}/` - View case details
+- ❌ `PATCH /api/cases/reports/{id}/` - Cannot update cases (read-only)
+- ❌ `POST /api/cases/reports/{id}/assign/` - Cannot assign cases
+
+#### Community
+- ✅ `GET /api/community/posts/` - View community posts
+- ✅ `POST /api/community/posts/` - Create post
+- ✅ `GET /api/community/comments/` - View comments
+- ✅ `POST /api/community/comments/` - Create comment
+
+#### Notifications
+- ✅ `GET /api/notifications/` - View own notifications
+
+#### Weather
+- ✅ `GET /api/weather/` - Get weather data
+
+#### Dashboard
+- ✅ `GET /api/dashboard/stats/` - Get dashboard statistics
+
+#### Restricted (Should Fail)
+- ❌ `GET /api/users/` - Cannot view all users
+- ❌ `GET /api/farmers/` - Cannot view all farmers
+- ❌ `GET /api/veterinarians/` - Cannot view veterinarians
+- ❌ `GET /api/broadcasts/` - Cannot view broadcasts
+
+---
+
+### 3. LOCAL VET ENDPOINTS
+
+#### Authentication
+- `POST /api/auth/register/` - Register new local vet (requires approval)
+- `POST /api/auth/login/` - Login
+- `POST /api/auth/verify-otp/` - Verify OTP
+
+#### Case Management
+- ✅ `GET /api/cases/reports/` - **View assigned cases only**
+- ❌ `POST /api/cases/reports/` - **Cannot create cases** (Only farmers can create)
+- ✅ `GET /api/cases/reports/{id}/` - View case details
+- ✅ `PATCH /api/cases/reports/{id}/` - **Update assigned case status**
+- ❌ `POST /api/cases/reports/{id}/assign/` - Cannot assign cases
+
+#### Livestock Management
+- ✅ `GET /api/livestock/` - **View livestock from assigned cases** (Read-only)
+- ❌ `POST /api/livestock/` - **Cannot create livestock** (Only farmers can create)
+- ✅ `GET /api/livestock/{id}/` - View livestock details (from assigned cases)
+- ❌ `PATCH /api/livestock/{id}/` - Cannot update livestock
+- ❌ `DELETE /api/livestock/{id}/` - Cannot delete livestock
+
+#### Community
+- ✅ `GET /api/community/posts/` - View community posts
+- ✅ `POST /api/community/posts/` - Create post
+- ✅ `GET /api/community/comments/` - View comments
+- ✅ `POST /api/community/comments/` - Create comment
+
+#### Notifications
+- ✅ `GET /api/notifications/` - View own notifications
+
+#### Weather
+- ✅ `GET /api/weather/` - Get weather data
+
+#### Dashboard
+- ✅ `GET /api/dashboard/stats/` - Get dashboard statistics
+
+#### Restricted (Should Fail)
+- ❌ `GET /api/users/` - Cannot view all users
+- ❌ `GET /api/farmers/` - Cannot view all farmers
+- ❌ `GET /api/veterinarians/` - Cannot view all veterinarians
+- ❌ `GET /api/broadcasts/` - Cannot view broadcasts
+- ❌ `POST /api/broadcasts/` - Cannot create broadcasts
+
+---
+
+### 4. SECTOR VET ENDPOINTS
+
+#### Authentication
+- `POST /api/auth/login/` - Login (Sector vets are created by admin, not via registration)
+
+#### User Management
+- ✅ `GET /api/users/` - **View all users**
+- ✅ `GET /api/farmers/` - **View all farmers**
+- ✅ `GET /api/veterinarians/` - **View all veterinarians**
+- ✅ `PATCH /api/farmers/{id}/` - Approve/reject farmers
+- ✅ `PATCH /api/veterinarians/{id}/` - Approve/reject local vets
+
+#### Case Management
+- ✅ `GET /api/cases/reports/` - **View all cases**
+- ❌ `POST /api/cases/reports/` - **Cannot create cases** (Only farmers can create)
+- ✅ `GET /api/cases/reports/{id}/` - View case details
+- ✅ `PATCH /api/cases/reports/{id}/` - Update case
+- ✅ `POST /api/cases/reports/{id}/assign/` - **Assign case to local vet**
+
+#### Livestock Management
+- ✅ `GET /api/livestock/` - **View all livestock** (Read-only)
+- ❌ `POST /api/livestock/` - **Cannot create livestock** (Only farmers can create)
+- ✅ `GET /api/livestock/{id}/` - View livestock details
+- ❌ `PATCH /api/livestock/{id}/` - Cannot update livestock
+- ❌ `DELETE /api/livestock/{id}/` - Cannot delete livestock
+
+#### Broadcasts
+- ✅ `GET /api/broadcasts/` - **View all broadcasts**
+- ✅ `POST /api/broadcasts/` - **Create broadcast**
+- ✅ `POST /api/broadcasts/{id}/send/` - **Send broadcast**
+
+#### Notifications
+- ✅ `GET /api/notifications/` - View notifications
+
+#### Weather
+- ✅ `GET /api/weather/` - Get weather data
+
+#### Dashboard
+- ✅ `GET /api/dashboard/stats/` - Get dashboard statistics
+
+---
+
+## Testing Checklist
+
+### Farmer Tests
+- [ ] Can register via mobile app
+- [ ] Can login
+- [ ] Can create livestock
+- [ ] Can view own livestock only
+- [ ] Can update own livestock
+- [ ] Can create case reports
+- [ ] Can view own cases only
+- [ ] Cannot view other farmers' livestock
+- [ ] Cannot view other farmers' cases
+- [ ] Cannot access admin endpoints
+- [ ] Cannot assign cases
+- [ ] Cannot create broadcasts
+
+### Local Vet Tests
+- [ ] Can register via mobile app (requires approval)
+- [ ] Can login (after approval)
+- [ ] Can view assigned cases only
+- [ ] Can update assigned case status
+- [ ] Cannot create cases
+- [ ] Cannot create livestock
+- [ ] Can view livestock from assigned cases
+- [ ] Cannot view all livestock
+- [ ] Cannot access admin endpoints
+- [ ] Cannot assign cases
+- [ ] Cannot create broadcasts
+
+### Sector Vet Tests
+- [ ] Can login (created by admin)
+- [ ] Can view all users
+- [ ] Can view all farmers
+- [ ] Can view all veterinarians
+- [ ] Can approve/reject farmers
+- [ ] Can approve/reject local vets
+- [ ] Can view all cases
+- [ ] Can assign cases to local vets
+- [ ] Cannot create cases
+- [ ] Cannot create livestock
+- [ ] Can view all livestock (read-only)
+- [ ] Can create broadcasts
+- [ ] Can send broadcasts
+
+---
+
+## Manual Testing Commands
+
+### Test Farmer Endpoints
+```bash
+# Login as farmer
+curl -X POST https://animalguardian-backend-production-b5a8.up.railway.app/api/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"phone_number": "+250788000003", "password": "testpass123"}'
+
+# Get token from response, then:
+TOKEN="your_token_here"
+
+# Create livestock (should succeed)
+curl -X POST https://animalguardian-backend-production-b5a8.up.railway.app/api/livestock/ \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"livestock_type": 1, "name": "Test Cow", "gender": "F", "status": "healthy"}'
+
+# Create case (should succeed)
+curl -X POST https://animalguardian-backend-production-b5a8.up.railway.app/api/cases/reports/ \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"livestock": 1, "symptoms_observed": "Test symptoms", "urgency": "medium"}'
+
+# Try to access admin endpoint (should fail with 403)
+curl -X GET https://animalguardian-backend-production-b5a8.up.railway.app/api/users/ \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Test Local Vet Endpoints
+```bash
+# Login as local vet
+curl -X POST https://animalguardian-backend-production-b5a8.up.railway.app/api/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"phone_number": "+250788000002", "password": "testpass123"}'
+
+TOKEN="your_token_here"
+
+# View assigned cases (should succeed)
+curl -X GET https://animalguardian-backend-production-b5a8.up.railway.app/api/cases/reports/ \
+  -H "Authorization: Bearer $TOKEN"
+
+# Try to create case (should fail with 403)
+curl -X POST https://animalguardian-backend-production-b5a8.up.railway.app/api/cases/reports/ \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"livestock": 1, "symptoms_observed": "Test", "urgency": "medium"}'
+
+# Try to create livestock (should fail with 403)
+curl -X POST https://animalguardian-backend-production-b5a8.up.railway.app/api/livestock/ \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"livestock_type": 1, "name": "Test", "gender": "F"}'
+```
+
+### Test Sector Vet Endpoints
+```bash
+# Login as sector vet
+curl -X POST https://animalguardian-backend-production-b5a8.up.railway.app/api/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"phone_number": "+250788000001", "password": "testpass123"}'
+
+TOKEN="your_token_here"
+
+# View all users (should succeed)
+curl -X GET https://animalguardian-backend-production-b5a8.up.railway.app/api/users/ \
+  -H "Authorization: Bearer $TOKEN"
+
+# Assign case (should succeed)
+curl -X POST https://animalguardian-backend-production-b5a8.up.railway.app/api/cases/reports/1/assign/ \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"veterinarian_id": 2}'
+
+# Try to create case (should fail with 403)
+curl -X POST https://animalguardian-backend-production-b5a8.up.railway.app/api/cases/reports/ \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"livestock": 1, "symptoms_observed": "Test", "urgency": "medium"}'
+
+# Create broadcast (should succeed)
+curl -X POST https://animalguardian-backend-production-b5a8.up.railway.app/api/broadcasts/ \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Test Broadcast", "message": "Test message", "channel": "in_app"}'
+```
+
+---
+
+## Expected Test Results
+
+### Farmer
+- ✅ Can create livestock
+- ✅ Can create cases
+- ✅ Can view own data only
+- ❌ Cannot access admin endpoints
+- ❌ Cannot assign cases
+
+### Local Vet
+- ❌ Cannot create livestock
+- ❌ Cannot create cases
+- ✅ Can view assigned cases
+- ✅ Can update case status
+- ❌ Cannot access admin endpoints
+- ❌ Cannot assign cases
+
+### Sector Vet
+- ❌ Cannot create livestock
+- ❌ Cannot create cases
+- ✅ Can view all data
+- ✅ Can assign cases
+- ✅ Can create broadcasts
+- ✅ Can manage users
+
+---
+
+## Notes
+
+1. **Test Accounts**: Create test accounts for each role before running tests
+2. **Approval Status**: Local vets must be approved by sector vet before they can login
+3. **Case Assignment**: Cases must exist before testing assignment
+4. **Livestock Ownership**: Farmers can only see/modify their own livestock
+5. **Case Visibility**: 
+   - Farmers see only their own cases
+   - Local vets see only assigned cases
+   - Sector vets see all cases
+
+
+
+
+---
+
+# Endpoint Test Summary
+
+# AnimalGuardian Endpoint Test Summary
+
+## Test Script Created
+- **File**: `test_endpoints_by_role.py`
+- **Purpose**: Comprehensive testing of all API endpoints for Sector Vet, Local Vet, and Farmer roles
+
+## Setup Required
+
+### 1. Create Test Accounts
+Before running tests, create test accounts for each role:
+
+**Sector Vet:**
+- Phone: `+250788000001`
+- Password: `testpass123`
+- Created via admin dashboard (not via registration)
+
+**Local Vet:**
+- Phone: `+250788000002`
+- Password: `testpass123`
+- Register via mobile app, then approve via sector vet dashboard
+
+**Farmer:**
+- Phone: `+250788000003`
+- Password: `testpass123`
+- Register via mobile app or USSD
+
+### 2. Update Test Script
+Edit `test_endpoints_by_role.py` and update `TEST_CREDENTIALS` with actual test account credentials.
+
+## Endpoint Test Matrix
+
+### Public Endpoints (No Auth)
+| Endpoint | Expected Status | Notes |
+|----------|----------------|-------|
+| `GET /api/livestock/types/` | 200 | May require auth (check backend) |
+| `GET /api/livestock/breeds/` | 200 | May require auth (check backend) |
+| `GET /api/cases/diseases/` | 200 | May require auth (check backend) |
+| `GET /api/marketplace/categories/` | 200 | ✅ Public |
+| `GET /api/marketplace/products/` | 200 | ✅ Public |
+
+### Farmer Endpoints
+| Endpoint | Method | Expected | Notes |
+|----------|--------|----------|-------|
+| `/api/livestock/` | GET | 200 | Own livestock only |
+| `/api/livestock/` | POST | 201 | ✅ Can create |
+| `/api/cases/reports/` | GET | 200 | Own cases only |
+| `/api/cases/reports/` | POST | 201 | ✅ Can create |
+| `/api/users/` | GET | 403 | ❌ Should fail |
+| `/api/farmers/` | GET | 403 | ❌ Should fail |
+| `/api/veterinarians/` | GET | 403 | ❌ Should fail |
+| `/api/broadcasts/` | GET | 403 | ❌ Should fail |
+
+### Local Vet Endpoints
+| Endpoint | Method | Expected | Notes |
+|----------|--------|----------|-------|
+| `/api/cases/reports/` | GET | 200 | Assigned cases only |
+| `/api/cases/reports/` | POST | 403 | ❌ Cannot create |
+| `/api/cases/reports/{id}/` | PATCH | 200 | Can update status |
+| `/api/livestock/` | GET | 200 | From assigned cases |
+| `/api/livestock/` | POST | 403 | ❌ Cannot create |
+| `/api/cases/reports/{id}/assign/` | POST | 403 | ❌ Cannot assign |
+| `/api/users/` | GET | 403 | ❌ Should fail |
+| `/api/broadcasts/` | GET | 403 | ❌ Should fail |
+
+### Sector Vet Endpoints
+| Endpoint | Method | Expected | Notes |
+|----------|--------|----------|-------|
+| `/api/users/` | GET | 200 | ✅ Can view all |
+| `/api/farmers/` | GET | 200 | ✅ Can view all |
+| `/api/veterinarians/` | GET | 200 | ✅ Can view all |
+| `/api/cases/reports/` | GET | 200 | ✅ All cases |
+| `/api/cases/reports/` | POST | 403 | ❌ Cannot create |
+| `/api/cases/reports/{id}/assign/` | POST | 200 | ✅ Can assign |
+| `/api/livestock/` | GET | 200 | ✅ All livestock |
+| `/api/livestock/` | POST | 403 | ❌ Cannot create |
+| `/api/broadcasts/` | GET | 200 | ✅ Can view |
+| `/api/broadcasts/` | POST | 201 | ✅ Can create |
+
+## Key Test Scenarios
+
+### 1. Farmer Can Create Livestock ✅
+- **Test**: POST `/api/livestock/` as farmer
+- **Expected**: 201 Created
+- **Verify**: Livestock is created with farmer as owner
+
+### 2. Farmer Can Create Cases ✅
+- **Test**: POST `/api/cases/reports/` as farmer
+- **Expected**: 201 Created
+- **Verify**: Case is created with farmer as reporter
+
+### 3. Local Vet Cannot Create Cases ❌
+- **Test**: POST `/api/cases/reports/` as local vet
+- **Expected**: 403 Forbidden
+- **Verify**: Error message indicates permission denied
+
+### 4. Local Vet Cannot Create Livestock ❌
+- **Test**: POST `/api/livestock/` as local vet
+- **Expected**: 403 Forbidden
+- **Verify**: Error message indicates only farmers can create
+
+### 5. Sector Vet Cannot Create Cases ❌
+- **Test**: POST `/api/cases/reports/` as sector vet
+- **Expected**: 403 Forbidden
+- **Verify**: Error message indicates permission denied
+
+### 6. Sector Vet Cannot Create Livestock ❌
+- **Test**: POST `/api/livestock/` as sector vet
+- **Expected**: 403 Forbidden
+- **Verify**: Error message indicates only farmers can create
+
+### 7. Sector Vet Can Assign Cases ✅
+- **Test**: POST `/api/cases/reports/{id}/assign/` as sector vet
+- **Expected**: 200 OK
+- **Verify**: Case is assigned to local vet
+
+### 8. Local Vet Can View Assigned Cases Only ✅
+- **Test**: GET `/api/cases/reports/` as local vet
+- **Expected**: 200 OK
+- **Verify**: Only cases assigned to this vet are returned
+
+### 9. Farmer Can View Own Cases Only ✅
+- **Test**: GET `/api/cases/reports/` as farmer
+- **Expected**: 200 OK
+- **Verify**: Only cases created by this farmer are returned
+
+### 10. Sector Vet Can View All Cases ✅
+- **Test**: GET `/api/cases/reports/` as sector vet
+- **Expected**: 200 OK
+- **Verify**: All cases are returned
+
+## Running Tests
+
+### Option 1: Automated Script
+```bash
+python test_endpoints_by_role.py
+```
+
+### Option 2: Manual Testing
+Use the curl commands in `ENDPOINT_TESTING_GUIDE.md`
+
+### Option 3: Postman/Insomnia
+Import the endpoints from the guide and test manually
+
+## Expected Results
+
+After running tests with valid credentials:
+
+- **Public Endpoints**: All should pass (if truly public)
+- **Farmer Tests**: 
+  - ✅ Can create livestock and cases
+  - ❌ Cannot access admin endpoints
+- **Local Vet Tests**:
+  - ✅ Can view assigned cases
+  - ❌ Cannot create cases or livestock
+- **Sector Vet Tests**:
+  - ✅ Can view all data
+  - ✅ Can assign cases
+  - ❌ Cannot create cases or livestock
+
+## Notes
+
+1. Some endpoints may require authentication even if marked as public (check backend settings)
+2. Test accounts must be created and approved before testing
+3. Local vets must be approved by sector vet before they can login
+4. Cases must exist before testing assignment functionality
+5. Livestock must exist before testing case creation
+
+
+
+
+---
+
+# Complete Functionality Test Guide
+
+# AnimalGuardian - Complete Functionality Test Guide
+
+## Overview
+This document provides a comprehensive guide to test all functionalities of the AnimalGuardian system.
+
+---
+
+## 1. BACKEND API TESTING
+
+### Prerequisites
+- Backend API is deployed and accessible
+- API Base URL: `https://animalguardian-backend-production-b5a8.up.railway.app/api`
+
+### Test Script
+Run the automated test script:
+```bash
+python test_all_functionalities.py
+```
+
+### Manual API Testing
+
+#### 1.1 Authentication Flow
+```bash
+# 1. Register a new farmer
+POST /api/auth/register/
+{
+  "phone_number": "+250788123456",
+  "password": "testpass123",
+  "user_type": "farmer",
+  "first_name": "Test",
+  "last_name": "Farmer"
+}
+
+# 2. Login
+POST /api/auth/login/
+{
+  "phone_number": "+250788123456",
+  "password": "testpass123"
+}
+# Response: { "access": "token...", "refresh": "token..." }
+
+# 3. Verify OTP (if required)
+POST /api/auth/verify-otp/
+{
+  "phone_number": "+250788123456",
+  "otp": "1234"
+}
+```
+
+#### 1.2 Livestock Management
+```bash
+# Get livestock (requires auth token)
+GET /api/livestock/
+Headers: Authorization: Bearer <token>
+
+# Create livestock
+POST /api/livestock/
+Headers: Authorization: Bearer <token>
+{
+  "livestock_type": 1,
+  "name": "Bella",
+  "gender": "female",
+  "status": "healthy"
+}
+
+# Get livestock types
+GET /api/livestock/types/
+```
+
+#### 1.3 Case Management
+```bash
+# Get cases
+GET /api/cases/reports/
+Headers: Authorization: Bearer <token>
+
+# Create case
+POST /api/cases/reports/
+Headers: Authorization: Bearer <token>
+{
+  "livestock": 1,
+  "symptoms_observed": "Loss of appetite",
+  "urgency": "high",
+  "number_of_affected_animals": 1
+}
+
+# Assign case (Admin/Sector Vet)
+POST /api/cases/reports/1/assign/
+Headers: Authorization: Bearer <admin_token>
+{
+  "veterinarian_id": 2
+}
+```
+
+---
+
+## 2. MOBILE APP TESTING
+
+### Prerequisites
+- Flutter app is built and running
+- Backend API is accessible
+- Test user accounts created
+
+### Test Checklist
+
+#### 2.1 Authentication Flow
+- [ ] **Splash Screen**
+  - App shows splash screen with logo
+  - Navigates to welcome/onboarding after delay
+
+- [ ] **Onboarding**
+  - All onboarding screens display correctly
+  - Navigation works (back button, skip, next)
+
+- [ ] **Registration**
+  - Farmer can register with phone number
+  - Local Vet can register (with approval notice)
+  - Form validation works
+  - OTP verification screen appears
+  - After OTP, navigates to correct dashboard
+
+- [ ] **Login**
+  - User can login with phone/password
+  - Error messages display for invalid credentials
+  - "Create Account" button navigates to registration
+  - After login, navigates to dashboard
+
+#### 2.2 Farmer Dashboard
+- [ ] **Home Tab**
+  - Displays feed cards
+  - Trending news shows
+  - Search functionality works
+  - Filter chips work (All, Livestock, Market, Tutorial)
+  - All links are clickable
+
+- [ ] **Cases Tab**
+  - Lists cases from database (real API data)
+  - Filter by status works (All, Pending, Under Review, Resolved)
+  - Search functionality works
+  - "Add Case" button navigates to report case screen
+  - Case items are clickable and show details
+  - Refresh button reloads cases
+
+- [ ] **Community Tab**
+  - Shows community feed
+  - Posts display correctly
+  - Video posts work
+  - Chat list shows
+  - Search functionality works
+  - Like, comment, share buttons work
+
+- [ ] **Profile Tab**
+  - User profile information displays
+  - Settings accessible
+  - Logout works
+
+- [ ] **Drawer Menu**
+  - Opens from hamburger icon
+  - All menu items clickable
+  - Navigation works correctly
+  - Closes after navigation
+
+- [ ] **Bottom Navigation**
+  - Always visible on all screens
+  - Tab switching works
+  - Correct icons and labels
+
+#### 2.3 Livestock Management
+- [ ] **View Livestock**
+  - Lists livestock from database (real API data)
+  - Filter by type works (All, Cattle, Goats, Sheep, Pigs)
+  - Search functionality works
+  - Refresh button reloads livestock
+  - Empty state shows "Add Livestock" button
+
+- [ ] **Add Livestock**
+  - Form displays all fields
+  - Livestock type dropdown loads
+  - Breed dropdown loads based on type
+  - Date picker works
+  - Form validation works
+  - Submit saves to database
+  - Success message shows
+  - Returns to livestock list
+  - New livestock appears in list
+
+- [ ] **Livestock Details**
+  - Details screen displays all information
+  - Back button works
+  - Images display correctly
+
+#### 2.4 Case Management
+- [ ] **View Cases**
+  - Lists cases from database (real API data)
+  - Status and urgency badges display correctly
+  - Filter by status works
+  - Search functionality works
+  - Refresh button reloads cases
+
+- [ ] **Report Case**
+  - Form displays all fields
+  - Livestock selection works
+  - Urgency selection works
+  - Image selection works (web compatible)
+  - Form validation works
+  - Submit saves to database
+  - Success message shows
+  - Returns to cases list
+  - New case appears in list
+
+- [ ] **Case Details**
+  - Details screen displays all information
+  - Back button works
+  - Images display correctly
+
+#### 2.5 Vet Dashboard
+- [ ] **Home Tab**
+  - Shows welcome message
+  - Displays quick stats (Active/Resolved Cases)
+  - Quick actions work
+  - Recent cases list shows
+
+- [ ] **Cases Tab**
+  - Lists assigned cases from database (real API data)
+  - Filter by status works
+  - Case details show farmer information
+  - Refresh button reloads cases
+
+- [ ] **Community Tab**
+  - Same as farmer community tab
+
+- [ ] **Profile Tab**
+  - Vet profile information
+  - Shows approval status if pending
+  - Settings accessible
+
+#### 2.6 Additional Features
+- [ ] **Market Tab**
+  - Product categories display
+  - Products list shows
+  - Search works
+  - Filter by category works
+
+- [ ] **Weather Tab**
+  - Weather data displays
+  - Location shows (Nyagatare, Rwanda)
+  - Refresh works
+
+- [ ] **Settings**
+  - All settings pages accessible
+  - Edit Profile works
+  - Change Password works
+  - Language selection works
+  - Help & Support works
+  - Privacy Policy works
+  - Terms of Service works
+
+---
+
+## 3. WEB DASHBOARD TESTING
+
+### Prerequisites
+- Web dashboard is deployed and accessible
+- Admin/Sector Vet account exists
+- Backend API is accessible
+
+### Test Checklist
+
+#### 3.1 Authentication
+- [ ] **Login**
+  - Admin can login
+  - Sector Vet can login
+  - Error messages display for invalid credentials
+  - Session persists after page refresh
+  - Logout works
+
+#### 3.2 Dashboard Overview
+- [ ] **Statistics**
+  - Total farmers count
+  - Total veterinarians count
+  - Total cases count
+  - Active cases count
+  - Charts display correctly
+
+#### 3.3 User Management
+- [ ] **Farmers**
+  - List all farmers
+  - Add new farmer (form works, saves to database)
+  - Approve/Reject farmers
+  - View farmer profile
+  - Filter and search work
+
+- [ ] **Veterinarians**
+  - List all veterinarians
+  - Add new veterinarian (form works, saves to database)
+  - Approve/Reject veterinarians
+  - View veterinarian profile
+  - Assign case to veterinarian
+  - Filter and search work
+
+#### 3.4 Case Management
+- [ ] **Cases**
+  - List all cases
+  - Add new case (form works, saves to database)
+  - View case details
+  - Assign case to veterinarian
+  - Update case status
+  - Filter by status works
+  - Search works
+
+#### 3.5 Notifications
+- [ ] **Notifications**
+  - List all notifications
+  - Mark as read works
+  - Filter by type works
+
+- [ ] **Broadcasts**
+  - List all broadcasts (Sector Vet/Admin)
+  - Create broadcast
+  - Send broadcast (creates notifications)
+  - Filter by channel works
+
+#### 3.6 Settings
+- [ ] **Profile Settings**
+  - Update profile works
+  - Save changes works
+
+- [ ] **System Settings**
+  - Settings save to localStorage
+  - Changes persist
+
+---
+
+## 4. DATA FLOW TESTS
+
+### 4.1 Mobile → Backend → Database
+- [ ] **Farmer Registration**
+  1. Register on mobile app
+  2. Check database: User created with correct type
+  3. Check web dashboard: User appears in farmers list
+
+- [ ] **Add Livestock**
+  1. Add livestock on mobile app
+  2. Check database: Livestock record created with correct owner
+  3. Check mobile app: Livestock appears in list
+  4. Check web dashboard: Livestock visible in admin view
+
+- [ ] **Report Case**
+  1. Report case on mobile app
+  2. Check database: Case created with correct reporter
+  3. Check mobile app: Case appears in farmer's cases
+  4. Check web dashboard: Case appears in all cases
+
+### 4.2 Web Dashboard → Backend → Database
+- [ ] **Add Farmer**
+  1. Add farmer on web dashboard
+  2. Check database: User created
+  3. Check web dashboard: Farmer appears in list
+  4. Check mobile app: Farmer can login
+
+- [ ] **Add Veterinarian**
+  1. Add vet on web dashboard
+  2. Check database: User created with vet profile
+  3. Check web dashboard: Vet appears in list
+  4. Check mobile app: Vet can login (after approval)
+
+- [ ] **Assign Case**
+  1. Assign case to vet on web dashboard
+  2. Check database: Case updated with assigned_veterinarian
+  3. Check web dashboard: Case shows as assigned
+  4. Check mobile app: Case appears in vet's assigned cases
+
+### 4.3 Cross-Platform Sync
+- [ ] **Case Created on Mobile → Visible on Web**
+  1. Create case on mobile
+  2. Refresh web dashboard
+  3. Case appears in cases list
+
+- [ ] **Case Assigned on Web → Visible on Mobile**
+  1. Assign case on web dashboard
+  2. Refresh vet mobile app
+  3. Case appears in vet's assigned cases
+
+---
+
+## 5. ERROR HANDLING TESTS
+
+### 5.1 API Errors
+- [ ] **401 Unauthorized**
+  - Request without token returns 401
+  - Mobile app handles gracefully
+  - Web dashboard redirects to login
+
+- [ ] **403 Forbidden**
+  - Farmer tries to access admin endpoint → 403
+  - Error message displays correctly
+
+- [ ] **404 Not Found**
+  - Invalid endpoint → 404
+  - Error handled gracefully
+
+- [ ] **500 Server Error**
+  - Server error → 500
+  - Error message displays
+  - App doesn't crash
+
+- [ ] **Network Errors**
+  - No internet connection
+  - Timeout errors
+  - Connection refused
+  - All handled gracefully with user-friendly messages
+
+### 5.2 Mobile App Errors
+- [ ] **Empty States**
+  - No livestock → Shows "Add Livestock" button
+  - No cases → Shows "Report Case" button
+  - No data → Shows appropriate empty state message
+
+- [ ] **Loading States**
+  - Loading indicators show during API calls
+  - Skeleton screens or spinners display
+
+- [ ] **Error Messages**
+  - API errors show user-friendly messages
+  - Validation errors show inline
+  - Network errors show retry option
+
+---
+
+## 6. SECURITY TESTS
+
+### 6.1 Authentication
+- [ ] **JWT Tokens**
+  - Tokens are stored securely
+  - Tokens expire correctly
+  - Token refresh works
+  - Invalid tokens are rejected
+
+### 6.2 Authorization
+- [ ] **Role-Based Access**
+  - Farmers can only see their own livestock/cases
+  - Vets can only see assigned cases
+  - Admins can see all data
+  - Unauthorized actions are blocked
+
+### 6.3 Data Validation
+- [ ] **Input Validation**
+  - Phone numbers validated
+  - Email format validated
+  - Password strength enforced
+  - Required fields enforced
+
+---
+
+## 7. PERFORMANCE TESTS
+
+### 7.1 API Response Times
+- [ ] **List Endpoints**
+  - GET /api/livestock/ → < 2s
+  - GET /api/cases/reports/ → < 2s
+  - GET /api/users/ → < 2s
+
+- [ ] **Detail Endpoints**
+  - GET /api/livestock/{id}/ → < 1s
+  - GET /api/cases/reports/{id}/ → < 1s
+
+- [ ] **Create/Update**
+  - POST /api/livestock/ → < 3s
+  - POST /api/cases/reports/ → < 3s
+
+### 7.2 Mobile App Performance
+- [ ] **App Launch**
+  - App opens in < 3s
+  - Splash screen displays correctly
+
+- [ ] **Navigation**
+  - Tab switching is instant
+  - Screen transitions are smooth
+  - No lag or jank
+
+- [ ] **Data Loading**
+  - Lists load progressively
+  - Images load correctly
+  - No memory leaks
+
+---
+
+## 8. USSD SERVICE TESTING
+
+### Prerequisites
+- USSD service is deployed
+- Test phone number available
+- Africa's Talking credentials configured
+
+### Test Checklist
+- [ ] **USSD Menu**
+  - Dial USSD code
+  - Menu displays correctly
+  - Navigation works
+
+- [ ] **Case Reporting via USSD**
+  - Report case through USSD
+  - Case appears in database
+  - Case visible on web dashboard
+
+- [ ] **User Verification**
+  - Only approved users can access
+  - Unapproved users see appropriate message
+
+---
+
+## TEST RESULTS TEMPLATE
+
+```
+Date: [Date]
+Tester: [Name]
+Environment: [Production/Staging/Development]
+
+Backend API: [Pass/Fail/Partial]
+Mobile App: [Pass/Fail/Partial]
+Web Dashboard: [Pass/Fail/Partial]
+Data Flow: [Pass/Fail/Partial]
+Error Handling: [Pass/Fail/Partial]
+Security: [Pass/Fail/Partial]
+Performance: [Pass/Fail/Partial]
+
+Issues Found:
+1. [Issue description]
+2. [Issue description]
+
+Notes:
+[Additional notes]
+```
+
+---
+
+## QUICK TEST COMMANDS
+
+### Test Backend API
+```bash
+# Health check
+curl https://animalguardian-backend-production-b5a8.up.railway.app/api/dashboard/health/
+
+# Get livestock types (public)
+curl https://animalguardian-backend-production-b5a8.up.railway.app/api/livestock/types/
+
+# Test protected endpoint (should return 401)
+curl https://animalguardian-backend-production-b5a8.up.railway.app/api/livestock/
+```
+
+### Run Automated Tests
+```bash
+# Python test script
+python test_all_functionalities.py
+
+# View results
+cat test_results.json
+```
+
+---
+
+## NEXT STEPS AFTER TESTING
+
+1. Document all issues found
+2. Prioritize fixes (Critical, High, Medium, Low)
+3. Create bug reports for each issue
+4. Re-test after fixes
+5. Update test documentation
+
+
+
+
+---
+
+# Comprehensive Testing Checklist
+
+# AnimalGuardian - Comprehensive Testing Checklist
+
+## 🧪 Testing Status Report
+
+### 📱 Mobile App (Flutter) - Testing
+
+#### Authentication & Onboarding
+- [ ] Splash Screen loads correctly
+- [ ] Onboarding screens display properly
+- [ ] User Registration (Farmer & Local Vet)
+- [ ] OTP Verification
+- [ ] User Login
+- [ ] Logout functionality
+
+#### Dashboard (Farmer)
+- [ ] Home tab displays real data from API
+- [ ] Cases tab fetches real cases from database
+- [ ] Livestock tab fetches real livestock from database
+- [ ] Community tab displays posts
+- [ ] Profile tab shows user information
+- [ ] Bottom navigation works correctly
+- [ ] Drawer menu navigation works
+
+#### Dashboard (Local Vet)
+- [ ] Vet dashboard loads correctly
+- [ ] Assigned cases display from API
+- [ ] Case filtering works
+- [ ] Navigation works
+
+#### Cases Management
+- [ ] View all cases (farmer sees own cases)
+- [ ] Filter cases by status
+- [ ] Search cases
+- [ ] Report new case
+- [ ] View case details
+- [ ] Case creation saves to database
+
+#### Livestock Management
+- [ ] View all livestock (farmer sees own livestock)
+- [ ] Filter livestock by type
+- [ ] Search livestock
+- [ ] Add new livestock
+- [ ] View livestock details
+- [ ] Livestock creation saves to database
+
+#### Community Features
+- [ ] View community posts
+- [ ] Create new post
+- [ ] Filter posts by type
+- [ ] Search posts
+
+#### Settings
+- [ ] Edit Profile
+- [ ] Change Password
+- [ ] Language Selection
+- [ ] Help & Support
+- [ ] Privacy Policy
+- [ ] Terms of Service
+
+### 🌐 Web Dashboard (React) - Testing
+
+#### Authentication
+- [ ] Admin Login
+- [ ] Logout
+- [ ] Session management
+
+#### Dashboard
+- [ ] Dashboard statistics load
+- [ ] Charts display correctly
+- [ ] Recent activity shows
+
+#### Farmers Management
+- [ ] View all farmers
+- [ ] Add new farmer
+- [ ] Approve/Reject farmer
+- [ ] View farmer profile
+- [ ] Search farmers
+
+#### Veterinarians Management
+- [ ] View all veterinarians
+- [ ] Add new veterinarian
+- [ ] View veterinarian profile
+- [ ] Assign case to veterinarian
+- [ ] Search veterinarians
+
+#### Cases Management
+- [ ] View all cases
+- [ ] Filter cases by status
+- [ ] Add new case
+- [ ] Assign case to vet
+- [ ] View case details
+- [ ] Update case status
+
+#### Notifications
+- [ ] View all notifications
+- [ ] Send broadcast message
+- [ ] Filter notifications
+
+#### Analytics
+- [ ] View analytics dashboard
+- [ ] Charts display correctly
+- [ ] Data filters work
+
+#### Settings
+- [ ] Profile settings
+- [ ] Security settings
+- [ ] System settings
+
+### 🔌 Backend API - Testing
+
+#### Authentication Endpoints
+- [ ] POST /api/auth/login/
+- [ ] POST /api/auth/signup/
+- [ ] POST /api/auth/verify-otp/
+- [ ] POST /api/auth/refresh/
+- [ ] GET /api/auth/profile/
+
+#### Cases Endpoints
+- [ ] GET /api/cases/reports/ (list cases)
+- [ ] POST /api/cases/reports/ (create case)
+- [ ] GET /api/cases/reports/{id}/ (get case)
+- [ ] PATCH /api/cases/reports/{id}/ (update case)
+- [ ] POST /api/cases/reports/{id}/assign/ (assign case)
+
+#### Livestock Endpoints
+- [ ] GET /api/livestock/ (list livestock)
+- [ ] POST /api/livestock/ (create livestock)
+- [ ] GET /api/livestock/{id}/ (get livestock)
+- [ ] PATCH /api/livestock/{id}/ (update livestock)
+- [ ] DELETE /api/livestock/{id}/ (delete livestock)
+
+#### Users Endpoints
+- [ ] GET /api/users/ (list users)
+- [ ] POST /api/users/ (create user)
+- [ ] GET /api/users/{id}/ (get user)
+- [ ] PATCH /api/users/{id}/ (update user)
+
+#### Notifications Endpoints
+- [ ] GET /api/notifications/notifications/ (list notifications)
+- [ ] GET /api/notifications/broadcasts/ (list broadcasts)
+- [ ] POST /api/notifications/broadcasts/ (create broadcast)
+- [ ] POST /api/notifications/broadcasts/{id}/send/ (send broadcast)
+
+### 🔗 Integration Testing
+
+#### Mobile App ↔ Backend
+- [ ] Mobile app can fetch cases from backend
+- [ ] Mobile app can create cases in backend
+- [ ] Mobile app can fetch livestock from backend
+- [ ] Mobile app can create livestock in backend
+- [ ] Authentication tokens work correctly
+- [ ] Error handling works properly
+
+#### Web Dashboard ↔ Backend
+- [ ] Web dashboard can fetch all data
+- [ ] Web dashboard can create users
+- [ ] Web dashboard can assign cases
+- [ ] Web dashboard can send broadcasts
+- [ ] Authentication works correctly
+
+#### Data Flow
+- [ ] Farmer creates case → Appears in web dashboard
+- [ ] Admin assigns case → Appears in vet dashboard
+- [ ] Vet updates case → Appears in farmer dashboard
+- [ ] Admin creates user → User can login
+
+### 🐛 Error Handling
+
+#### Mobile App
+- [ ] Network errors handled gracefully
+- [ ] API errors display user-friendly messages
+- [ ] Loading states work correctly
+- [ ] Empty states display properly
+
+#### Web Dashboard
+- [ ] API errors handled
+- [ ] Form validation works
+- [ ] Loading states work
+
+### 🔒 Security Testing
+
+- [ ] Authentication required for protected endpoints
+- [ ] CORS configured correctly
+- [ ] JWT tokens work correctly
+- [ ] User permissions enforced
+- [ ] Sensitive data not exposed
+
+### 📊 Performance Testing
+
+- [ ] API response times acceptable
+- [ ] Mobile app loads quickly
+- [ ] Web dashboard loads quickly
+- [ ] Large data sets handled properly
+
+
+
+
+---
+
+# Functionality Test Report
+
+# AnimalGuardian Functionality Test Report
+
+## Test Date: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+
+---
+
+## 1. BACKEND API ENDPOINTS
+
+### 1.1 Authentication Endpoints
+- [ ] `POST /api/auth/register/` - User registration
+- [ ] `POST /api/auth/login/` - User login
+- [ ] `POST /api/auth/verify-otp/` - OTP verification
+- [ ] `POST /api/auth/refresh/` - Token refresh
+- [ ] `POST /api/auth/password-reset/request/` - Request password reset
+- [ ] `POST /api/auth/password-reset/verify-otp/` - Verify reset OTP
+- [ ] `POST /api/auth/password-reset/reset/` - Reset password
+
+### 1.2 User Management
+- [ ] `GET /api/users/` - List users (Admin/Sector Vet)
+- [ ] `POST /api/users/` - Create user (Admin)
+- [ ] `GET /api/farmers/` - List farmers
+- [ ] `GET /api/veterinarians/` - List veterinarians
+
+### 1.3 Livestock Management
+- [ ] `GET /api/livestock/` - List livestock
+- [ ] `POST /api/livestock/` - Create livestock (Farmer)
+- [ ] `GET /api/livestock/{id}/` - Get livestock details
+- [ ] `PATCH /api/livestock/{id}/` - Update livestock
+- [ ] `DELETE /api/livestock/{id}/` - Delete livestock
+- [ ] `GET /api/livestock/types/` - List livestock types
+- [ ] `GET /api/livestock/breeds/` - List breeds
+
+### 1.4 Case Reports
+- [ ] `GET /api/cases/reports/` - List cases
+- [ ] `POST /api/cases/reports/` - Create case (Farmer)
+- [ ] `GET /api/cases/reports/{id}/` - Get case details
+- [ ] `PATCH /api/cases/reports/{id}/` - Update case
+- [ ] `POST /api/cases/reports/{id}/assign/` - Assign case (Sector Vet/Admin)
+- [ ] `GET /api/cases/diseases/` - List diseases
+
+### 1.5 Notifications
+- [ ] `GET /api/notifications/` - List notifications
+- [ ] `GET /api/broadcasts/` - List broadcasts (Sector Vet/Admin)
+- [ ] `POST /api/broadcasts/` - Create broadcast
+- [ ] `POST /api/broadcasts/{id}/send/` - Send broadcast
+
+### 1.6 Dashboard
+- [ ] `GET /api/dashboard/stats/` - Get dashboard statistics
+
+### 1.7 Weather
+- [ ] `GET /api/weather/` - Get weather data
+
+### 1.8 Community
+- [ ] `GET /api/community/posts/` - List posts
+- [ ] `POST /api/community/posts/` - Create post
+
+### 1.9 Marketplace
+- [ ] `GET /api/marketplace/products/` - List products
+- [ ] `GET /api/marketplace/categories/` - List categories
+
+---
+
+## 2. MOBILE APP FUNCTIONALITIES
+
+### 2.1 Authentication
+- [ ] Splash Screen displays correctly
+- [ ] Onboarding screens work
+- [ ] User Registration (Farmer, Local Vet)
+- [ ] User Login
+- [ ] OTP Verification
+- [ ] Navigation to appropriate dashboard based on user type
+
+### 2.2 Farmer Dashboard
+- [ ] Home Tab - Displays feed and news
+- [ ] Cases Tab - Lists farmer's cases (Real API data)
+- [ ] Community Tab - Shows posts and chats
+- [ ] Profile Tab - User profile information
+- [ ] Drawer Menu - Navigation works
+- [ ] Bottom Navigation - Always visible
+
+### 2.3 Livestock Management (Farmer)
+- [ ] View livestock list (Real API data)
+- [ ] Add new livestock
+- [ ] View livestock details
+- [ ] Filter by type (Cattle, Goats, Sheep, Pigs)
+- [ ] Search livestock
+
+### 2.4 Case Management (Farmer)
+- [ ] View cases list (Real API data)
+- [ ] Report new case
+- [ ] View case details
+- [ ] Filter by status (Pending, Under Review, Resolved)
+- [ ] Cases saved to database
+
+### 2.5 Vet Dashboard (Local Vet)
+- [ ] Home Tab - Shows assigned cases stats
+- [ ] Cases Tab - Lists assigned cases (Real API data)
+- [ ] Community Tab
+- [ ] Profile Tab
+- [ ] Drawer Menu works
+
+### 2.6 Additional Features
+- [ ] Livestock Tab (from drawer)
+- [ ] Market Tab (from drawer)
+- [ ] Weather Tab (from drawer)
+- [ ] Settings Tab (from drawer)
+- [ ] All settings pages accessible
+
+---
+
+## 3. WEB DASHBOARD FUNCTIONALITIES
+
+### 3.1 Authentication
+- [ ] Admin/Sector Vet Login
+- [ ] Session management
+- [ ] Logout
+
+### 3.2 Dashboard Overview
+- [ ] Statistics display
+- [ ] Charts and graphs
+- [ ] Recent activity
+
+### 3.3 User Management
+- [ ] View all farmers
+- [ ] Add new farmer (Admin)
+- [ ] Approve/Reject farmers
+- [ ] View all veterinarians
+- [ ] Add new veterinarian (Admin)
+- [ ] Approve/Reject veterinarians
+- [ ] View user profiles
+
+### 3.4 Case Management
+- [ ] View all cases
+- [ ] Add new case (Admin)
+- [ ] Assign case to veterinarian
+- [ ] View case details
+- [ ] Update case status
+
+### 3.5 Livestock Management
+- [ ] View all livestock
+- [ ] Filter by owner
+- [ ] View livestock details
+
+### 3.6 Notifications
+- [ ] View notifications
+- [ ] Send broadcast message (Sector Vet/Admin)
+- [ ] Filter by channel (SMS, Email, In-App)
+
+### 3.7 Settings
+- [ ] Profile settings
+- [ ] System settings
+- [ ] Save settings
+
+---
+
+## 4. DATA FLOW TESTS
+
+### 4.1 Mobile → Backend → Database
+- [ ] Farmer registers → User created in database
+- [ ] Farmer adds livestock → Livestock saved to database
+- [ ] Farmer reports case → Case saved to database
+- [ ] Mobile app fetches real data from database
+
+### 4.2 Web Dashboard → Backend → Database
+- [ ] Admin adds farmer → User created in database
+- [ ] Admin adds vet → User created in database
+- [ ] Admin adds case → Case created in database
+- [ ] Admin assigns case → Assignment saved to database
+- [ ] Web dashboard fetches real data from database
+
+### 4.3 Cross-Platform Data Sync
+- [ ] Case created on mobile → Visible on web dashboard
+- [ ] Case assigned on web → Visible on vet mobile app
+- [ ] Livestock added on mobile → Visible on web dashboard
+
+---
+
+## 5. ERROR HANDLING
+
+### 5.1 API Errors
+- [ ] 401 Unauthorized - Handled correctly
+- [ ] 403 Forbidden - Handled correctly
+- [ ] 404 Not Found - Handled correctly
+- [ ] 500 Server Error - Handled correctly
+- [ ] Network errors - Handled gracefully
+
+### 5.2 Mobile App Errors
+- [ ] API connection failures
+- [ ] Empty data states
+- [ ] Loading states
+- [ ] Error messages displayed
+
+---
+
+## 6. SECURITY TESTS
+
+### 6.1 Authentication
+- [ ] JWT tokens work correctly
+- [ ] Token refresh works
+- [ ] Unauthorized access blocked
+
+### 6.2 Authorization
+- [ ] Farmers can only see their own livestock/cases
+- [ ] Vets can only see assigned cases
+- [ ] Admins can see all data
+- [ ] Role-based permissions enforced
+
+---
+
+## 7. PERFORMANCE TESTS
+
+### 7.1 API Response Times
+- [ ] List endpoints respond in < 2s
+- [ ] Detail endpoints respond in < 1s
+- [ ] Create/Update operations complete in < 3s
+
+### 7.2 Mobile App
+- [ ] App loads in < 3s
+- [ ] Navigation is smooth
+- [ ] Images load correctly
+- [ ] No memory leaks
+
+---
+
+## TEST RESULTS SUMMARY
+
+### Backend API: ⏳ Testing...
+### Mobile App: ⏳ Testing...
+### Web Dashboard: ⏳ Testing...
+### Data Flow: ⏳ Testing...
+### Error Handling: ⏳ Testing...
+### Security: ⏳ Testing...
+### Performance: ⏳ Testing...
+
+---
+
+## NOTES
+- All tests should be performed with real API endpoints
+- Use production database for final tests
+- Document any issues found
+
+
