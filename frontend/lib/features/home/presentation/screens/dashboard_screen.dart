@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/services/mock_data_service.dart';
 import '../../../../shared/presentation/widgets/placeholder_image.dart';
 import '../../../cases/presentation/screens/report_case_screen.dart';
 import '../../../cases/presentation/screens/case_detail_screen.dart';
+import '../../../cases/providers/cases_provider.dart';
+import '../../../../core/models/case_model.dart';
 import '../../../livestock/presentation/screens/add_livestock_screen.dart';
 import '../../../livestock/presentation/screens/livestock_detail_screen.dart';
 import '../../../community/presentation/screens/create_post_screen.dart';
@@ -890,65 +893,82 @@ class _LivestockTabState extends State<_LivestockTab> {
 }
 
 // Cases Tab
-class _CasesTab extends StatefulWidget {
+class _CasesTab extends ConsumerStatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   
   const _CasesTab({required this.scaffoldKey});
 
   @override
-  State<_CasesTab> createState() => _CasesTabState();
+  ConsumerState<_CasesTab> createState() => _CasesTabState();
 }
 
-class _CasesTabState extends State<_CasesTab> {
+class _CasesTabState extends ConsumerState<_CasesTab> {
   String _selectedFilter = 'All';
-  List<Map<String, dynamic>> _cases = MockDataService.getMockCases();
-  List<Map<String, dynamic>> _filteredCases = MockDataService.getMockCases();
 
   @override
   void initState() {
     super.initState();
-    _filteredCases = _cases;
+    // Load cases when tab is initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(casesProvider.notifier).loadCases(refresh: true);
+    });
   }
 
   void _filterCases(String filter) {
     setState(() {
       _selectedFilter = filter;
-      if (filter == 'All') {
-        _filteredCases = _cases;
-      } else {
-        _filteredCases = _cases.where((item) => item['status'] == filter.toLowerCase().replaceAll(' ', '_')).toList();
-      }
     });
+    // Update search query in provider to filter
+    if (filter == 'All') {
+      ref.read(casesProvider.notifier).clearSearch();
+    } else {
+      // Filter by status - we'll filter in the UI since provider filters by search query
+    }
   }
 
-  Color _getStatusColor(String status) {
+  List<CaseReport> _getFilteredCases(List<CaseReport> cases) {
+    if (_selectedFilter == 'All') {
+      return cases;
+    }
+    final statusMap = {
+      'Pending': 'pending',
+      'Under Review': 'under_review',
+      'Resolved': 'resolved',
+    };
+    final statusValue = statusMap[_selectedFilter] ?? '';
+    return cases.where((c) => c.status.apiValue == statusValue).toList();
+  }
+
+  Color _getStatusColor(CaseStatus status) {
     switch (status) {
-      case 'pending':
+      case CaseStatus.pending:
         return Colors.orange;
-      case 'under_review':
+      case CaseStatus.underReview:
         return Colors.blue;
-      case 'resolved':
+      case CaseStatus.resolved:
         return Colors.green;
       default:
         return Colors.grey;
     }
   }
 
-  Color _getUrgencyColor(String urgency) {
+  Color _getUrgencyColor(CaseUrgency urgency) {
     switch (urgency) {
-      case 'high':
+      case CaseUrgency.high:
+      case CaseUrgency.urgent:
         return Colors.red;
-      case 'medium':
+      case CaseUrgency.medium:
         return Colors.orange;
-      case 'low':
+      case CaseUrgency.low:
         return Colors.green;
-      default:
-        return Colors.grey;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final casesState = ref.watch(casesProvider);
+    final filteredCases = _getFilteredCases(casesState.filteredCases);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Case Reports'),
@@ -960,6 +980,12 @@ class _CasesTabState extends State<_CasesTab> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              ref.read(casesProvider.notifier).loadCases(refresh: true);
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
               context.push('/cases/report');
@@ -967,149 +993,168 @@ class _CasesTabState extends State<_CasesTab> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Status filter chips
-            Wrap(
-              spacing: 8,
-              children: [
-                FilterChip(
-                  label: const Text('All'),
-                  selected: _selectedFilter == 'All',
-                  onSelected: (selected) => _filterCases('All'),
-                ),
-                FilterChip(
-                  label: const Text('Pending'),
-                  selected: _selectedFilter == 'Pending',
-                  onSelected: (selected) => _filterCases('Pending'),
-                ),
-                FilterChip(
-                  label: const Text('Under Review'),
-                  selected: _selectedFilter == 'Under Review',
-                  onSelected: (selected) => _filterCases('Under Review'),
-                ),
-                FilterChip(
-                  label: const Text('Resolved'),
-                  selected: _selectedFilter == 'Resolved',
-                  onSelected: (selected) => _filterCases('Resolved'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            // Cases list
-            _filteredCases.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.report_problem,
-                          size: 80,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No cases found',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                color: Colors.grey[600],
-                              ),
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            context.push('/cases/report');
-                          },
-                          icon: const Icon(Icons.add),
-                          label: const Text('Report Case'),
-                        ),
-                      ],
+      body: casesState.isLoading && filteredCases.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Status filter chips
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      FilterChip(
+                        label: const Text('All'),
+                        selected: _selectedFilter == 'All',
+                        onSelected: (selected) => _filterCases('All'),
+                      ),
+                      FilterChip(
+                        label: const Text('Pending'),
+                        selected: _selectedFilter == 'Pending',
+                        onSelected: (selected) => _filterCases('Pending'),
+                      ),
+                      FilterChip(
+                        label: const Text('Under Review'),
+                        selected: _selectedFilter == 'Under Review',
+                        onSelected: (selected) => _filterCases('Under Review'),
+                      ),
+                      FilterChip(
+                        label: const Text('Resolved'),
+                        selected: _selectedFilter == 'Resolved',
+                        onSelected: (selected) => _filterCases('Resolved'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  // Error message
+                  if (casesState.error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        'Error: ${casesState.error}',
+                        style: TextStyle(color: Colors.red[700]),
+                      ),
                     ),
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _filteredCases.length,
-                    itemBuilder: (context, index) {
-                      final caseItem = _filteredCases[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: _getStatusColor(caseItem['status']),
-                            child: PlaceholderImage(
-                              networkUrl: caseItem['image'],
-                              placeholderIcon: Icons.report_problem,
-                              width: 40,
-                              height: 40,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                          ),
-                          title: Text(caseItem['caseId']),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(caseItem['livestock']),
-                              Text(caseItem['symptoms'], style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                            ],
-                          ),
-                          trailing: Column(
+                  // Cases list
+                  filteredCases.isEmpty
+                      ? Center(
+                          child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: _getStatusColor(caseItem['status']).withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  caseItem['status'].toString().replaceAll('_', ' ').toUpperCase(),
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    color: _getStatusColor(caseItem['status']),
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                              Icon(
+                                Icons.report_problem,
+                                size: 80,
+                                color: Colors.grey[400],
                               ),
-                              const SizedBox(height: 1),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                                decoration: BoxDecoration(
-                                  color: _getUrgencyColor(caseItem['urgency']).withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  caseItem['urgency'].toString().toUpperCase(),
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    color: _getUrgencyColor(caseItem['urgency']),
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No cases found',
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      color: Colors.grey[600],
+                                    ),
+                              ),
+                              const SizedBox(height: 24),
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  context.push('/cases/report');
+                                },
+                                icon: const Icon(Icons.add),
+                                label: const Text('Report Case'),
                               ),
                             ],
                           ),
-                          isThreeLine: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => CaseDetailScreen(caseId: caseItem['id']),
+                        )
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: filteredCases.length,
+                          itemBuilder: (context, index) {
+                            final caseReport = filteredCases[index];
+                            final photoUrl = caseReport.photos.isNotEmpty 
+                                ? caseReport.photos.first 
+                                : null;
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: _getStatusColor(caseReport.status),
+                                  child: PlaceholderImage(
+                                    networkUrl: photoUrl,
+                                    placeholderIcon: Icons.report_problem,
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                ),
+                                title: Text(caseReport.caseId),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(caseReport.livestockName ?? 'Unknown Livestock'),
+                                    Text(
+                                      caseReport.symptomsObserved,
+                                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                                trailing: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: _getStatusColor(caseReport.status).withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        caseReport.status.name.toUpperCase(),
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          color: _getStatusColor(caseReport.status),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 1),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                      decoration: BoxDecoration(
+                                        color: _getUrgencyColor(caseReport.urgency).withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        caseReport.urgency.name.toUpperCase(),
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          color: _getUrgencyColor(caseReport.urgency),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                isThreeLine: true,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => CaseDetailScreen(caseId: caseReport.id),
+                                    ),
+                                  );
+                                },
                               ),
                             );
                           },
                         ),
-                      );
-                    },
-                  ),
-          ],
-        ),
-      ),
+                ],
+              ),
+            ),
     );
   }
 }

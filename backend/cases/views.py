@@ -36,6 +36,10 @@ class CaseReportViewSet(viewsets.ModelViewSet):
         # Default: Only own cases
         return CaseReport.objects.filter(reporter=user)
     
+    def perform_create(self, serializer):
+        """Automatically set the reporter to the current user when creating a case."""
+        serializer.save(reporter=self.request.user)
+    
     @action(detail=True, methods=['post'])
     def assign(self, request, pk=None):
         """Assign a case to a local veterinarian (sector vet/admin only)."""
