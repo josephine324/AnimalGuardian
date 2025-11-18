@@ -1,17 +1,8 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
-  "$service": {
-    "source": {
-      "repo": "josephine324/AnimalGuardian",
-      "rootDirectory": "backend"
-    }
-  },
   "build": {
     "builder": "DOCKERFILE",
-    "dockerfilePath": "Dockerfile",
-    "watchPatterns": [
-      "**"
-    ]
+    "dockerfilePath": "backend/Dockerfile"
   },
   "deploy": {
     "startCommand": "sh start.sh",
