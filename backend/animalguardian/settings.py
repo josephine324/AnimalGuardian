@@ -80,22 +80,34 @@ TEMPLATES = [
 WSGI_APPLICATION = 'animalguardian.wsgi.application'
 
 # Database
-DATABASES = {
-    'default': dj_database_url.config(
-        default=config('DATABASE_URL', default=f'sqlite:///{BASE_DIR}/db.sqlite3'),
-        conn_max_age=600,  # Keep connections alive for 10 minutes
-        conn_health_checks=True,  # Enable connection health checks
-    )
-}
+DATABASE_URL = config('DATABASE_URL', default=None)
 
-# Database connection pooling settings for PostgreSQL
-if DATABASES['default'].get('ENGINE') == 'django.db.backends.postgresql':
-    DATABASES['default']['OPTIONS'] = {
-        'connect_timeout': 10,
-        'options': '-c statement_timeout=30000',  # 30 second statement timeout
+if DATABASE_URL:
+    # Use PostgreSQL from DATABASE_URL (Railway provides this)
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,  # Keep connections alive for 10 minutes
+            conn_health_checks=True,  # Enable connection health checks
+        )
     }
-    # Keep connections alive
-    DATABASES['default']['CONN_MAX_AGE'] = 600  # 10 minutes
+    
+    # Database connection pooling settings for PostgreSQL
+    if DATABASES['default'].get('ENGINE') == 'django.db.backends.postgresql':
+        DATABASES['default']['OPTIONS'] = {
+            'connect_timeout': 10,
+            'options': '-c statement_timeout=30000',  # 30 second statement timeout
+        }
+        # Keep connections alive
+        DATABASES['default']['CONN_MAX_AGE'] = 600  # 10 minutes
+else:
+    # Fallback to SQLite for local development
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -124,7 +136,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
-]
+] if (BASE_DIR / 'static').exists() else []
 
 # Media files
 MEDIA_URL = '/media/'
