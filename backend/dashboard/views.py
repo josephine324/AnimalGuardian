@@ -72,6 +72,45 @@ def stats(request):
         created_at__gte=timezone.now() - timedelta(days=7)
     ).count()
     
+    # Calculate vaccinations due (from VaccinationRecord model)
+    from livestock.models import VaccinationRecord
+    today = timezone.now().date()
+    vaccinations_due = VaccinationRecord.objects.filter(
+        next_due_date__lte=today + timedelta(days=30),  # Due in next 30 days
+        next_due_date__gte=today  # Not past due yet
+    ).count()
+    
+    # Calculate average response time from case reports
+    # Response time = time from case reported_at to assigned_at
+    assigned_cases = CaseReport.objects.filter(
+        assigned_at__isnull=False,
+        reported_at__isnull=False
+    )
+    
+    if assigned_cases.exists():
+        response_times = []
+        for case in assigned_cases:
+            try:
+                if case.reported_at and case.assigned_at:
+                    time_diff = (case.assigned_at - case.reported_at).total_seconds() / 3600  # Hours
+                    if time_diff > 0:  # Only count positive differences
+                        response_times.append(time_diff)
+            except (AttributeError, TypeError):
+                continue
+        
+        if response_times:
+            avg_hours = sum(response_times) / len(response_times)
+            if avg_hours < 1:
+                average_response_time = f"{int(avg_hours * 60)} minutes"
+            elif avg_hours < 24:
+                average_response_time = f"{avg_hours:.1f} hours"
+            else:
+                average_response_time = f"{avg_hours / 24:.1f} days"
+        else:
+            average_response_time = '0 hours'
+    else:
+        average_response_time = '0 hours'
+    
     # Calculate resolution rate
     resolution_rate = f"{(resolved_cases / total_cases * 100):.1f}%" if total_cases > 0 else "0%"
     
@@ -91,7 +130,7 @@ def stats(request):
         'total_livestock': total_livestock,
         'healthy_livestock': healthy_livestock,
         'sick_livestock': sick_livestock,
-        'vaccinations_due': 0,  # Can be calculated if VaccinationRecord model exists
-        'average_response_time': '0 hours',  # Can be calculated from consultations
+        'vaccinations_due': vaccinations_due,
+        'average_response_time': average_response_time,
         'resolution_rate': resolution_rate,
     }, status=status.HTTP_200_OK)

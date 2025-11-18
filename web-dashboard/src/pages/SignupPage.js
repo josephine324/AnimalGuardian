@@ -12,7 +12,7 @@ const SignupPage = ({ onLogin }) => {
     last_name: '',
     password: '',
     password_confirm: '',
-    user_type: 'farmer',
+    user_type: 'sector_vet',
     gender: '',
     province: '',
     district: '',
@@ -48,8 +48,8 @@ const SignupPage = ({ onLogin }) => {
     }
 
     try {
-      // Prepare data for API (remove password_confirm)
-      const { password_confirm, ...registrationData } = formData;
+      // Prepare data for API (keep password_confirm - backend expects it)
+      const registrationData = { ...formData };
       
       // Ensure phone number has country code
       let phoneNumber = registrationData.phone_number.trim();
@@ -65,7 +65,7 @@ const SignupPage = ({ onLogin }) => {
       }
       registrationData.phone_number = phoneNumber;
 
-      // Call registration API
+      // Call registration API (backend will handle password_confirm removal)
       await authAPI.register(registrationData);
 
       setSuccess(true);
@@ -120,7 +120,10 @@ const SignupPage = ({ onLogin }) => {
             Create Account
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Join AnimalGuardian Digital Livestock Support System
+            Create account for Sector Veterinarian or Field Officer
+          </p>
+          <p className="mt-1 text-xs text-amber-600">
+            ⚠️ Farmers and Local Veterinarians register via mobile app and are approved by sector veterinarians through the web dashboard.
           </p>
         </div>
 
@@ -172,11 +175,12 @@ const SignupPage = ({ onLogin }) => {
                   value={formData.user_type}
                   onChange={handleChange}
                 >
-                  <option value="farmer">Farmer</option>
                   <option value="sector_vet">Sector Veterinarian</option>
-                  <option value="local_vet">Local Veterinarian</option>
                   <option value="field_officer">Field Officer</option>
                 </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Note: Farmers and Local Veterinarians register via mobile app and are approved by sector veterinarians through the web dashboard.
+                </p>
               </div>
             </div>
 

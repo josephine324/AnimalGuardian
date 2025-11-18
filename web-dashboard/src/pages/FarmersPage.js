@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { usersAPI } from '../services/api';
+import { usersAPI, livestockAPI } from '../services/api';
 
 const FarmersPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -75,11 +75,41 @@ const FarmersPage = () => {
     farmer.sector?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Calculate total livestock from all farmers' livestock
-  const totalLivestock = farmers.reduce((acc, farmer) => {
-    // This would need to be calculated from farmer's livestock if available
-    return { cattle: acc.cattle, goats: acc.goats, chickens: acc.chickens };
-  }, { cattle: 0, goats: 0, chickens: 0 });
+  // Fetch livestock statistics from backend
+  const [livestockStats, setLivestockStats] = useState({ cattle: 0, goats: 0, chickens: 0 });
+
+  useEffect(() => {
+    const fetchLivestockStats = async () => {
+      try {
+        const { livestockAPI } = await import('../services/api');
+        const data = await livestockAPI.getAll();
+        const livestockList = data.results || (Array.isArray(data) ? data : []);
+        
+        // Count by type
+        const stats = livestockList.reduce((acc, animal) => {
+          const typeName = animal.livestock_type?.name?.toLowerCase() || 
+                          (typeof animal.livestock_type === 'string' ? animal.livestock_type.toLowerCase() : '');
+          if (typeName.includes('cattle') || typeName.includes('cow')) {
+            acc.cattle++;
+          } else if (typeName.includes('goat')) {
+            acc.goats++;
+          } else if (typeName.includes('chicken') || typeName.includes('poultry')) {
+            acc.chickens++;
+          }
+          return acc;
+        }, { cattle: 0, goats: 0, chickens: 0 });
+        
+        setLivestockStats(stats);
+      } catch (err) {
+        console.error('Error fetching livestock stats:', err);
+        // Keep defaults if fetch fails
+      }
+    };
+    
+    fetchLivestockStats();
+  }, []);
+
+  const totalLivestock = livestockStats;
 
   if (loading) {
     return (

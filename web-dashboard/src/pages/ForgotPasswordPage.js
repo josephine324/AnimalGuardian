@@ -11,7 +11,6 @@ const ForgotPasswordPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -49,11 +48,6 @@ const ForgotPasswordPage = () => {
       );
 
       setSuccess(true);
-      
-      // In development, show OTP code if returned
-      if (response.otp_code) {
-        setOtpCode(response.otp_code);
-      }
     } catch (err) {
       const errorMessage = err.response?.data?.error || 
                           err.response?.data?.detail ||
@@ -79,13 +73,9 @@ const ForgotPasswordPage = () => {
             <p className="mt-2 text-sm text-gray-600">
               A password reset code has been sent to your {formData.phone_number ? 'phone' : 'email'}.
             </p>
-            {otpCode && (
-              <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-xs text-yellow-800 font-semibold mb-1">Development Mode:</p>
-                <p className="text-lg font-mono text-yellow-900">{otpCode}</p>
-                <p className="text-xs text-yellow-700 mt-1">This will not be shown in production</p>
-              </div>
-            )}
+            <p className="mt-2 text-xs text-gray-500">
+              Please check your {formData.phone_number ? 'SMS messages' : 'email inbox'} for the 6-digit code. The code will expire in 15 minutes.
+            </p>
             <div className="mt-6">
               <button
                 onClick={() => navigate('/reset-password', { 
