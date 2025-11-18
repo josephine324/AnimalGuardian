@@ -66,7 +66,7 @@ const SignupPage = ({ onLogin }) => {
       registrationData.phone_number = phoneNumber;
 
       // Call registration API
-      const response = await authAPI.register(registrationData);
+      await authAPI.register(registrationData);
 
       setSuccess(true);
       

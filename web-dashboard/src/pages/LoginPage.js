@@ -32,9 +32,10 @@ const LoginPage = ({ onLogin }) => {
 
       // Handle redirect based on user type
       const userType = response.user?.user_type;
-      const redirectTo = response.redirect_to || 
-        (userType === 'farmer' ? 'farmer_dashboard' : 
-         (userType === 'local_vet' || userType === 'sector_vet' ? 'vet_dashboard' : 'admin_dashboard'));
+      // Note: redirectTo is available but not used in web dashboard
+      // const redirectTo = response.redirect_to || 
+      //   (userType === 'farmer' ? 'farmer_dashboard' : 
+      //    (userType === 'local_vet' || userType === 'sector_vet' ? 'vet_dashboard' : 'admin_dashboard'));
       
       // For web dashboard, only sector_vet and admin should access
       if (userType === 'local_vet' || userType === 'farmer') {
