@@ -6,17 +6,6 @@ const FarmersPage = () => {
   const [farmers, setFarmers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
-    email: '',
-    phone_number: '',
-    password: '',
-    sector: '',
-    district: '',
-  });
-  const [submitting, setSubmitting] = useState(false);
   const [filterApproval, setFilterApproval] = useState('all'); // all, pending, approved
 
   useEffect(() => {
@@ -42,7 +31,8 @@ const FarmersPage = () => {
       }
       
       const data = await usersAPI.getFarmers(params);
-      const farmersList = data.results || (Array.isArray(data) ? data : []);
+      // Handle both array and object with results property
+      const farmersList = Array.isArray(data) ? data : (data.results || []);
       setFarmers(Array.isArray(farmersList) ? farmersList : []);
     } catch (err) {
       console.error('Error fetching farmers:', err);
@@ -52,57 +42,10 @@ const FarmersPage = () => {
     }
   };
 
-  const handleAddFarmer = async (e) => {
-    e.preventDefault();
-    try {
-      setSubmitting(true);
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        alert('Not authenticated. Please login.');
-        return;
-      }
-
-      const userData = {
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        phone_number: formData.phone_number,
-        password: formData.password,
-        user_type: 'farmer',
-        sector: formData.sector,
-        district: formData.district,
-      };
-      
-      // Only include email if provided
-      if (formData.email && formData.email.trim()) {
-        userData.email = formData.email.trim();
-      }
-
-      await usersAPI.create(userData);
-
-      setShowAddModal(false);
-      setFormData({
-        first_name: '',
-        last_name: '',
-        email: '',
-        phone_number: '',
-        password: '',
-        sector: '',
-        district: '',
-      });
-
-      await fetchFarmers();
-      alert('Farmer added successfully!');
-    } catch (err) {
-      console.error('Error adding farmer:', err);
-      alert(err.response?.data?.error || err.response?.data?.detail || 'Failed to add farmer');
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const handleApproveFarmer = async (farmerId) => {
     try {
-      await usersAPI.approve(farmerId);
+      await usersAPI.approveUser(farmerId);
       await fetchFarmers();
       alert('Farmer approved successfully!');
     } catch (err) {
@@ -116,7 +59,7 @@ const FarmersPage = () => {
       return;
     }
     try {
-      await usersAPI.reject(farmerId);
+      await usersAPI.rejectUser(farmerId);
       await fetchFarmers();
       alert('Farmer rejected.');
     } catch (err) {
@@ -178,16 +121,8 @@ const FarmersPage = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Farmers Management</h1>
           <p className="text-gray-600 mt-1">Manage registered farmers and their livestock</p>
+          <p className="text-sm text-gray-500 mt-1">Note: Farmers register via mobile app. You can approve or reject them here.</p>
         </div>
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition-colors flex items-center"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Add Farmer
-        </button>
       </div>
 
       {/* Stats */}
@@ -365,114 +300,6 @@ const FarmersPage = () => {
         )}
       </div>
 
-      {/* Add Farmer Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Add New Farmer</h2>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <form onSubmit={handleAddFarmer} className="p-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.first_name}
-                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.last_name}
-                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="Optional"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
-                  <input
-                    type="tel"
-                    required
-                    value={formData.phone_number}
-                    onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="+250788123456"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
-                  <input
-                    type="password"
-                    required
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Sector</label>
-                  <input
-                    type="text"
-                    value={formData.sector}
-                    onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">District</label>
-                  <input
-                    type="text"
-                    value={formData.district}
-                    onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="e.g., Nyagatare"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {submitting ? 'Adding...' : 'Add Farmer'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
