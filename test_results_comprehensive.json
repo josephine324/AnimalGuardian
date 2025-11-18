@@ -1,0 +1,190 @@
+{
+  "timestamp": "2025-11-18T15:07:40.805402",
+  "base_url": "https://animalguardian-backend-production-b5a8.up.railway.app/api",
+  "summary": {
+    "total": 19,
+    "passed": 15,
+    "failed": 4
+  },
+  "results": {
+    "public": [
+      {
+        "name": "Livestock Types",
+        "endpoint": "/livestock/types/",
+        "status": "FAIL",
+        "expected": 200,
+        "actual": 401,
+        "message": "{\"detail\":\"Authentication credentials were not provided.\"}",
+        "description": "Should be public or require auth"
+      },
+      {
+        "name": "Breeds",
+        "endpoint": "/livestock/breeds/",
+        "status": "FAIL",
+        "expected": 200,
+        "actual": 401,
+        "message": "{\"detail\":\"Authentication credentials were not provided.\"}",
+        "description": "Should be public or require auth"
+      },
+      {
+        "name": "Diseases",
+        "endpoint": "/cases/diseases/",
+        "status": "FAIL",
+        "expected": 200,
+        "actual": 401,
+        "message": "{\"detail\":\"Authentication credentials were not provided.\"}",
+        "description": "Should be public or require auth"
+      },
+      {
+        "name": "Marketplace Categories",
+        "endpoint": "/marketplace/categories/",
+        "status": "PASS",
+        "expected": 200,
+        "actual": 200,
+        "message": "OK",
+        "description": "Public endpoint"
+      },
+      {
+        "name": "Marketplace Products",
+        "endpoint": "/marketplace/products/",
+        "status": "PASS",
+        "expected": 200,
+        "actual": 200,
+        "message": "OK",
+        "description": "Public endpoint"
+      }
+    ],
+    "auth": [
+      {
+        "name": "Register Endpoint",
+        "endpoint": "/auth/register/",
+        "status": "PASS",
+        "expected": 400,
+        "actual": 400,
+        "message": "OK",
+        "description": "Should exist (400 = bad request, but endpoint exists)"
+      },
+      {
+        "name": "Login Endpoint",
+        "endpoint": "/auth/login/",
+        "status": "PASS",
+        "expected": 400,
+        "actual": 400,
+        "message": "OK",
+        "description": "Should exist (400 = bad request, but endpoint exists)"
+      },
+      {
+        "name": "Verify OTP Endpoint",
+        "endpoint": "/auth/verify-otp/",
+        "status": "PASS",
+        "expected": 400,
+        "actual": 400,
+        "message": "OK",
+        "description": "Should exist"
+      },
+      {
+        "name": "Token Refresh Endpoint",
+        "endpoint": "/auth/refresh/",
+        "status": "FAIL",
+        "expected": 401,
+        "actual": 400,
+        "message": "{\"refresh\":[\"This field is required.\"]}",
+        "description": "Should exist (401 = no token)"
+      }
+    ],
+    "protected": [
+      {
+        "name": "Livestock List",
+        "endpoint": "/livestock/",
+        "status": "PASS",
+        "expected": 401,
+        "actual": 401,
+        "message": "OK",
+        "description": "Should require auth"
+      },
+      {
+        "name": "Cases List",
+        "endpoint": "/cases/reports/",
+        "status": "PASS",
+        "expected": 401,
+        "actual": 401,
+        "message": "OK",
+        "description": "Should require auth"
+      },
+      {
+        "name": "Notifications",
+        "endpoint": "/notifications/",
+        "status": "PASS",
+        "expected": 401,
+        "actual": 401,
+        "message": "OK",
+        "description": "Should require auth"
+      },
+      {
+        "name": "Dashboard Stats",
+        "endpoint": "/dashboard/stats/",
+        "status": "PASS",
+        "expected": 401,
+        "actual": 401,
+        "message": "OK",
+        "description": "Should require auth"
+      },
+      {
+        "name": "Weather Data",
+        "endpoint": "/weather/",
+        "status": "PASS",
+        "expected": 401,
+        "actual": 401,
+        "message": "OK",
+        "description": "Should require auth"
+      },
+      {
+        "name": "Community Posts",
+        "endpoint": "/community/posts/",
+        "status": "PASS",
+        "expected": 401,
+        "actual": 401,
+        "message": "OK",
+        "description": "Should require auth"
+      }
+    ],
+    "admin": [
+      {
+        "name": "Users List",
+        "endpoint": "/users/",
+        "status": "PASS",
+        "expected": 401,
+        "actual": 401,
+        "message": "OK",
+        "description": "Should require auth"
+      },
+      {
+        "name": "Farmers List",
+        "endpoint": "/farmers/",
+        "status": "PASS",
+        "expected": 401,
+        "actual": 401,
+        "message": "OK",
+        "description": "Should require auth"
+      },
+      {
+        "name": "Veterinarians List",
+        "endpoint": "/veterinarians/",
+        "status": "PASS",
+        "expected": 401,
+        "actual": 401,
+        "message": "OK",
+        "description": "Should require auth"
+      },
+      {
+        "name": "Broadcasts List",
+        "endpoint": "/broadcasts/",
+        "status": "PASS",
+        "expected": 401,
+        "actual": 401,
+        "message": "OK",
+        "description": "Should require auth"
+      }
+    ]
+  }
+}

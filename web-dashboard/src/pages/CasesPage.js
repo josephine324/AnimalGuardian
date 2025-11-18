@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { casesAPI, livestockAPI, usersAPI } from '../services/api';
+import { casesAPI, usersAPI } from '../services/api';
 
 const CasesPage = () => {
   const [filter, setFilter] = useState('all');
@@ -7,22 +7,11 @@ const CasesPage = () => {
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedCase, setSelectedCase] = useState(null);
-  const [livestockList, setLivestockList] = useState([]);
   const [localVets, setLocalVets] = useState([]);
   const [userData, setUserData] = useState(null);
-  const [formData, setFormData] = useState({
-    livestock: '',
-    symptoms_observed: '',
-    urgency: 'medium',
-    duration_of_symptoms: '',
-    number_of_affected_animals: 1,
-    location_notes: '',
-  });
   const [assignVetId, setAssignVetId] = useState('');
-  const [submitting, setSubmitting] = useState(false);
   const [assigning, setAssigning] = useState(false);
 
   useEffect(() => {
@@ -38,7 +27,6 @@ const CasesPage = () => {
         }
       }
       fetchCases();
-      fetchLivestock();
       // Fetch local vets if user is sector vet or admin
       if (storedUserData) {
         try {
@@ -112,15 +100,6 @@ const CasesPage = () => {
     }
   };
 
-  const fetchLivestock = async () => {
-    try {
-      const data = await livestockAPI.getAll();
-      const livestockList = data.results || (Array.isArray(data) ? data : []);
-      setLivestockList(Array.isArray(livestockList) ? livestockList : []);
-    } catch (err) {
-      console.error('Error fetching livestock:', err);
-    }
-  };
 
   const fetchLocalVets = async () => {
     try {
@@ -202,51 +181,6 @@ const CasesPage = () => {
     }
   };
 
-  const handleAddCase = async (e) => {
-    e.preventDefault();
-    try {
-      setSubmitting(true);
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        alert('Not authenticated. Please login.');
-        return;
-      }
-
-      if (!formData.livestock) {
-        alert('Please select a livestock animal.');
-        return;
-      }
-
-      const caseData = {
-        livestock: formData.livestock,
-        symptoms_observed: formData.symptoms_observed,
-        urgency: formData.urgency,
-        duration_of_symptoms: formData.duration_of_symptoms,
-        number_of_affected_animals: parseInt(formData.number_of_affected_animals) || 1,
-        location_notes: formData.location_notes,
-      };
-
-      await casesAPI.create(caseData);
-
-      setShowAddModal(false);
-      setFormData({
-        livestock: '',
-        symptoms_observed: '',
-        urgency: 'medium',
-        duration_of_symptoms: '',
-        number_of_affected_animals: 1,
-        location_notes: '',
-      });
-
-      await fetchCases();
-      alert('Case report created successfully!');
-    } catch (err) {
-      console.error('Error creating case:', err);
-      alert(err.response?.data?.error || err.response?.data?.detail || 'Failed to create case report');
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
 
   const getUrgencyColor = (urgency) => {
@@ -348,16 +282,8 @@ const CasesPage = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Case Reports</h1>
           <p className="text-gray-600 mt-1">Monitor and manage all livestock health cases</p>
+          <p className="text-sm text-gray-500 mt-1">Note: Only farmers can add cases via mobile app or USSD</p>
         </div>
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition-colors flex items-center"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          New Case
-        </button>
       </div>
 
       {/* Stats */}
@@ -544,116 +470,6 @@ const CasesPage = () => {
           </button>
         </div>
       </div>
-
-      {/* Add Case Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Report New Case</h2>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <form onSubmit={handleAddCase} className="p-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Livestock *</label>
-                  <select
-                    required
-                    value={formData.livestock}
-                    onChange={(e) => setFormData({ ...formData, livestock: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="">Select livestock...</option>
-                    {livestockList.map((animal) => (
-                      <option key={animal.id} value={animal.id}>
-                        {animal.name} ({animal.livestock_type?.name || animal.type || 'Unknown'})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Symptoms Observed *</label>
-                  <textarea
-                    required
-                    rows={4}
-                    value={formData.symptoms_observed}
-                    onChange={(e) => setFormData({ ...formData, symptoms_observed: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="Describe the symptoms observed..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Urgency *</label>
-                  <select
-                    required
-                    value={formData.urgency}
-                    onChange={(e) => setFormData({ ...formData, urgency: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Number of Affected Animals</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formData.number_of_affected_animals}
-                    onChange={(e) => setFormData({ ...formData, number_of_affected_animals: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Duration of Symptoms</label>
-                  <input
-                    type="text"
-                    value={formData.duration_of_symptoms}
-                    onChange={(e) => setFormData({ ...formData, duration_of_symptoms: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="e.g., 2 days, 1 week"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Location Notes</label>
-                  <input
-                    type="text"
-                    value={formData.location_notes}
-                    onChange={(e) => setFormData({ ...formData, location_notes: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="e.g., Sector, District"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {submitting ? 'Creating...' : 'Create Case Report'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Assign Case Modal */}
       {showAssignModal && selectedCase && (

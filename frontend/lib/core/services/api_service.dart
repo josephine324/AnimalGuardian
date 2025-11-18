@@ -335,5 +335,77 @@ class ApiService {
       };
     }
   }
+
+  // Authentication API
+  Future<Map<String, dynamic>> register(Map<String, dynamic> payload) async {
+    final headers = await _getHeaders(includeAuth: false);
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/register/'),
+      headers: headers,
+      body: json.encode(payload),
+    ).timeout(AppConstants.connectionTimeout);
+
+    return _handleResponse(response) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> login(String phoneNumber, String password) async {
+    final headers = await _getHeaders(includeAuth: false);
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/login/'),
+      headers: headers,
+      body: json.encode({
+        'phone_number': phoneNumber,
+        'password': password,
+      }),
+    ).timeout(AppConstants.connectionTimeout);
+
+    final data = _handleResponse(response) as Map<String, dynamic>;
+    
+    // Store tokens
+    if (data.containsKey('access')) {
+      await _storage.write(key: AppConstants.authTokenKey, value: data['access']);
+    }
+    if (data.containsKey('refresh')) {
+      await _storage.write(key: AppConstants.refreshTokenKey, value: data['refresh']);
+    }
+    if (data.containsKey('user') && data['user'] is Map) {
+      final user = data['user'] as Map<String, dynamic>;
+      if (user.containsKey('id')) {
+        await _storage.write(key: AppConstants.userIdKey, value: user['id'].toString());
+      }
+    }
+    
+    return data;
+  }
+
+  Future<Map<String, dynamic>> verifyOTP(String phoneNumber, String otpCode) async {
+    final headers = await _getHeaders(includeAuth: false);
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/verify-otp/'),
+      headers: headers,
+      body: json.encode({
+        'phone_number': phoneNumber,
+        'otp_code': otpCode,
+      }),
+    ).timeout(AppConstants.connectionTimeout);
+
+    final data = _handleResponse(response) as Map<String, dynamic>;
+    
+    // Store tokens if provided
+    if (data.containsKey('access')) {
+      await _storage.write(key: AppConstants.authTokenKey, value: data['access']);
+    }
+    if (data.containsKey('refresh')) {
+      await _storage.write(key: AppConstants.refreshTokenKey, value: data['refresh']);
+    }
+    
+    return data;
+  }
+
+  Future<void> logout() async {
+    await _storage.delete(key: AppConstants.authTokenKey);
+    await _storage.delete(key: AppConstants.refreshTokenKey);
+    await _storage.delete(key: AppConstants.userIdKey);
+  }
 }
 

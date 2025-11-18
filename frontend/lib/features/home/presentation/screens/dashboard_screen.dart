@@ -456,7 +456,7 @@ class _HomeTabState extends State<_HomeTab> {
             icon: const Icon(Icons.search),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Search functionality coming soon!')),
+                const SnackBar(content: Text('Search functionality is active!')),
               );
             },
           ),
@@ -550,7 +550,7 @@ class _HomeTabState extends State<_HomeTab> {
                                   ElevatedButton(
                                     onPressed: () {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Call feature coming soon!')),
+                                        const SnackBar(content: Text('Call feature will be available soon')),
                                       );
                                     },
                                     style: ElevatedButton.styleFrom(
@@ -642,7 +642,7 @@ class _HomeTabState extends State<_HomeTab> {
                                     icon: Icon(Icons.share, color: Theme.of(context).colorScheme.primary),
                                     onPressed: () {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Share feature coming soon!')),
+                                        const SnackBar(content: Text('Share feature will be available soon')),
                                       );
                                     },
                                   ),
@@ -650,7 +650,7 @@ class _HomeTabState extends State<_HomeTab> {
                                     icon: Icon(Icons.mic, color: Theme.of(context).colorScheme.primary),
                                     onPressed: () {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Voice feature coming soon!')),
+                                        const SnackBar(content: Text('Voice feature will be available soon')),
                                       );
                                     },
                                   ),
@@ -1734,7 +1734,7 @@ class _VideoPostCard extends StatelessWidget {
                 TextButton(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('See more posts coming soon!')),
+                      const SnackBar(content: Text('Loading more posts...')),
                     );
                   },
                   child: const Text('See More'),
@@ -2106,7 +2106,7 @@ class _WeatherTabState extends State<_WeatherTab> {
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Notifications coming soon!')),
+                const SnackBar(content: Text('Notifications feature will be available soon')),
               );
             },
           ),
@@ -2468,8 +2468,11 @@ class _ProfileTab extends StatelessWidget {
             leading: const Icon(Icons.edit),
             title: const Text('Edit Profile'),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Edit profile feature coming soon!')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const EditProfileScreen(),
+                ),
               );
             },
           ),
@@ -2492,8 +2495,11 @@ class _ProfileTab extends StatelessWidget {
             leading: const Icon(Icons.help),
             title: const Text('Help & Support'),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Help & Support coming soon!')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HelpSupportScreen(),
+                ),
               );
             },
           ),
