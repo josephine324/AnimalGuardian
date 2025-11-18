@@ -25,8 +25,12 @@ class UserSerializer(serializers.ModelSerializer):
         }
     
     def get_approved_by_name(self, obj):
-        if obj.approved_by:
-            return obj.approved_by.get_full_name() or obj.approved_by.username
+        try:
+            if obj and obj.approved_by:
+                return obj.approved_by.get_full_name() or obj.approved_by.username
+        except Exception:
+            # If there's any error accessing approved_by, return None
+            pass
         return None
     
     def validate(self, attrs):

@@ -49,10 +49,29 @@ const LoginPage = ({ onLogin }) => {
       // Call onLogin callback with all tokens
       onLogin(response.user, response.access, response.refresh);
     } catch (err) {
-      const errorMessage = err.response?.data?.error || 
-                          err.response?.data?.detail || 
-                          err.message || 
-                          'Invalid email/phone or password';
+      // Log full error for debugging
+      console.error('Login error:', err);
+      console.error('Error response:', err.response);
+      console.error('Error data:', err.response?.data);
+      
+      // Extract error message from various possible locations
+      let errorMessage = 'Invalid email/phone or password';
+      
+      if (err.response?.data) {
+        const errorData = err.response.data;
+        errorMessage = errorData.error || 
+                      errorData.detail || 
+                      errorData.message ||
+                      (typeof errorData === 'string' ? errorData : errorMessage);
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      // If it's a 500 error, provide more helpful message
+      if (err.response?.status === 500) {
+        errorMessage = errorMessage || 'Server error occurred. Please check the backend console for details and try again.';
+      }
+      
       setError(errorMessage);
     } finally {
       setLoading(false);
