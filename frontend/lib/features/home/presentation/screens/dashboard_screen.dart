@@ -7,6 +7,8 @@ import '../../../cases/presentation/screens/report_case_screen.dart';
 import '../../../cases/presentation/screens/case_detail_screen.dart';
 import '../../../cases/providers/cases_provider.dart';
 import '../../../../core/models/case_model.dart';
+import '../../../livestock/providers/livestock_provider.dart';
+import '../../../../core/models/livestock_model.dart';
 import '../../../livestock/presentation/screens/add_livestock_screen.dart';
 import '../../../livestock/presentation/screens/livestock_detail_screen.dart';
 import '../../../community/presentation/screens/create_post_screen.dart';
@@ -673,26 +675,27 @@ class _HomeTabState extends State<_HomeTab> {
 }
 
 // Livestock Tab
-class _LivestockTab extends StatefulWidget {
+class _LivestockTab extends ConsumerStatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final Widget? bottomNavBar;
   
   const _LivestockTab({required this.scaffoldKey, this.bottomNavBar});
 
   @override
-  State<_LivestockTab> createState() => _LivestockTabState();
+  ConsumerState<_LivestockTab> createState() => _LivestockTabState();
 }
 
-class _LivestockTabState extends State<_LivestockTab> {
+class _LivestockTabState extends ConsumerState<_LivestockTab> {
   final TextEditingController _searchController = TextEditingController();
   String _selectedFilter = 'All';
-  List<Map<String, dynamic>> _livestock = MockDataService.getMockLivestock();
-  List<Map<String, dynamic>> _filteredLivestock = MockDataService.getMockLivestock();
 
   @override
   void initState() {
     super.initState();
-    _filteredLivestock = _livestock;
+    // Load livestock when tab is initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(livestockProvider.notifier).loadLivestock(refresh: true);
+    });
   }
 
   @override
@@ -704,55 +707,51 @@ class _LivestockTabState extends State<_LivestockTab> {
   void _filterLivestock(String filter) {
     setState(() {
       _selectedFilter = filter;
-      String searchQuery = _searchController.text;
-      List<Map<String, dynamic>> filtered = _livestock;
-      
-      // Apply type filter
-      if (filter != 'All') {
-        String filterType = filter;
-        if (filter == 'Cattle') filterType = 'Cow';
-        filtered = filtered.where((item) => item['type'].toString().toLowerCase() == filterType.toLowerCase()).toList();
-      }
-      
-      // Apply search filter
-      if (searchQuery.isNotEmpty) {
-        filtered = filtered.where((item) {
-          return item['name'].toString().toLowerCase().contains(searchQuery.toLowerCase()) ||
-                 item['type'].toString().toLowerCase().contains(searchQuery.toLowerCase()) ||
-                 item['breed'].toString().toLowerCase().contains(searchQuery.toLowerCase());
-        }).toList();
-      }
-      
-      _filteredLivestock = filtered;
     });
+    // Update search in provider
+    ref.read(livestockProvider.notifier).updateSearch(_searchController.text);
   }
 
   void _searchLivestock(String query) {
-    setState(() {
-      List<Map<String, dynamic>> filtered = _livestock;
-      
-      // Apply type filter
-      if (_selectedFilter != 'All') {
-        String filterType = _selectedFilter;
-        if (_selectedFilter == 'Cattle') filterType = 'Cow';
-        filtered = filtered.where((item) => item['type'].toString().toLowerCase() == filterType.toLowerCase()).toList();
+    ref.read(livestockProvider.notifier).updateSearch(query);
+  }
+
+  List<Livestock> _getFilteredLivestock(List<Livestock> livestock) {
+    if (_selectedFilter == 'All') {
+      return livestock;
+    }
+    // Filter by livestock type name
+    return livestock.where((animal) {
+      final typeName = animal.livestockType?.name.toLowerCase() ?? '';
+      final filterLower = _selectedFilter.toLowerCase();
+      // Map filter names to type names
+      if (filterLower == 'cattle') {
+        return typeName.contains('cow') || typeName.contains('cattle');
       }
-      
-      // Apply search filter
-      if (query.isNotEmpty) {
-        filtered = filtered.where((item) {
-          return item['name'].toString().toLowerCase().contains(query.toLowerCase()) ||
-                 item['type'].toString().toLowerCase().contains(query.toLowerCase()) ||
-                 item['breed'].toString().toLowerCase().contains(query.toLowerCase());
-        }).toList();
-      }
-      
-      _filteredLivestock = filtered;
-    });
+      return typeName.contains(filterLower);
+    }).toList();
+  }
+
+  Color _getStatusColor(LivestockStatus status) {
+    switch (status) {
+      case LivestockStatus.healthy:
+        return Colors.green;
+      case LivestockStatus.sick:
+        return Colors.red;
+      case LivestockStatus.recovering:
+        return Colors.orange;
+      case LivestockStatus.quarantined:
+        return Colors.purple;
+      default:
+        return Colors.grey;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final livestockState = ref.watch(livestockProvider);
+    final filteredLivestock = _getFilteredLivestock(livestockState.filteredLivestock);
+
     return Scaffold(
       bottomNavigationBar: widget.bottomNavBar,
       appBar: AppBar(
@@ -765,6 +764,12 @@ class _LivestockTabState extends State<_LivestockTab> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              ref.read(livestockProvider.notifier).loadLivestock(refresh: true);
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
               context.push('/livestock/add');
@@ -772,122 +777,146 @@ class _LivestockTabState extends State<_LivestockTab> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Search bar
-            TextField(
-              controller: _searchController,
-              onChanged: _searchLivestock,
-              decoration: InputDecoration(
-                hintText: 'Search livestock...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.grey[100],
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Filter chips
-            Wrap(
-              spacing: 8,
-              children: [
-                FilterChip(
-                  label: const Text('All'),
-                  selected: _selectedFilter == 'All',
-                  onSelected: (selected) => _filterLivestock('All'),
-                ),
-                FilterChip(
-                  label: const Text('Cattle'),
-                  selected: _selectedFilter == 'Cattle',
-                  onSelected: (selected) => _filterLivestock('Cattle'),
-                ),
-                FilterChip(
-                  label: const Text('Goats'),
-                  selected: _selectedFilter == 'Goats',
-                  onSelected: (selected) => _filterLivestock('Goats'),
-                ),
-                FilterChip(
-                  label: const Text('Sheep'),
-                  selected: _selectedFilter == 'Sheep',
-                  onSelected: (selected) => _filterLivestock('Sheep'),
-                ),
-                FilterChip(
-                  label: const Text('Pigs'),
-                  selected: _selectedFilter == 'Pigs',
-                  onSelected: (selected) => _filterLivestock('Pigs'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            // Livestock list
-            _filteredLivestock.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.pets,
-                          size: 80,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No livestock found',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                color: Colors.grey[600],
-                              ),
-                        ),
-                      ],
+      body: livestockState.isLoading && filteredLivestock.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Search bar
+                  TextField(
+                    controller: _searchController,
+                    onChanged: _searchLivestock,
+                    decoration: InputDecoration(
+                      hintText: 'Search livestock...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[100],
                     ),
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _filteredLivestock.length,
-                    itemBuilder: (context, index) {
-                      final livestock = _filteredLivestock[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: livestock['status'] == 'healthy' ? Colors.green : Colors.orange,
-                            child: PlaceholderImage(
-                              networkUrl: livestock['image'],
-                              placeholderIcon: Icons.pets,
-                              width: 40,
-                              height: 40,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Filter chips
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      FilterChip(
+                        label: const Text('All'),
+                        selected: _selectedFilter == 'All',
+                        onSelected: (selected) => _filterLivestock('All'),
+                      ),
+                      FilterChip(
+                        label: const Text('Cattle'),
+                        selected: _selectedFilter == 'Cattle',
+                        onSelected: (selected) => _filterLivestock('Cattle'),
+                      ),
+                      FilterChip(
+                        label: const Text('Goats'),
+                        selected: _selectedFilter == 'Goats',
+                        onSelected: (selected) => _filterLivestock('Goats'),
+                      ),
+                      FilterChip(
+                        label: const Text('Sheep'),
+                        selected: _selectedFilter == 'Sheep',
+                        onSelected: (selected) => _filterLivestock('Sheep'),
+                      ),
+                      FilterChip(
+                        label: const Text('Pigs'),
+                        selected: _selectedFilter == 'Pigs',
+                        onSelected: (selected) => _filterLivestock('Pigs'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  // Error message
+                  if (livestockState.error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        'Error: ${livestockState.error}',
+                        style: TextStyle(color: Colors.red[700]),
+                      ),
+                    ),
+                  // Livestock list
+                  filteredLivestock.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.pets,
+                                size: 80,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No livestock found',
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      color: Colors.grey[600],
+                                    ),
+                              ),
+                              const SizedBox(height: 24),
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  context.push('/livestock/add');
+                                },
+                                icon: const Icon(Icons.add),
+                                label: const Text('Add Livestock'),
+                              ),
+                            ],
                           ),
-                          title: Text(livestock['name']),
-                          subtitle: Text('${livestock['type']} - ${livestock['breed']}'),
-                          trailing: Chip(
-                            label: Text(
-                              livestock['status'],
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            backgroundColor: livestock['status'] == 'healthy' ? Colors.green[100] : Colors.orange[100],
-                          ),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => LivestockDetailScreen(livestockId: livestock['id']),
+                        )
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: filteredLivestock.length,
+                          itemBuilder: (context, index) {
+                            final livestock = filteredLivestock[index];
+                            final photoUrl = livestock.photos.isNotEmpty 
+                                ? livestock.photos.first 
+                                : null;
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: _getStatusColor(livestock.status),
+                                  child: PlaceholderImage(
+                                    networkUrl: photoUrl,
+                                    placeholderIcon: Icons.pets,
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                ),
+                                title: Text(livestock.name ?? 'Unnamed'),
+                                subtitle: Text(
+                                  '${livestock.livestockType?.name ?? 'Unknown'} - ${livestock.breed?.name ?? 'Unknown breed'}',
+                                ),
+                                trailing: Chip(
+                                  label: Text(
+                                    livestock.status.name,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  backgroundColor: _getStatusColor(livestock.status).withOpacity(0.2),
+                                ),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => LivestockDetailScreen(livestockId: livestock.id),
+                                    ),
+                                  );
+                                },
                               ),
                             );
                           },
                         ),
-                      );
-                    },
-                  ),
-          ],
-        ),
-      ),
+                ],
+              ),
+            ),
     );
   }
 }
