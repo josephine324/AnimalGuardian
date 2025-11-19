@@ -17,7 +17,18 @@ RUN apt-get update && apt-get install -y \
 COPY backend/ /app/
 
 # Debug: List contents to verify start.sh was copied
-RUN ls -la /app/ | grep -E "(start.sh|manage.py)" || (echo "Files in /app:" && ls -la /app/ | head -30)
+RUN echo "=== Checking for start.sh ===" && \
+    if [ -f /app/start.sh ]; then \
+        echo "✓ start.sh found"; \
+        ls -lh /app/start.sh; \
+    else \
+        echo "✗ start.sh NOT found"; \
+        echo "Files in /app/:"; \
+        ls -la /app/ | head -30; \
+        echo "Looking for .sh files:"; \
+        find /app -name "*.sh" 2>/dev/null || echo "No .sh files found"; \
+        exit 1; \
+    fi
 
 # Make startup script executable
 RUN chmod +x /app/start.sh
