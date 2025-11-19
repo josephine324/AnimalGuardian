@@ -108,7 +108,33 @@ const VeterinariansPage = () => {
       alert('Veterinarian added successfully!');
     } catch (err) {
       console.error('Error adding veterinarian:', err);
-      alert(err.response?.data?.error || err.response?.data?.detail || 'Failed to add veterinarian');
+      console.error('Error response:', err.response);
+      console.error('Error data:', err.response?.data);
+      
+      // Extract detailed error message
+      let errorMessage = 'Failed to add veterinarian';
+      if (err.response?.data) {
+        const errorData = err.response.data;
+        if (errorData.error) {
+          errorMessage = errorData.error;
+        } else if (errorData.detail) {
+          errorMessage = errorData.detail;
+        } else if (typeof errorData === 'object') {
+          // Handle validation errors (e.g., {phone_number: ["User with this phone number already exists."]})
+          const errorMessages = [];
+          for (const [field, messages] of Object.entries(errorData)) {
+            if (Array.isArray(messages)) {
+              errorMessages.push(`${field}: ${messages.join(', ')}`);
+            } else {
+              errorMessages.push(`${field}: ${messages}`);
+            }
+          }
+          if (errorMessages.length > 0) {
+            errorMessage = errorMessages.join('\n');
+          }
+        }
+      }
+      alert(errorMessage);
     } finally {
       setSubmitting(false);
     }
