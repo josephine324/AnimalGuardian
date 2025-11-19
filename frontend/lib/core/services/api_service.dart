@@ -499,6 +499,63 @@ class ApiService {
     return _handleResponse(response) as Map<String, dynamic>;
   }
 
+  // Password Reset
+  Future<Map<String, dynamic>> requestPasswordReset(String emailOrPhone) async {
+    final headers = await _getHeaders(includeAuth: false);
+    
+    // Determine if it's email or phone
+    final isEmail = emailOrPhone.contains('@');
+    final payload = isEmail 
+        ? {'email': emailOrPhone}
+        : {'phone_number': emailOrPhone};
+    
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/password-reset/request/'),
+      headers: headers,
+      body: json.encode(payload),
+    ).timeout(AppConstants.connectionTimeout);
+
+    return _handleResponse(response) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> verifyPasswordResetOTP(String emailOrPhone, String otpCode) async {
+    final headers = await _getHeaders(includeAuth: false);
+    
+    final isEmail = emailOrPhone.contains('@');
+    final payload = {
+      ...(isEmail ? {'email': emailOrPhone} : {'phone_number': emailOrPhone}),
+      'otp_code': otpCode,
+    };
+    
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/password-reset/verify-otp/'),
+      headers: headers,
+      body: json.encode(payload),
+    ).timeout(AppConstants.connectionTimeout);
+
+    return _handleResponse(response) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> resetPassword(String emailOrPhone, String otpCode, String newPassword, String passwordConfirm) async {
+    final headers = await _getHeaders(includeAuth: false);
+    
+    final isEmail = emailOrPhone.contains('@');
+    final payload = {
+      ...(isEmail ? {'email': emailOrPhone} : {'phone_number': emailOrPhone}),
+      'otp_code': otpCode,
+      'new_password': newPassword,
+      'password_confirm': passwordConfirm,
+    };
+    
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/password-reset/reset/'),
+      headers: headers,
+      body: json.encode(payload),
+    ).timeout(AppConstants.connectionTimeout);
+
+    return _handleResponse(response) as Map<String, dynamic>;
+  }
+
   // Toggle veterinarian availability (online/offline)
   Future<Map<String, dynamic>> toggleAvailability(bool isOnline) async {
     final headers = await _getHeaders();

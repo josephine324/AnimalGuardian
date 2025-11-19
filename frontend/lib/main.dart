@@ -9,6 +9,9 @@ import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/register_screen.dart';
 import 'features/auth/presentation/screens/otp_verification_screen.dart';
 import 'features/auth/presentation/screens/vet_availability_screen.dart';
+import 'features/auth/presentation/screens/forgot_password_screen.dart';
+import 'features/auth/presentation/screens/verify_password_reset_otp_screen.dart';
+import 'features/auth/presentation/screens/reset_password_screen.dart';
 import 'features/home/presentation/screens/dashboard_screen.dart';
 import 'features/home/presentation/screens/vet_dashboard_screen.dart';
 import 'features/cases/presentation/screens/report_case_screen.dart';
@@ -95,6 +98,31 @@ final _router = GoRouter(
           phoneNumber: phoneNumber ?? '',
           email: email,
           userType: userType,
+        );
+      },
+    ),
+    // Forgot Password routes
+    GoRoute(
+      path: '/forgot-password',
+      builder: (context, state) => const ForgotPasswordScreen(),
+    ),
+    GoRoute(
+      path: '/forgot-password/verify',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        final emailOrPhone = extra?['emailOrPhone'] as String? ?? '';
+        return VerifyPasswordResetOTPScreen(emailOrPhone: emailOrPhone);
+      },
+    ),
+    GoRoute(
+      path: '/forgot-password/reset',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        final emailOrPhone = extra?['emailOrPhone'] as String? ?? '';
+        final otpCode = extra?['otpCode'] as String? ?? '';
+        return ResetPasswordScreen(
+          emailOrPhone: emailOrPhone,
+          otpCode: otpCode,
         );
       },
     ),

@@ -239,6 +239,14 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                       ),
                       const SizedBox(height: 16),
+                      // Forgot Password Link
+                      TextButton(
+                        onPressed: () {
+                          context.push('/forgot-password');
+                        },
+                        child: const Text('Forgot Password?'),
+                      ),
+                      const SizedBox(height: 8),
                       // Create Account Button
                       OutlinedButton(
                         onPressed: () {

@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/services/api_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -16,6 +18,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
   final ApiService _apiService = ApiService();
+  final ImagePicker _imagePicker = ImagePicker();
+  File? _profileImage;
+  String? _profileImageUrl;
   bool _isLoading = false;
   bool _isInitialized = false;
 
@@ -34,6 +39,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           _emailController.text = user['email'] ?? '';
           _phoneController.text = user['phone_number'] ?? '';
           _addressController.text = user['village'] ?? user['sector'] ?? user['district'] ?? '';
+          _profileImageUrl = user['profile_picture'];
           _isInitialized = true;
         });
       }
@@ -47,6 +53,102 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         });
       }
     }
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        setState(() {
+          _profileImage = File(image.path);
+          _profileImageUrl = null; // Clear URL when new image is selected
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to pick image: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _takePhoto() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        setState(() {
+          _profileImage = File(image.path);
+          _profileImageUrl = null; // Clear URL when new image is selected
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to take photo: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showImageSourceDialog() async {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take Photo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _takePhoto();
+                },
+              ),
+              if (_profileImage != null || _profileImageUrl != null)
+                ListTile(
+                  leading: const Icon(Icons.delete, color: Colors.red),
+                  title: const Text('Remove Photo', style: TextStyle(color: Colors.red)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    setState(() {
+                      _profileImage = null;
+                      _profileImageUrl = null;
+                    });
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -143,20 +245,42 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               Center(
                 child: Stack(
                   children: [
-                    const CircleAvatar(
-                      radius: 50,
-                      child: Icon(Icons.person, size: 50),
+                    GestureDetector(
+                      onTap: _showImageSourceDialog,
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.grey[300],
+                        backgroundImage: _profileImage != null
+                            ? FileImage(_profileImage!)
+                            : (_profileImageUrl != null && _profileImageUrl!.isNotEmpty
+                                ? NetworkImage(_profileImageUrl!)
+                                : null) as ImageProvider?,
+                        child: _profileImage == null && (_profileImageUrl == null || _profileImageUrl!.isEmpty)
+                            ? const Icon(Icons.person, size: 50, color: Colors.grey)
+                            : null,
+                      ),
                     ),
                     Positioned(
                       bottom: 0,
                       right: 0,
-                      child: CircleAvatar(
-                        radius: 16,
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                      child: GestureDetector(
+                        onTap: _showImageSourceDialog,
+                        child: CircleAvatar(
+                          radius: 16,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                        ),
                       ),
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Center(
+                child: TextButton.icon(
+                  onPressed: _showImageSourceDialog,
+                  icon: const Icon(Icons.edit),
+                  label: const Text('Change Profile Picture'),
                 ),
               ),
               const SizedBox(height: 32),
