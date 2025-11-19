@@ -31,20 +31,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  final List<Widget> _screens = [];
-  
-  @override
-  void initState() {
-    super.initState();
-    _screens.addAll([
-      _HomeTab(scaffoldKey: _scaffoldKey),
-      _LivestockTab(scaffoldKey: _scaffoldKey, bottomNavBar: _buildBottomNavigationBar(context)),
-      _CasesTab(scaffoldKey: _scaffoldKey),
-      _ChatTab(scaffoldKey: _scaffoldKey), // Chat with vets
-      _CommunityTab(scaffoldKey: _scaffoldKey), // Community - connect with other farmers
-    ]);
-  }
-
   void changeTab(int index) {
     setState(() {
       _currentIndex = index;
@@ -383,10 +369,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Build screens here to ensure context is available
+    final screens = [
+      _HomeTab(scaffoldKey: _scaffoldKey),
+      _LivestockTab(scaffoldKey: _scaffoldKey, bottomNavBar: _buildBottomNavigationBar(context)),
+      _CasesTab(scaffoldKey: _scaffoldKey),
+      _ChatTab(scaffoldKey: _scaffoldKey), // Chat with vets
+      _CommunityTab(scaffoldKey: _scaffoldKey), // Community - connect with other farmers
+    ];
+    
     return Scaffold(
       key: _scaffoldKey,
       drawer: _buildDrawer(context),
-      body: _screens[_currentIndex],
+      body: screens[_currentIndex],
       bottomNavigationBar: _buildBottomNavigationBar(context),
     );
   }
