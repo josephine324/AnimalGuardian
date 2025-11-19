@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/services/api_service.dart';
@@ -54,10 +55,6 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
         BottomNavigationBarItem(
           icon: Icon(Icons.report_problem),
           label: 'Cases',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.chat_bubble_outline),
-          label: 'Chat',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.people),
@@ -129,19 +126,11 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.chat_bubble_outline, color: Colors.blue),
-            title: const Text('Chat'),
-            onTap: () {
-              Navigator.pop(context);
-              changeTab(2);
-            },
-          ),
-          ListTile(
             leading: const Icon(Icons.people, color: Colors.purple),
             title: const Text('Community'),
             onTap: () {
               Navigator.pop(context);
-              changeTab(3);
+              changeTab(2);
             },
           ),
           ListTile(
@@ -149,7 +138,7 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
             title: const Text('Profile'),
             onTap: () {
               Navigator.pop(context);
-              changeTab(4);
+              changeTab(3);
             },
           ),
           const Divider(),
@@ -208,6 +197,34 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
               );
             },
           ),
+          const Divider(),
+          // Legal
+          ListTile(
+            leading: const Icon(Icons.privacy_tip, color: Colors.blue),
+            title: const Text('Privacy Policy'),
+            onTap: () {
+              Navigator.pop(context); // Close drawer
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PrivacyPolicyScreen(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.description, color: Colors.orange),
+            title: const Text('Terms & Conditions'),
+            onTap: () {
+              Navigator.pop(context); // Close drawer
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const TermsOfServiceScreen(),
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -218,8 +235,7 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
     final List<Widget> screens = [
       _VetHomeTab(scaffoldKey: _scaffoldKey),
       _VetCasesTab(scaffoldKey: _scaffoldKey),
-      _VetChatTab(scaffoldKey: _scaffoldKey), // Chat with farmers
-      _VetCommunityTab(scaffoldKey: _scaffoldKey), // Community - connect with farmers
+      _VetCommunityTab(scaffoldKey: _scaffoldKey), // Community - connect with farmers (replaces Chat)
       _VetProfileTab(
         scaffoldKey: _scaffoldKey,
         buildBottomNavBar: _buildBottomNavigationBar,
@@ -675,67 +691,76 @@ class _VetCasesTabState extends ConsumerState<_VetCasesTab> {
                             ),
                       ),
                       const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          _buildStyledFilterChip(
-                            context,
-                            'All',
-                            _selectedFilter == 'All',
-                            Colors.blue,
-                            () => _filterCases('All'),
-                          ),
-                          _buildStyledFilterChip(
-                            context,
-                            'Assigned',
-                            _selectedFilter == 'Assigned',
-                            Colors.orange,
-                            () => _filterCases('Assigned'),
-                          ),
-                          _buildStyledFilterChip(
-                            context,
-                            'In Progress',
-                            _selectedFilter == 'In Progress',
-                            Colors.blue,
-                            () => _filterCases('In Progress'),
-                          ),
-                          _buildStyledFilterChip(
-                            context,
-                            'Resolved',
-                            _selectedFilter == 'Resolved',
-                            Colors.green,
-                            () => _filterCases('Resolved'),
-                          ),
-                          _buildStyledFilterChip(
-                            context,
-                            'Diagnosed',
-                            _selectedFilter == 'Diagnosed',
-                            Colors.purple,
-                            () => _filterCases('Diagnosed'),
-                          ),
-                          _buildStyledFilterChip(
-                            context,
-                            'Treated',
-                            _selectedFilter == 'Treated',
-                            Colors.teal,
-                            () => _filterCases('Treated'),
-                          ),
-                          _buildStyledFilterChip(
-                            context,
-                            'Investigation',
-                            _selectedFilter == 'Investigation',
-                            Colors.indigo,
-                            () => _filterCases('Investigation'),
-                          ),
-                          _buildStyledFilterChip(
-                            context,
-                            'Rejected',
-                            _selectedFilter == 'Rejected',
-                            Colors.red,
-                            () => _filterCases('Rejected'),
-                          ),
-                        ],
+                      // Single row with horizontal scroll
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildStyledFilterChip(
+                              context,
+                              'All',
+                              _selectedFilter == 'All',
+                              Colors.blue,
+                              () => _filterCases('All'),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildStyledFilterChip(
+                              context,
+                              'Assigned',
+                              _selectedFilter == 'Assigned',
+                              Colors.orange,
+                              () => _filterCases('Assigned'),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildStyledFilterChip(
+                              context,
+                              'In Progress',
+                              _selectedFilter == 'In Progress',
+                              Colors.blue,
+                              () => _filterCases('In Progress'),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildStyledFilterChip(
+                              context,
+                              'Resolved',
+                              _selectedFilter == 'Resolved',
+                              Colors.green,
+                              () => _filterCases('Resolved'),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildStyledFilterChip(
+                              context,
+                              'Diagnosed',
+                              _selectedFilter == 'Diagnosed',
+                              Colors.purple,
+                              () => _filterCases('Diagnosed'),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildStyledFilterChip(
+                              context,
+                              'Treated',
+                              _selectedFilter == 'Treated',
+                              Colors.teal,
+                              () => _filterCases('Treated'),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildStyledFilterChip(
+                              context,
+                              'Investigation',
+                              _selectedFilter == 'Investigation',
+                              Colors.indigo,
+                              () => _filterCases('Investigation'),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildStyledFilterChip(
+                              context,
+                              'Rejected',
+                              _selectedFilter == 'Rejected',
+                              Colors.red,
+                              () => _filterCases('Rejected'),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -1227,13 +1252,13 @@ class _VetCommunityTabState extends State<_VetCommunityTab> with SingleTickerPro
                         Icons.comment_outlined,
                         '${post.commentsCount}',
                         Colors.grey,
-                        () {},
+                        () => _handleComment(post.id),
                       ),
                       _buildActionButton(
                         Icons.share_outlined,
                         'Share',
                         Colors.grey,
-                        () {},
+                        () => _handleShare(post.id),
                       ),
                     ],
                   ),
@@ -1353,6 +1378,115 @@ class _VetCommunityTabState extends State<_VetCommunityTab> with SingleTickerPro
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to like post: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleComment(int postId) async {
+    final commentController = TextEditingController();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Comment'),
+        content: TextField(
+          controller: commentController,
+          decoration: const InputDecoration(
+            hintText: 'Write your comment...',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 4,
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (commentController.text.trim().isNotEmpty) {
+                Navigator.pop(context, true);
+              }
+            },
+            child: const Text('Post'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && commentController.text.trim().isNotEmpty) {
+      try {
+        await _apiService.createComment({
+          'post': postId,
+          'content': commentController.text.trim(),
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Comment posted successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          await _loadPosts(); // Refresh posts to update comment count
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to post comment: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _handleShare(int postId) async {
+    try {
+      final post = _posts.firstWhere((p) => p.id == postId);
+      final shareText = '${post.title}\n\n${post.content}\n\nShared from AnimalGuardian App';
+
+      if (mounted) {
+        final result = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Share Post'),
+            content: SelectableText(shareText),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: shareText));
+                  if (mounted) {
+                    Navigator.pop(context, true);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Post content copied to clipboard!'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                },
+                child: const Text('Copy'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to share: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );

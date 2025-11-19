@@ -262,7 +262,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Navigator.of(context).popUntil((route) => route.isFirst);
               }
               Future.delayed(const Duration(milliseconds: 100), () {
-                if (mounted) changeTab(1);
+                if (mounted) changeTab(2); // Cases is at index 2
               });
             },
           ),
@@ -275,7 +275,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Navigator.of(context).popUntil((route) => route.isFirst);
               }
               Future.delayed(const Duration(milliseconds: 100), () {
-                if (mounted) changeTab(2);
+                if (mounted) changeTab(3); // Community is at index 3
               });
             },
           ),
@@ -288,7 +288,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Navigator.of(context).popUntil((route) => route.isFirst);
               }
               Future.delayed(const Duration(milliseconds: 100), () {
-                if (mounted) changeTab(3);
+                if (mounted) changeTab(4); // Profile is at index 4
               });
             },
           ),
@@ -357,6 +357,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Future.delayed(const Duration(milliseconds: 100), () {
                 if (mounted) _navigateToSettings(context);
               });
+            },
+          ),
+          const Divider(),
+          // Legal
+          ListTile(
+            leading: const Icon(Icons.privacy_tip, color: Colors.blue),
+            title: const Text('Privacy Policy'),
+            onTap: () {
+              Navigator.pop(context); // Close drawer
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PrivacyPolicyScreen(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.description, color: Colors.orange),
+            title: const Text('Terms & Conditions'),
+            onTap: () {
+              Navigator.pop(context); // Close drawer
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const TermsOfServiceScreen(),
+                ),
+              );
             },
           ),
         ],
@@ -1124,41 +1152,48 @@ class _CasesTabState extends ConsumerState<_CasesTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Status filter chips
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      FilterChip(
-                        label: const Text('All'),
-                        selected: _selectedFilter == 'All',
-                        onSelected: (selected) => _filterCases('All'),
-                      ),
-                      FilterChip(
-                        label: const Text('Pending'),
-                        selected: _selectedFilter == 'Pending',
-                        onSelected: (selected) => _filterCases('Pending'),
-                      ),
-                      FilterChip(
-                        label: const Text('Under Review'),
-                        selected: _selectedFilter == 'Under Review',
-                        onSelected: (selected) => _filterCases('Under Review'),
-                      ),
-                      FilterChip(
-                        label: const Text('Resolved'),
-                        selected: _selectedFilter == 'Resolved',
-                        onSelected: (selected) => _filterCases('Resolved'),
-                      ),
-                      FilterChip(
-                        label: const Text('Investigation'),
-                        selected: _selectedFilter == 'Investigation',
-                        onSelected: (selected) => _filterCases('Investigation'),
-                      ),
-                      FilterChip(
-                        label: const Text('Rejected'),
-                        selected: _selectedFilter == 'Rejected',
-                        onSelected: (selected) => _filterCases('Rejected'),
-                      ),
-                    ],
+                  // Status filter chips - single row with horizontal scroll
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        FilterChip(
+                          label: const Text('All'),
+                          selected: _selectedFilter == 'All',
+                          onSelected: (selected) => _filterCases('All'),
+                        ),
+                        const SizedBox(width: 8),
+                        FilterChip(
+                          label: const Text('Pending'),
+                          selected: _selectedFilter == 'Pending',
+                          onSelected: (selected) => _filterCases('Pending'),
+                        ),
+                        const SizedBox(width: 8),
+                        FilterChip(
+                          label: const Text('Under Review'),
+                          selected: _selectedFilter == 'Under Review',
+                          onSelected: (selected) => _filterCases('Under Review'),
+                        ),
+                        const SizedBox(width: 8),
+                        FilterChip(
+                          label: const Text('Resolved'),
+                          selected: _selectedFilter == 'Resolved',
+                          onSelected: (selected) => _filterCases('Resolved'),
+                        ),
+                        const SizedBox(width: 8),
+                        FilterChip(
+                          label: const Text('Investigation'),
+                          selected: _selectedFilter == 'Investigation',
+                          onSelected: (selected) => _filterCases('Investigation'),
+                        ),
+                        const SizedBox(width: 8),
+                        FilterChip(
+                          label: const Text('Rejected'),
+                          selected: _selectedFilter == 'Rejected',
+                          onSelected: (selected) => _filterCases('Rejected'),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 24),
                   // Error message

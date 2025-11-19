@@ -13,6 +13,8 @@ const CasesPage = () => {
   const [userData, setUserData] = useState(null);
   const [assignVetId, setAssignVetId] = useState('');
   const [assigning, setAssigning] = useState(false);
+  const [showCaseDetailModal, setShowCaseDetailModal] = useState(false);
+  const [selectedCaseDetail, setSelectedCaseDetail] = useState(null);
 
   useEffect(() => {
     // Only fetch if user is authenticated
@@ -414,7 +416,15 @@ const CasesPage = () => {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                    <button className="text-green-600 hover:text-green-900">View</button>
+                    <button 
+                      onClick={() => {
+                        setSelectedCaseDetail(case_);
+                        setShowCaseDetailModal(true);
+                      }}
+                      className="text-green-600 hover:text-green-900"
+                    >
+                      View
+                    </button>
                     {isSectorVetOrAdmin() && (
                       <>
                         {case_.assigned_veterinarian ? (
@@ -546,6 +556,152 @@ const CasesPage = () => {
                   {assigning ? 'Assigning...' : selectedCase.assigned_veterinarian ? 'Reassign' : 'Assign'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Case Detail Modal */}
+      {showCaseDetailModal && selectedCaseDetail && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
+              <h2 className="text-xl font-bold text-gray-900">Case Details - {selectedCaseDetail.case_id || selectedCaseDetail.id}</h2>
+              <button
+                onClick={() => {
+                  setShowCaseDetailModal(false);
+                  setSelectedCaseDetail(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              {/* Case Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 mb-1">Case ID</h3>
+                  <p className="text-lg font-semibold text-gray-900">{selectedCaseDetail.case_id || selectedCaseDetail.id}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 mb-1">Status</h3>
+                  <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(selectedCaseDetail.status)}`}>
+                    {selectedCaseDetail.status ? selectedCaseDetail.status.replace(/_/g, ' ') : 'pending'}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 mb-1">Urgency</h3>
+                  <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full border ${getUrgencyColor(selectedCaseDetail.urgency)}`}>
+                    {selectedCaseDetail.urgency || 'medium'}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 mb-1">Reported Date</h3>
+                  <p className="text-lg text-gray-900">
+                    {selectedCaseDetail.reported_at ? new Date(selectedCaseDetail.reported_at).toLocaleString() : 'N/A'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Reporter Information */}
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Reporter Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">Name</h4>
+                    <p className="text-gray-900">{selectedCaseDetail.reporter_name || 'Unknown'}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">Phone</h4>
+                    <p className="text-gray-900">{selectedCaseDetail.reporter?.phone_number || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">Email</h4>
+                    <p className="text-gray-900">{selectedCaseDetail.reporter?.email || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">Location</h4>
+                    <p className="text-gray-900">{selectedCaseDetail.location_notes || selectedCaseDetail.reporter?.sector || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Livestock Information */}
+              {selectedCaseDetail.livestock && (
+                <div className="border-t border-gray-200 pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Livestock Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500 mb-1">Type</h4>
+                      <p className="text-gray-900">
+                        {selectedCaseDetail.livestock?.livestock_type?.name || selectedCaseDetail.livestock?.name || 'Unknown'}
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500 mb-1">Breed</h4>
+                      <p className="text-gray-900">
+                        {selectedCaseDetail.livestock?.breed?.name || selectedCaseDetail.livestock?.tag_number || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Symptoms */}
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Symptoms Observed</h3>
+                <p className="text-gray-700 whitespace-pre-wrap">{selectedCaseDetail.symptoms_observed || 'No symptoms reported'}</p>
+              </div>
+
+              {/* Additional Information */}
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {selectedCaseDetail.duration_of_symptoms && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500 mb-1">Duration of Symptoms</h4>
+                      <p className="text-gray-900">{selectedCaseDetail.duration_of_symptoms}</p>
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">Number of Affected Animals</h4>
+                    <p className="text-gray-900">{selectedCaseDetail.number_of_affected_animals || 1}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Assigned Veterinarian */}
+              {selectedCaseDetail.assigned_veterinarian_name && (
+                <div className="border-t border-gray-200 pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Assigned Veterinarian</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500 mb-1">Veterinarian</h4>
+                      <p className="text-gray-900">{selectedCaseDetail.assigned_veterinarian_name}</p>
+                    </div>
+                    {selectedCaseDetail.assigned_at && (
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500 mb-1">Assigned Date</h4>
+                        <p className="text-gray-900">{new Date(selectedCaseDetail.assigned_at).toLocaleString()}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end sticky bottom-0 bg-white">
+              <button
+                onClick={() => {
+                  setShowCaseDetailModal(false);
+                  setSelectedCaseDetail(null);
+                }}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

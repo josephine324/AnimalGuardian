@@ -167,8 +167,24 @@ const LivestockPage = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                    <button className="text-blue-600 hover:text-blue-900">View</button>
-                    <button className="text-green-600 hover:text-green-900">Edit</button>
+                    <button 
+                      onClick={() => {
+                        // Show livestock details in a modal
+                        alert(`Livestock Details:\n\nName: ${animal.name || 'Unnamed'}\nType: ${animal.livestock_type?.name || 'Unknown'}\nBreed: ${animal.breed?.name || 'Unknown'}\nStatus: ${animal.status || 'Unknown'}\nOwner: ${animal.owner?.first_name || ''} ${animal.owner?.last_name || animal.owner?.username || 'Unknown'}`);
+                      }}
+                      className="text-blue-600 hover:text-blue-900"
+                    >
+                      View
+                    </button>
+                    <button 
+                      onClick={() => {
+                        // Edit functionality - for now show alert, can be enhanced later
+                        alert(`Edit functionality for ${animal.name || 'this livestock'} will be available soon.`);
+                      }}
+                      className="text-green-600 hover:text-green-900"
+                    >
+                      Edit
+                    </button>
                   </td>
                 </tr>
               ))
