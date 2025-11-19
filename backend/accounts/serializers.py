@@ -125,6 +125,27 @@ class UserSerializer(serializers.ModelSerializer):
         validated_data.setdefault('preferred_language', 'en')
         
         user = User.objects.create_user(password=password, **validated_data)
+        
+        # Automatically create VeterinarianProfile if user is a veterinarian
+        user_type = validated_data.get('user_type')
+        if user_type in ['local_vet', 'sector_vet']:
+            # Generate a unique license number
+            license_number = f'VET-{user.id}-{secrets.token_hex(4).upper()}'
+            while VeterinarianProfile.objects.filter(license_number=license_number).exists():
+                license_number = f'VET-{user.id}-{secrets.token_hex(4).upper()}'
+            
+            VeterinarianProfile.objects.create(
+                user=user,
+                license_number=license_number,
+                license_type='licensed',
+                specialization=validated_data.get('specialization', 'General Practice'),
+                is_available=True
+            )
+        
+        # Automatically create FarmerProfile if user is a farmer
+        elif user_type == 'farmer':
+            FarmerProfile.objects.create(user=user)
+        
         return user
     
     def update(self, instance, validated_data):
