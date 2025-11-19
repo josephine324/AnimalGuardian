@@ -60,7 +60,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
         // Navigate based on user type
         if (userType == 'local_vet' || userType == 'sector_vet') {
-          context.go('/vet-dashboard');
+          // For veterinarians, show availability screen first
+          context.go('/vet-availability');
         } else {
           context.go('/dashboard');
         }
