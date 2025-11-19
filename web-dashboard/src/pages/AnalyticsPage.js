@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { casesAPI, dashboardAPI } from '../services/api';
+import { casesAPI, dashboardAPI, usersAPI, livestockAPI } from '../services/api';
 
 const AnalyticsPage = () => {
   const [diseaseData, setDiseaseData] = useState([]);
@@ -44,6 +44,15 @@ const AnalyticsPage = () => {
       const casesData = await casesAPI.getAll();
       const cases = casesData.results || (Array.isArray(casesData) ? casesData : []);
 
+      // Fetch farmers and livestock for accurate sector analytics
+      const [farmersData, livestockData] = await Promise.all([
+        usersAPI.getFarmers().catch(() => []),
+        livestockAPI.getAll().catch(() => [])
+      ]);
+      
+      const farmers = Array.isArray(farmersData) ? farmersData : (farmersData.results || []);
+      const livestock = Array.isArray(livestockData) ? livestockData : (livestockData.results || []);
+
       // Calculate disease data from cases (if disease field exists)
       // This is a placeholder - actual implementation depends on backend structure
       setDiseaseData([]);
@@ -52,8 +61,8 @@ const AnalyticsPage = () => {
       const monthly = calculateMonthlyData(cases);
       setMonthlyData(monthly);
 
-      // Calculate sector data from cases
-      const sectors = calculateSectorData(cases);
+      // Calculate sector data from cases, farmers, and livestock
+      const sectors = calculateSectorData(cases, farmers, livestock);
       setSectorData(sectors);
     } catch (err) {
       console.error('Error fetching analytics:', err);
@@ -80,25 +89,65 @@ const AnalyticsPage = () => {
     return Object.values(monthly).slice(-6); // Last 6 months
   };
 
-  const calculateSectorData = (cases) => {
-    // Group cases by sector
+  const calculateSectorData = (cases, farmers, livestock) => {
+    // Group data by sector
     const sectors = {};
+    
+    // Process cases
     cases.forEach(case_ => {
-      const sector = case_.sector || case_.location_notes || 'Unknown';
+      const sector = case_.reporter?.sector || case_.sector || case_.location_notes || 'Unknown';
       if (!sectors[sector]) {
-        sectors[sector] = { sector, cases: 0, farmers: new Set(), livestock: 0 };
+        sectors[sector] = { 
+          sector, 
+          cases: 0, 
+          farmers: new Set(), 
+          livestock: new Set() 
+        };
       }
       sectors[sector].cases++;
       if (case_.reporter) {
         sectors[sector].farmers.add(case_.reporter.id);
       }
     });
+    
+    // Process farmers
+    farmers.forEach(farmer => {
+      const sector = farmer.sector || 'Unknown';
+      if (!sectors[sector]) {
+        sectors[sector] = { 
+          sector, 
+          cases: 0, 
+          farmers: new Set(), 
+          livestock: new Set() 
+        };
+      }
+      if (farmer.id) {
+        sectors[sector].farmers.add(farmer.id);
+      }
+    });
+    
+    // Process livestock
+    livestock.forEach(animal => {
+      const sector = animal.owner?.sector || 'Unknown';
+      if (!sectors[sector]) {
+        sectors[sector] = { 
+          sector, 
+          cases: 0, 
+          farmers: new Set(), 
+          livestock: new Set() 
+        };
+      }
+      if (animal.id) {
+        sectors[sector].livestock.add(animal.id);
+      }
+    });
+    
     return Object.values(sectors).map(s => ({
       sector: s.sector,
       cases: s.cases,
       farmers: s.farmers.size,
-      livestock: 0, // Would need to fetch from livestock API
-    }));
+      livestock: s.livestock.size,
+    })).sort((a, b) => b.cases - a.cases); // Sort by cases descending
   };
 
   if (loading) {
