@@ -87,9 +87,14 @@ final _router = GoRouter(
     GoRoute(
       path: '/otp-verify',
       builder: (context, state) {
-        final phoneNumber = state.uri.queryParameters['phone'] ?? '+250********';
+        final phoneNumber = state.uri.queryParameters['phone'];
+        final email = state.uri.queryParameters['email'];
         final userType = state.uri.queryParameters['user_type'];
-        return OTPVerificationScreen(phoneNumber: phoneNumber, userType: userType);
+        return OTPVerificationScreen(
+          phoneNumber: phoneNumber ?? '',
+          email: email,
+          userType: userType,
+        );
       },
     ),
     // Main dashboard with bottom navigation (Farmer)
