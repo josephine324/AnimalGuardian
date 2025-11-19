@@ -125,9 +125,20 @@ class CasesNotifier extends StateNotifier<CasesState> {
 
       return newCase;
     } catch (error) {
+      // Extract more detailed error message
+      String errorMessage = error.toString();
+      if (error.toString().contains('HTTP 400')) {
+        // Parse validation errors
+        final errorStr = error.toString();
+        if (errorStr.contains('case_id') || errorStr.contains('reporter')) {
+          errorMessage = 'Server error: Please try again. If the problem persists, contact support.';
+        } else {
+          errorMessage = errorStr.replaceAll('Exception: ', '');
+        }
+      }
       state = state.copyWith(
         isLoading: false,
-        error: error.toString(),
+        error: errorMessage,
       );
       return null;
     }

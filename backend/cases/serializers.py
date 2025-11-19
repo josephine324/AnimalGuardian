@@ -11,9 +11,14 @@ class CaseReportSerializer(serializers.ModelSerializer):
     assigned_veterinarian_name = serializers.SerializerMethodField()
     assigned_by_name = serializers.SerializerMethodField()
     
+    # Make case_id and reporter read-only (auto-generated/set by backend)
+    case_id = serializers.CharField(read_only=True)
+    reporter = serializers.PrimaryKeyRelatedField(read_only=True)
+    
     class Meta:
         model = CaseReport
         fields = '__all__'
+        read_only_fields = ('case_id', 'reporter', 'assigned_veterinarian', 'assigned_at', 'assigned_by', 'reported_at', 'updated_at')
     
     def get_reporter_name(self, obj):
         return obj.reporter.get_full_name() or obj.reporter.username if obj.reporter else None

@@ -90,9 +90,9 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
       if (_selectedLivestockId != null) 'livestock': _selectedLivestockId,
       'urgency': _selectedUrgency.apiValue,
       'symptoms_observed': _symptomsController.text.trim(),
-      'duration_of_symptoms': _durationController.text.trim(),
+      if (_durationController.text.trim().isNotEmpty) 'duration_of_symptoms': _durationController.text.trim(),
       'number_of_affected_animals': int.tryParse(_numberOfAnimalsController.text) ?? 1,
-      'location_notes': _locationNotesController.text.trim(),
+      if (_locationNotesController.text.trim().isNotEmpty) 'location_notes': _locationNotesController.text.trim(),
       'photos': photoUrls,
     };
 
@@ -109,10 +109,13 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
         );
         context.pop();
       } else {
+        // Show the actual error message from the provider
+        final errorMessage = casesNotifier.state.error ?? 'Failed to report case. Please try again.';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to report case. Please try again.'),
+          SnackBar(
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -255,9 +258,12 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
               const SizedBox(height: 16),
 
               // Photos Section
-              const Text(
+              Text(
                 'Photos (Optional)',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Row(

@@ -40,7 +40,28 @@ class ApiService {
       }
       return json.decode(response.body);
     } else {
-      throw Exception('HTTP ${response.statusCode}: ${response.body}');
+      // Try to parse error message from response
+      String errorMessage = 'HTTP ${response.statusCode}';
+      try {
+        final errorData = json.decode(response.body);
+        if (errorData is Map) {
+          // Format validation errors nicely
+          final errors = <String>[];
+          errorData.forEach((key, value) {
+            if (value is List) {
+              errors.add('$key: ${value.join(", ")}');
+            } else {
+              errors.add('$key: $value');
+            }
+          });
+          errorMessage = errors.join('; ');
+        } else {
+          errorMessage = errorData.toString();
+        }
+      } catch (e) {
+        errorMessage = 'HTTP ${response.statusCode}: ${response.body}';
+      }
+      throw Exception(errorMessage);
     }
   }
 
