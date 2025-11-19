@@ -5,6 +5,8 @@ from . import views
 router = DefaultRouter()
 router.register(r'posts', views.PostViewSet, basename='post')
 router.register(r'comments', views.CommentViewSet, basename='comment')
+router.register(r'conversations', views.ConversationViewSet, basename='conversation')
+router.register(r'messages', views.MessageViewSet, basename='message')
 
 urlpatterns = [
     path('', include(router.urls)),
