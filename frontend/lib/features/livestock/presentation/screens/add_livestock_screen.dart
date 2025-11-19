@@ -26,14 +26,54 @@ class _AddLivestockScreenState extends ConsumerState<AddLivestockScreen> {
   LivestockStatus _selectedStatus = LivestockStatus.healthy;
   DateTime? _selectedBirthDate;
   bool _isPregnant = false;
+  bool _isLoadingTypes = false;
 
   @override
   void initState() {
     super.initState();
     // Load livestock types and breeds when screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(livestockProvider.notifier).loadLivestockTypes();
+      _loadLivestockTypes();
     });
+  }
+
+  Future<void> _loadLivestockTypes() async {
+    if (_isLoadingTypes) return;
+    
+    setState(() {
+      _isLoadingTypes = true;
+    });
+    
+    try {
+      await ref.read(livestockProvider.notifier).loadLivestockTypes();
+      // If types loaded successfully, check if we need to show a message
+      final state = ref.read(livestockProvider);
+      if (mounted && state.livestockTypes.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No livestock types available. Please contact support.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load livestock types: ${error.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingTypes = false;
+        });
+      }
+    }
   }
 
   @override
@@ -86,23 +126,53 @@ class _AddLivestockScreenState extends ConsumerState<AddLivestockScreen> {
       'is_pregnant': _isPregnant,
     };
 
-    final livestockNotifier = ref.read(livestockProvider.notifier);
-    final newLivestock = await livestockNotifier.createLivestock(livestockData);
+    setState(() {
+      _isLoading = true;
+    });
 
-    if (mounted) {
-      if (newLivestock != null) {
+    try {
+      final livestockNotifier = ref.read(livestockProvider.notifier);
+      final newLivestock = await livestockNotifier.createLivestock(livestockData);
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        if (newLivestock != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Livestock added successfully!'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          // Refresh livestock list after successful creation
+          await livestockNotifier.loadLivestock(refresh: true);
+          if (mounted) {
+            context.pop();
+          }
+        } else {
+          final error = ref.read(livestockProvider).error ?? 'Unknown error';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to add livestock: $error'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Livestock added successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        context.pop();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to add livestock. Please try again.'),
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -134,23 +204,57 @@ class _AddLivestockScreenState extends ConsumerState<AddLivestockScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Livestock Type *',
                   prefixIcon: Icon(Icons.pets),
+                  hintText: 'Select livestock type',
+                  border: OutlineInputBorder(),
                 ),
-                items: livestockState.livestockTypes.map((type) {
-                  return DropdownMenuItem<int>(
-                    value: type.id,
-                    child: Text(type.name),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedLivestockTypeId = value;
-                    _selectedBreedId = null; // Reset breed when type changes
-                  });
-                  // Load breeds for selected type
-                  if (value != null) {
-                    ref.read(livestockProvider.notifier).loadBreeds(livestockTypeId: value);
-                  }
-                },
+                hint: _isLoadingTypes
+                    ? const Text('Loading types...')
+                    : (livestockState.livestockTypes.isEmpty 
+                        ? const Text('No types available') 
+                        : const Text('Select livestock type')),
+                isExpanded: true,
+                items: _isLoadingTypes || livestockState.livestockTypes.isEmpty
+                    ? [
+                        DropdownMenuItem<int>(
+                          value: null,
+                          enabled: false,
+                          child: Text(_isLoadingTypes ? 'Loading types...' : 'No types available. Please contact support.'),
+                        )
+                      ]
+                    : [
+                        const DropdownMenuItem<int>(
+                          value: null,
+                          child: Text('Select livestock type'),
+                        ),
+                        ...livestockState.livestockTypes.map((type) {
+                          return DropdownMenuItem<int>(
+                            value: type.id,
+                            child: Text(type.name),
+                          );
+                        }).toList(),
+                      ],
+                onChanged: (_isLoadingTypes || livestockState.livestockTypes.isEmpty)
+                    ? null
+                    : (value) {
+                        if (value != null) {
+                          setState(() {
+                            _selectedLivestockTypeId = value;
+                            _selectedBreedId = null; // Reset breed when type changes
+                          });
+                          // Load breeds for selected type
+                          ref.read(livestockProvider.notifier).loadBreeds(livestockTypeId: value).catchError((error) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to load breeds: ${error.toString()}'),
+                                  backgroundColor: Colors.orange,
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            }
+                          });
+                        }
+                      },
                 validator: (value) {
                   if (value == null) {
                     return 'Please select a livestock type';
@@ -166,20 +270,51 @@ class _AddLivestockScreenState extends ConsumerState<AddLivestockScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Breed (Optional)',
                   prefixIcon: Icon(Icons.category),
+                  hintText: 'Select breed',
+                  border: OutlineInputBorder(),
                 ),
-                items: livestockState.breeds
-                    .where((breed) => breed.livestockTypeId == _selectedLivestockTypeId)
-                    .map((breed) {
-                  return DropdownMenuItem<int>(
-                    value: breed.id,
-                    child: Text(breed.name),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedBreedId = value;
-                  });
-                },
+                hint: Text(_selectedLivestockTypeId == null
+                    ? 'Select livestock type first'
+                    : 'Select breed (optional)'),
+                isExpanded: true,
+                items: _selectedLivestockTypeId == null
+                    ? [
+                        const DropdownMenuItem<int>(
+                          value: null,
+                          enabled: false,
+                          child: Text('Select livestock type first'),
+                        )
+                      ]
+                    : livestockState.breeds
+                        .where((breed) => breed.livestockTypeId == _selectedLivestockTypeId)
+                        .isEmpty
+                        ? [
+                            const DropdownMenuItem<int>(
+                              value: null,
+                              child: Text('No breeds available (optional)'),
+                            )
+                          ]
+                        : [
+                            const DropdownMenuItem<int>(
+                              value: null,
+                              child: Text('No breed (optional)'),
+                            ),
+                            ...livestockState.breeds
+                                .where((breed) => breed.livestockTypeId == _selectedLivestockTypeId)
+                                .map((breed) {
+                                  return DropdownMenuItem<int>(
+                                    value: breed.id,
+                                    child: Text(breed.name),
+                                  );
+                                }).toList(),
+                          ],
+                onChanged: _selectedLivestockTypeId == null
+                    ? null
+                    : (value) {
+                        setState(() {
+                          _selectedBreedId = value;
+                        });
+                      },
               ),
               const SizedBox(height: 16),
 
