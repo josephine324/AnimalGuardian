@@ -3,9 +3,11 @@ import 'dart:convert';
 enum CaseStatus {
   pending,
   underReview,
+  investigation,
   diagnosed,
   treated,
   resolved,
+  rejected,
   escalated,
 }
 
@@ -23,12 +25,16 @@ extension CaseStatusExtension on CaseStatus {
         return 'Pending Review';
       case CaseStatus.underReview:
         return 'Under Review';
+      case CaseStatus.investigation:
+        return 'Under Investigation';
       case CaseStatus.diagnosed:
         return 'Diagnosed';
       case CaseStatus.treated:
         return 'Treated';
       case CaseStatus.resolved:
         return 'Resolved';
+      case CaseStatus.rejected:
+        return 'Rejected';
       case CaseStatus.escalated:
         return 'Escalated';
     }
@@ -40,12 +46,16 @@ extension CaseStatusExtension on CaseStatus {
         return 'pending';
       case CaseStatus.underReview:
         return 'under_review';
+      case CaseStatus.investigation:
+        return 'investigation';
       case CaseStatus.diagnosed:
         return 'diagnosed';
       case CaseStatus.treated:
         return 'treated';
       case CaseStatus.resolved:
         return 'resolved';
+      case CaseStatus.rejected:
+        return 'rejected';
       case CaseStatus.escalated:
         return 'escalated';
     }
@@ -57,12 +67,16 @@ extension CaseStatusExtension on CaseStatus {
         return CaseStatus.pending;
       case 'under_review':
         return CaseStatus.underReview;
+      case 'investigation':
+        return CaseStatus.investigation;
       case 'diagnosed':
         return CaseStatus.diagnosed;
       case 'treated':
         return CaseStatus.treated;
       case 'resolved':
         return CaseStatus.resolved;
+      case 'rejected':
+        return CaseStatus.rejected;
       case 'escalated':
         return CaseStatus.escalated;
       default:

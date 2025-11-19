@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/services/api_service.dart';
@@ -122,29 +123,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
           label: 'Cases',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.chat_bubble_outline),
-          label: 'Chat',
-        ),
-        BottomNavigationBarItem(
           icon: Icon(Icons.people_outline),
           label: 'Community',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person),
+          label: 'Profile',
         ),
       ],
     );
   }
 
   void _navigateToLivestock(BuildContext context) {
-    // Navigate to livestock screen
+    // Navigate to livestock screen - no bottom nav bar to avoid duplication
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => _LivestockTab(
           scaffoldKey: _scaffoldKey,
-          bottomNavBar: _buildBottomNavigationBar(
-            context,
-            isPushedScreen: true,
-            onTabChanged: (index) => changeTab(index),
-          ),
+          bottomNavBar: null, // Don't pass bottomNavBar to avoid duplication
         ),
       ),
     );
@@ -372,10 +369,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Build screens here to ensure context is available
     final screens = [
       _HomeTab(scaffoldKey: _scaffoldKey),
-      _LivestockTab(scaffoldKey: _scaffoldKey, bottomNavBar: _buildBottomNavigationBar(context)),
+      _LivestockTab(scaffoldKey: _scaffoldKey, bottomNavBar: null), // Don't pass bottomNavBar to avoid duplication
       _CasesTab(scaffoldKey: _scaffoldKey),
-      _ChatTab(scaffoldKey: _scaffoldKey), // Chat with vets
       _CommunityTab(scaffoldKey: _scaffoldKey), // Community - connect with other farmers
+      _ProfileTab(scaffoldKey: _scaffoldKey), // Profile tab
     ];
     
     return Scaffold(
@@ -1054,7 +1051,9 @@ class _CasesTabState extends ConsumerState<_CasesTab> {
     final statusMap = {
       'Pending': 'pending',
       'Under Review': 'under_review',
+      'Investigation': 'investigation',
       'Resolved': 'resolved',
+      'Rejected': 'rejected',
     };
     final statusValue = statusMap[_selectedFilter] ?? '';
     return cases.where((c) => c.status.apiValue == statusValue).toList();
@@ -1066,8 +1065,12 @@ class _CasesTabState extends ConsumerState<_CasesTab> {
         return Colors.orange;
       case CaseStatus.underReview:
         return Colors.blue;
+      case CaseStatus.investigation:
+        return Colors.indigo;
       case CaseStatus.resolved:
         return Colors.green;
+      case CaseStatus.rejected:
+        return Colors.red;
       default:
         return Colors.grey;
     }
@@ -1144,6 +1147,16 @@ class _CasesTabState extends ConsumerState<_CasesTab> {
                         label: const Text('Resolved'),
                         selected: _selectedFilter == 'Resolved',
                         onSelected: (selected) => _filterCases('Resolved'),
+                      ),
+                      FilterChip(
+                        label: const Text('Investigation'),
+                        selected: _selectedFilter == 'Investigation',
+                        onSelected: (selected) => _filterCases('Investigation'),
+                      ),
+                      FilterChip(
+                        label: const Text('Rejected'),
+                        selected: _selectedFilter == 'Rejected',
+                        onSelected: (selected) => _filterCases('Rejected'),
                       ),
                     ],
                   ),
@@ -1280,47 +1293,7 @@ class _CasesTabState extends ConsumerState<_CasesTab> {
   }
 }
 
-// Chat Tab
-class _ChatTab extends StatelessWidget {
-  final GlobalKey<ScaffoldState> scaffoldKey;
-  
-  const _ChatTab({required this.scaffoldKey});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () => scaffoldKey.currentState?.openDrawer(),
-        ),
-        title: const Text('Chat'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-      ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.chat_bubble_outline, size: 80, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              'Chat Feature Coming Soon',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Direct messaging with veterinarians will be available soon',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// Chat Tab - REMOVED (using Community instead)
 
 // Community Tab
 class _CommunityTab extends StatefulWidget {
@@ -1496,22 +1469,119 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
     );
   }
 
-  void _handleLike(int postId) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Liked post $postId')),
+  Future<void> _handleComment(int postId) async {
+    final commentController = TextEditingController();
+    
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Comment'),
+        content: TextField(
+          controller: commentController,
+          decoration: const InputDecoration(
+            hintText: 'Write your comment...',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 4,
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (commentController.text.trim().isNotEmpty) {
+                Navigator.pop(context, true);
+              }
+            },
+            child: const Text('Post'),
+          ),
+        ],
+      ),
     );
+
+    if (result == true && commentController.text.trim().isNotEmpty) {
+      try {
+        await _apiService.createComment({
+          'post': postId,
+          'content': commentController.text.trim(),
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Comment posted successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          await _loadPosts(); // Refresh posts to update comment count
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to post comment: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 
-  void _handleComment(int postId) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Comment on post $postId')),
-    );
-  }
-
-  void _handleShare(int postId) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Share post $postId')),
-    );
+  Future<void> _handleShare(int postId) async {
+    try {
+      final post = _posts.firstWhere((p) => p.id == postId);
+      final shareText = '${post.title}\n\n${post.content}\n\nShared from AnimalGuardian App';
+      
+      // Use Flutter's share functionality
+      // Note: This requires share_plus package, but we'll use a simple approach
+      // For web, we can copy to clipboard
+      if (mounted) {
+        // For mobile, this would use share_plus
+        // For now, show a dialog with copy option
+        final result = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Share Post'),
+            content: SelectableText(shareText),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  // Copy to clipboard
+                  await Clipboard.setData(ClipboardData(text: shareText));
+                  if (mounted) {
+                    Navigator.pop(context, true);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Post content copied to clipboard!'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                },
+                child: const Text('Copy'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to share: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -2646,11 +2716,15 @@ class _ProfileTab extends StatelessWidget {
           label: 'Home',
         ),
         BottomNavigationBarItem(
+          icon: Icon(Icons.pets),
+          label: 'Livestock',
+        ),
+        BottomNavigationBarItem(
           icon: Icon(Icons.report_problem),
           label: 'Cases',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.people),
+          icon: Icon(Icons.people_outline),
           label: 'Community',
         ),
         BottomNavigationBarItem(

@@ -81,20 +81,13 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
       return;
     }
 
-    if (_selectedLivestockId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a livestock')),
-      );
-      return;
-    }
-
     // For now, we'll upload images as base64 or URLs
     // In production, you'd want to upload to a file server first
     final List<String> photoUrls = [];
     // TODO: Implement image upload to server and get URLs
 
     final caseData = {
-      'livestock': _selectedLivestockId,
+      if (_selectedLivestockId != null) 'livestock': _selectedLivestockId,
       'urgency': _selectedUrgency.apiValue,
       'symptoms_observed': _symptomsController.text.trim(),
       'duration_of_symptoms': _durationController.text.trim(),
@@ -146,31 +139,32 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Livestock Selection
+              // Livestock Selection (Optional)
               DropdownButtonFormField<int>(
                 value: _selectedLivestockId,
                 decoration: const InputDecoration(
-                  labelText: 'Select Livestock *',
+                  labelText: 'Select Livestock (Optional)',
                   prefixIcon: Icon(Icons.pets),
+                  hintText: 'Select a specific animal (optional)',
                 ),
-                items: livestockState.livestock.map((livestock) {
-                  return DropdownMenuItem<int>(
-                    value: livestock.id,
-                    child: Text(
-                      '${livestock.displayName} (${livestock.livestockType?.name ?? "Unknown"})',
-                    ),
-                  );
-                }).toList(),
+                items: [
+                  const DropdownMenuItem<int>(
+                    value: null,
+                    child: Text('No specific livestock (general case)'),
+                  ),
+                  ...livestockState.livestock.map((livestock) {
+                    return DropdownMenuItem<int>(
+                      value: livestock.id,
+                      child: Text(
+                        '${livestock.displayName} (${livestock.livestockType?.name ?? "Unknown"})',
+                      ),
+                    );
+                  }).toList(),
+                ],
                 onChanged: (value) {
                   setState(() {
                     _selectedLivestockId = value;
                   });
-                },
-                validator: (value) {
-                  if (value == null) {
-                    return 'Please select a livestock';
-                  }
-                  return null;
                 },
               ),
               const SizedBox(height: 16),

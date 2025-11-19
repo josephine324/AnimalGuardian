@@ -507,8 +507,12 @@ class _VetHomeTabState extends ConsumerState<_VetHomeTab> {
         return Colors.orange;
       case CaseStatus.underReview:
         return Colors.blue;
+      case CaseStatus.investigation:
+        return Colors.indigo;
       case CaseStatus.resolved:
         return Colors.green;
+      case CaseStatus.rejected:
+        return Colors.red;
       default:
         return Colors.grey;
     }
@@ -553,9 +557,11 @@ class _VetCasesTabState extends ConsumerState<_VetCasesTab> {
     final statusMap = {
       'Assigned': CaseStatus.pending,
       'In Progress': CaseStatus.underReview,
+      'Investigation': CaseStatus.investigation,
       'Resolved': CaseStatus.resolved,
       'Diagnosed': CaseStatus.diagnosed,
       'Treated': CaseStatus.treated,
+      'Rejected': CaseStatus.rejected,
     };
     final statusValue = statusMap[_selectedFilter];
     if (statusValue == null) {
@@ -714,6 +720,20 @@ class _VetCasesTabState extends ConsumerState<_VetCasesTab> {
                             _selectedFilter == 'Treated',
                             Colors.teal,
                             () => _filterCases('Treated'),
+                          ),
+                          _buildStyledFilterChip(
+                            context,
+                            'Investigation',
+                            _selectedFilter == 'Investigation',
+                            Colors.indigo,
+                            () => _filterCases('Investigation'),
+                          ),
+                          _buildStyledFilterChip(
+                            context,
+                            'Rejected',
+                            _selectedFilter == 'Rejected',
+                            Colors.red,
+                            () => _filterCases('Rejected'),
                           ),
                         ],
                       ),

@@ -55,9 +55,11 @@ class CaseReport(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending Review'),
         ('under_review', 'Under Review'),
+        ('investigation', 'Under Investigation'),
         ('diagnosed', 'Diagnosed'),
         ('treated', 'Treated'),
         ('resolved', 'Resolved'),
+        ('rejected', 'Rejected'),
         ('escalated', 'Escalated'),
     ]
     
@@ -70,7 +72,7 @@ class CaseReport(models.Model):
     
     # Basic information
     reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='case_reports')
-    livestock = models.ForeignKey(Livestock, on_delete=models.CASCADE, related_name='case_reports')
+    livestock = models.ForeignKey(Livestock, on_delete=models.CASCADE, related_name='case_reports', null=True, blank=True, help_text="Optional: Specific livestock affected. Leave blank for general cases.")
     
     # Veterinarian assignment
     assigned_veterinarian = models.ForeignKey(

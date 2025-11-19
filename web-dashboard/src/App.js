@@ -12,6 +12,7 @@ import FarmersPage from './pages/FarmersPage';
 import LivestockPage from './pages/LivestockPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import NotificationsPage from './pages/NotificationsPage';
+import CommunityPage from './pages/CommunityPage';
 import SettingsPage from './pages/SettingsPage';
 
 function App() {
@@ -130,6 +131,7 @@ function App() {
           <Route path="farmers" element={<FarmersPage />} />
           <Route path="livestock" element={<LivestockPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
+          <Route path="community" element={<CommunityPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>

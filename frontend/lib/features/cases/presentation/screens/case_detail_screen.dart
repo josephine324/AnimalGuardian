@@ -453,12 +453,16 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
         return Colors.blue;
       case CaseStatus.underReview:
         return Colors.orange;
+      case CaseStatus.investigation:
+        return Colors.indigo;
       case CaseStatus.diagnosed:
         return Colors.purple;
       case CaseStatus.treated:
         return Colors.teal;
       case CaseStatus.resolved:
         return Colors.green;
+      case CaseStatus.rejected:
+        return Colors.red;
       case CaseStatus.escalated:
         return Colors.red;
     }
