@@ -16,7 +16,7 @@ class AppConstants {
   static const String userIdKey = 'user_id';
   
   // Timeouts
-  static const Duration connectionTimeout = Duration(seconds: 30);
-  static const Duration receiveTimeout = Duration(seconds: 30);
+  static const Duration connectionTimeout = Duration(seconds: 60); // Increased for registration (email sending)
+  static const Duration receiveTimeout = Duration(seconds: 60);
 }
 
