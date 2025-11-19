@@ -1611,64 +1611,123 @@ class _VetProfileTabState extends State<_VetProfileTab> {
               ),
             ),
           if (isApproved) const SizedBox(height: 16),
-          ListTile(
-            leading: const Icon(Icons.edit),
-            title: const Text('Edit Profile'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const EditProfileScreen(),
+          // Profile Information Card
+          Card(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.email, color: Colors.blue),
+                  title: const Text('Email'),
+                  subtitle: Text(_userData?['email'] ?? 'Not provided'),
                 ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.assignment),
-            title: const Text('My Cases'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.pop(context);
-              // Navigate to cases tab
-              final state = context.findAncestorStateOfType<_VetDashboardScreenState>();
-              state?.changeTab(1);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.people),
-            title: const Text('My Farmers'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // Show farmers from assigned cases
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('View farmers from your assigned cases')),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.settings),
-            title: const Text('Settings'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => _VetSettingsTab(
-                    scaffoldKey: widget.scaffoldKey,
-                    bottomNavBar: widget.buildBottomNavBar != null ? widget.buildBottomNavBar!(context) : null,
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.phone, color: Colors.green),
+                  title: const Text('Phone'),
+                  subtitle: Text(_userData?['phone_number'] ?? 'Not provided'),
+                ),
+                if (_userData?['veterinarian_profile'] != null) ...[
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.badge, color: Colors.purple),
+                    title: const Text('License Number'),
+                    subtitle: Text(
+                      _userData?['veterinarian_profile']?['license_number'] ?? 'Not provided',
+                    ),
                   ),
-                ),
-              );
-            },
+                ],
+              ],
+            ),
           ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('Logout', style: TextStyle(color: Colors.red)),
-            onTap: () {
-              context.go('/login');
-            },
+          // Quick Actions
+          Text(
+            'Quick Actions',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.edit, color: Colors.blue),
+                  title: const Text('Edit Profile'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const EditProfileScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.assignment, color: Colors.orange),
+                  title: const Text('My Cases'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Navigate to cases tab
+                    final state = context.findAncestorStateOfType<_VetDashboardScreenState>();
+                    state?.changeTab(1);
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.people, color: Colors.green),
+                  title: const Text('My Farmers'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => _VetLivestockTab(
+                          scaffoldKey: widget.scaffoldKey,
+                          bottomNavBar: widget.buildBottomNavBar != null ? widget.buildBottomNavBar!(context) : null,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.settings, color: Colors.grey),
+                  title: const Text('Settings'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => _VetSettingsTab(
+                          scaffoldKey: widget.scaffoldKey,
+                          bottomNavBar: widget.buildBottomNavBar != null ? widget.buildBottomNavBar!(context) : null,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Logout
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text('Logout', style: TextStyle(color: Colors.red)),
+              onTap: () async {
+                final apiService = ApiService();
+                await apiService.logout();
+                if (mounted) {
+                  context.go('/login');
+                }
+              },
+            ),
           ),
         ],
       ),
