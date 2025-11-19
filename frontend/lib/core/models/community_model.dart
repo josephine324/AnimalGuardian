@@ -95,15 +95,26 @@ class Post {
   });
 
   factory Post.fromMap(Map<String, dynamic> map) {
+    // Handle both author (int) and author_id
+    final authorId = map['author'] is int 
+        ? map['author'] as int 
+        : (map['author_id'] as int? ?? 0);
+    
+    // Handle image field - backend uses 'image' (single URL), frontend expects 'images' (list)
+    final imageUrl = map['image'] as String?;
+    final images = imageUrl != null && imageUrl.isNotEmpty 
+        ? [imageUrl] 
+        : <String>[];
+    
     return Post(
       id: map['id'] as int,
-      authorId: map['author'] as int,
+      authorId: authorId,
       authorName: map['author_name'] ?? '',
       authorUsername: map['author_username'] ?? '',
       title: map['title'] ?? '',
       content: map['content'] ?? '',
       postType: PostTypeExtension.fromString(map['post_type'] ?? 'general'),
-      images: List<String>.from(map['images'] ?? []),
+      images: images,
       likesCount: map['likes_count'] ?? 0,
       commentsCount: map['comments_count'] ?? 0,
       viewsCount: map['views_count'] ?? 0,
@@ -164,7 +175,9 @@ class Comment {
     return Comment(
       id: map['id'] as int,
       postId: map['post'] as int,
-      authorId: map['author'] as int,
+      authorId: map['author'] is int 
+          ? map['author'] as int 
+          : (map['author_id'] as int? ?? 0),
       authorName: map['author_name'] ?? '',
       authorUsername: map['author_username'] ?? '',
       content: map['content'] ?? '',
