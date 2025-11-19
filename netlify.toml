@@ -9,6 +9,7 @@ REACT_APP_API_URL = "https://animalguardian-backend-production-b5a8.up.railway.a
 CI = "false"
 
 # Force rebuild to pick up correct backend URL
+# Updated: 2025-11-19 - Ensure correct backend URL is used
 
 [[redirects]]
 from = "/*"
