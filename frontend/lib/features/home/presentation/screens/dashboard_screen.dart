@@ -720,161 +720,56 @@ class _HomeTabState extends State<_HomeTab> {
         
         return Column(
           children: recentCases.map((caseReport) {
-              if (item['type'] == 'card') {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                  child: Card(
-                    color: Colors.green[50],
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item['title'],
-                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: Theme.of(context).colorScheme.primary,
-                                      ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  item['description'],
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        color: Colors.grey[700],
-                                      ),
-                                ),
-                                if (item['title'] == 'Breeding Tips') ...[
-                                  const SizedBox(height: 12),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Call feature will be available soon')),
-                                      );
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Theme.of(context).colorScheme.primary,
-                                      foregroundColor: Colors.white,
-                                    ),
-                                    child: const Text('Get Call'),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                          Icon(
-                            item['title'] == 'How to use app' ? Icons.play_circle_filled : Icons.pets,
-                            size: 60,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ],
-                      ),
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: _getStatusColor(caseReport.status),
+                  child: const Icon(Icons.report_problem, color: Colors.white),
+                ),
+                title: Text(caseReport.caseId),
+                subtitle: Text(
+                  caseReport.symptomsObserved.length > 50
+                      ? '${caseReport.symptomsObserved.substring(0, 50)}...'
+                      : caseReport.symptomsObserved,
+                ),
+                trailing: Chip(
+                  label: Text(
+                    caseReport.status.name,
+                    style: const TextStyle(fontSize: 10),
+                  ),
+                  backgroundColor: _getStatusColor(caseReport.status).withOpacity(0.2),
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CaseDetailScreen(caseId: caseReport.id),
                     ),
-                  ),
-                );
-              } else if (item['type'] == 'news') {
-                final news = item['data'] as Map<String, dynamic>;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Trending News',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(Icons.location_on, size: 16, color: Theme.of(context).colorScheme.primary),
-                          const SizedBox(width: 4),
-                          Text(
-                            news['location'],
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Row(
-                            children: [
-                              PlaceholderImage(
-                                networkUrl: news['image'],
-                                placeholderIcon: Icons.image,
-                                width: 80,
-                                height: 80,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '${news['temperature']}°',
-                                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                    ),
-                                    Text(
-                                      'High: ${news['high']} / Low: ${news['low']}',
-                                      style: Theme.of(context).textTheme.bodySmall,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      news['title'],
-                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                            color: Colors.orange,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Column(
-                                children: [
-                                  IconButton(
-                                    icon: Icon(Icons.share, color: Theme.of(context).colorScheme.primary),
-                                    onPressed: () {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Share feature will be available soon')),
-                                      );
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: Icon(Icons.mic, color: Theme.of(context).colorScheme.primary),
-                                    onPressed: () {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Voice feature will be available soon')),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              return const SizedBox.shrink();
-            }).toList(),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
+                  );
+                },
+              ),
+            );
+          }).toList(),
+        );
+      },
     );
   }
+
+  Color _getStatusColor(CaseStatus status) {
+    switch (status) {
+      case CaseStatus.pending:
+        return Colors.orange;
+      case CaseStatus.underReview:
+        return Colors.blue;
+      case CaseStatus.resolved:
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
 }
+
 
 // Livestock Tab
 class _LivestockTab extends ConsumerStatefulWidget {
