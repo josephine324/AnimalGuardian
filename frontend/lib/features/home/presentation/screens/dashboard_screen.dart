@@ -1285,6 +1285,48 @@ class _CasesTabState extends ConsumerState<_CasesTab> {
   }
 }
 
+// Chat Tab
+class _ChatTab extends StatelessWidget {
+  final GlobalKey<ScaffoldState> scaffoldKey;
+  
+  const _ChatTab({required this.scaffoldKey});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => scaffoldKey.currentState?.openDrawer(),
+        ),
+        title: const Text('Chat'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+      ),
+      body: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.chat_bubble_outline, size: 80, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              'Chat Feature Coming Soon',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Direct messaging with veterinarians will be available soon',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // Community Tab
 class _CommunityTab extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
@@ -1821,68 +1863,6 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
     }
   }
 
-  Widget _buildVideoFeed() {
-    final videoItems = _filteredPosts.where((p) => p['type'] == 'video').toList();
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: videoItems.isEmpty
-          ? const Center(
-              child: Padding(
-                padding: EdgeInsets.all(32.0),
-                child: Text('No videos found'),
-              ),
-            )
-          : Column(
-              children: videoItems.map((video) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: _VideoPostCard(
-              postId: video['id'],
-              authorName: video['author'],
-              location: video['location'],
-              time: video['time'],
-              videoTitle: video['videoTitle'],
-              duration: video['duration'],
-              content: video['content'],
-              marketView: video['marketView'],
-              tags: List<String>.from(video['tags'] ?? []),
-              likes: video['likes'],
-              comments: video['comments'],
-              saves: video['saves'],
-              shares: video['shares'],
-              onLike: () => _handleLike(video['id']),
-              onComment: () => _handleComment(video['id']),
-              onShare: () => _handleShare(video['id']),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildChatsList() {
-    return _filteredChats.isEmpty
-        ? const Center(
-            child: Padding(
-              padding: EdgeInsets.all(32.0),
-              child: Text('No chats found'),
-            ),
-          )
-        : ListView.builder(
-            padding: const EdgeInsets.all(16.0),
-            itemCount: _filteredChats.length,
-            itemBuilder: (context, index) {
-              final chat = _filteredChats[index];
-        return _ChatListItem(
-          name: chat['name'],
-          lastMessage: chat['lastMessage'],
-          date: chat['date'],
-          unreadCount: chat['unreadCount'],
-          avatarPath: chat['avatar'],
-        );
-      },
-    );
-  }
 }
 
 class _CommunityCard extends StatelessWidget {

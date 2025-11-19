@@ -312,7 +312,7 @@ class _VetHomeTabState extends ConsumerState<_VetHomeTab> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () => scaffoldKey.currentState?.openDrawer(),
+          onPressed: () => widget.scaffoldKey.currentState?.openDrawer(),
         ),
         title: const Text('Veterinarian Dashboard'),
         backgroundColor: Colors.white,
@@ -1615,8 +1615,8 @@ class _VetProfileTabState extends State<_VetProfileTab> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => _VetSettingsTab(
-                    scaffoldKey: scaffoldKey,
-                    bottomNavBar: buildBottomNavBar != null ? buildBottomNavBar!(context) : null,
+                    scaffoldKey: widget.scaffoldKey,
+                    bottomNavBar: widget.buildBottomNavBar != null ? widget.buildBottomNavBar!(context) : null,
                   ),
                 ),
               );
