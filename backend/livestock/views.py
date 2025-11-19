@@ -53,11 +53,13 @@ class LivestockTypeViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet for Livestock types."""
     queryset = LivestockType.objects.all()
     serializer_class = LivestockTypeSerializer
+    permission_classes = [IsAuthenticated]  # Require authentication
 
 class BreedViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet for Breeds."""
     queryset = Breed.objects.all()
     serializer_class = BreedSerializer
+    permission_classes = [IsAuthenticated]  # Require authentication
 
 class HealthRecordViewSet(viewsets.ModelViewSet):
     """ViewSet for Health records."""
