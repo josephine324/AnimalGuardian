@@ -68,17 +68,18 @@ class UserSerializer(serializers.ModelSerializer):
                 profile = obj.farmer_profile
                 return {
                     'id': profile.id,
-                    'farm_name': profile.farm_name,
-                    'farm_size': str(profile.farm_size) if profile.farm_size else None,
-                    'farm_size_unit': profile.farm_size_unit,
-                    'total_livestock_count': profile.total_livestock_count,
-                    'years_of_farming': profile.years_of_farming,
-                    'has_smartphone': profile.has_smartphone,
-                    'has_basic_phone': profile.has_basic_phone,
-                    'has_internet_access': profile.has_internet_access,
-                    'preferred_communication': profile.preferred_communication,
+                    'farm_name': profile.farm_name or '',
+                    'farm_size': str(profile.farm_size) if profile.farm_size is not None else None,
+                    'farm_size_unit': profile.farm_size_unit or 'hectares',
+                    'total_livestock_count': profile.total_livestock_count or 0,
+                    'years_of_farming': profile.years_of_farming or 0,
+                    'has_smartphone': profile.has_smartphone if hasattr(profile, 'has_smartphone') else False,
+                    'has_basic_phone': profile.has_basic_phone if hasattr(profile, 'has_basic_phone') else True,
+                    'has_internet_access': profile.has_internet_access if hasattr(profile, 'has_internet_access') else False,
+                    'preferred_communication': profile.preferred_communication or 'sms',
                 }
-        except FarmerProfile.DoesNotExist:
+        except (FarmerProfile.DoesNotExist, AttributeError, Exception) as e:
+            # Silently return None if profile doesn't exist or has issues
             pass
         return None
     
