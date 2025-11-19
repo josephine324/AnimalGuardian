@@ -13,8 +13,11 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy all project files from backend directory to /app
-COPY backend/ /app/
+# Copy all project files to /app
+# Railway's build context might be 'backend', so we need to check
+# First, try copying from current directory (if build context is backend)
+# If that doesn't work, Railway might need to be configured differently
+COPY . /app/
 
 # Debug: List contents to verify start.sh was copied
 RUN echo "=== Checking for start.sh ===" && \
