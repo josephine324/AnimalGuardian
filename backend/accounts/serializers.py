@@ -68,9 +68,14 @@ class UserSerializer(serializers.ModelSerializer):
                 profile = obj.farmer_profile
                 return {
                     'id': profile.id,
-                    'farm_size': profile.farm_size,
-                    'livestock_count': profile.livestock_count,
-                    'experience_years': profile.experience_years,
+                    'farm_name': profile.farm_name,
+                    'farm_size': str(profile.farm_size) if profile.farm_size else None,
+                    'farm_size_unit': profile.farm_size_unit,
+                    'total_livestock_count': profile.total_livestock_count,
+                    'years_of_farming': profile.years_of_farming,
+                    'has_smartphone': profile.has_smartphone,
+                    'has_basic_phone': profile.has_basic_phone,
+                    'has_internet_access': profile.has_internet_access,
                     'preferred_communication': profile.preferred_communication,
                 }
         except FarmerProfile.DoesNotExist:
@@ -161,8 +166,36 @@ class UserSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+class SimpleUserSerializer(serializers.ModelSerializer):
+    """Simplified UserSerializer without nested profiles to avoid circular references."""
+    approved_by_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = User
+        fields = [
+            'id', 'username', 'phone_number', 'first_name', 'last_name', 'email',
+            'gender', 'date_of_birth', 'province', 'district', 'sector',
+            'cell', 'village', 'preferred_language', 'user_type',
+            'is_verified', 'is_approved_by_admin', 'approved_by', 'approved_at',
+            'approval_notes', 'approved_by_name',
+            'created_at', 'updated_at'
+        ]
+        extra_kwargs = {
+            'approved_by': {'read_only': True},
+            'approved_at': {'read_only': True},
+        }
+    
+    def get_approved_by_name(self, obj):
+        try:
+            if obj and obj.approved_by:
+                return obj.approved_by.get_full_name() or obj.approved_by.username
+        except Exception:
+            pass
+        return None
+
+
 class FarmerProfileSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
+    user = SimpleUserSerializer(read_only=True)
     
     class Meta:
         model = FarmerProfile

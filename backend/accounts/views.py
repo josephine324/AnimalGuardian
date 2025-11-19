@@ -554,18 +554,33 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(pending_users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-class FarmerViewSet(viewsets.ModelViewSet):
-    """ViewSet for Farmer profiles."""
-    queryset = FarmerProfile.objects.all()
-    serializer_class = FarmerProfileSerializer
+class FarmerViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet for Farmer users (returns users with farmer profiles)."""
+    serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Return users who are farmers."""
+        return User.objects.filter(user_type='farmer').order_by('-created_at')
+    
+    def list(self, request, *args, **kwargs):
+        """List all farmers with their profiles."""
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Retrieve a specific farmer."""
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
     def profile(self, request):
-        """Get farmer profile."""
+        """Get current user's farmer profile."""
         try:
             profile = request.user.farmer_profile
-            serializer = self.get_serializer(profile)
+            serializer = FarmerProfileSerializer(profile)
             return Response(serializer.data)
         except FarmerProfile.DoesNotExist:
             return Response({
