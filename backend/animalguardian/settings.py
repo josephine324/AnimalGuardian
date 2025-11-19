@@ -196,7 +196,9 @@ SIMPLE_JWT = {
 # CORS Configuration
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "http://localhost:3001",  # React dev server (alternative port)
     "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",  # React dev server (alternative port)
     "http://localhost:8081",  # React Native Metro
     "https://animalguards.netlify.app",  # Production frontend
 ]
