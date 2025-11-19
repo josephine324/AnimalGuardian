@@ -16,6 +16,9 @@ RUN apt-get update && apt-get install -y \
 # Copy all project files from backend directory to /app
 COPY backend/ /app/
 
+# Debug: List contents to verify start.sh was copied
+RUN ls -la /app/ | grep -E "(start.sh|manage.py)" || (echo "Files in /app:" && ls -la /app/ | head -30)
+
 # Make startup script executable
 RUN chmod +x /app/start.sh
 
