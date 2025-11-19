@@ -751,7 +751,7 @@ class VeterinarianViewSet(viewsets.ReadOnlyModelViewSet):
                 user=user,
                 license_number=f'VET-{user.id}',
                 license_type='licensed',
-                is_available=True
+                is_available=False  # Start as offline - vet must set themselves to online via app
             )
         
         # Toggle availability

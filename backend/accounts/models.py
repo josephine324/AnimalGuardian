@@ -127,7 +127,7 @@ class VeterinarianProfile(models.Model):
     clinic_address = models.TextField(blank=True)
     
     # Availability
-    is_available = models.BooleanField(default=True)
+    is_available = models.BooleanField(default=False, help_text="Veterinarian must explicitly set themselves to online via the app")
     working_hours = models.JSONField(default=dict, blank=True)
     
     # Experience and ratings
