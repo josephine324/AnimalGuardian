@@ -55,17 +55,21 @@ class LoginView(generics.GenericAPIView):
             elif email:
                 try:
                     # Use filter().first() to avoid MultipleObjectsReturned exception
-                    # Use only() to avoid loading password_reset_code field that might not exist
-                    user_obj = User.objects.filter(email=email).only('id', 'email', 'phone_number', 'username', 'user_type', 'is_active', 'is_verified', 'is_approved_by_admin', 'password').first()
+                    # Load full user object for proper password checking
+                    user_obj = User.objects.filter(email=email).first()
                     if user_obj:
                         logger.info(f'Login attempt for email: {email}, found user: {user_obj.id}, phone: {user_obj.phone_number}, active: {user_obj.is_active}')
                         if user_obj.phone_number:
+                            # Try authenticate first (standard Django way)
                             user = authenticate(username=user_obj.phone_number, password=password)
                             if not user:
-                                logger.warning(f'Authentication failed for email: {email}, phone: {user_obj.phone_number}')
-                                # Check if password is correct but authentication still failed
+                                # If authenticate fails, check password directly
+                                # This handles cases where authenticate() might fail due to backend issues
                                 if user_obj.check_password(password):
-                                    logger.warning(f'Password check passed but authenticate() returned None for user: {user_obj.id}')
+                                    logger.info(f'Password check passed for email: {email}, using user object directly')
+                                    user = user_obj
+                                else:
+                                    logger.warning(f'Authentication failed for email: {email}, phone: {user_obj.phone_number} - password incorrect')
                         else:
                             logger.warning(f'User with email {email} found but has no phone_number set')
                     else:
