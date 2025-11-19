@@ -1,9 +1,0 @@
-# Azure-specific requirements
-# This file includes all requirements plus Azure-specific packages
-
--r requirements.txt
-
-# Azure-specific packages (if needed)
-# azure-storage-blob  # For Azure Blob Storage (if using)
-# azure-identity  # For Azure Managed Identity
-

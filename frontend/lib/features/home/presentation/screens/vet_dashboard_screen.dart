@@ -228,7 +228,10 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
       _VetHomeTab(scaffoldKey: _scaffoldKey),
       _VetCasesTab(scaffoldKey: _scaffoldKey),
       _VetCommunityTab(scaffoldKey: _scaffoldKey),
-      _VetProfileTab(scaffoldKey: _scaffoldKey),
+      _VetProfileTab(
+        scaffoldKey: _scaffoldKey,
+        buildBottomNavBar: _buildBottomNavigationBar,
+      ),
     ];
 
     return Scaffold(
@@ -734,8 +737,9 @@ class _VetCommunityTab extends StatelessWidget {
 // Vet Profile Tab
 class _VetProfileTab extends StatelessWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
+  final Widget Function(BuildContext)? buildBottomNavBar;
   
-  const _VetProfileTab({required this.scaffoldKey});
+  const _VetProfileTab({required this.scaffoldKey, this.buildBottomNavBar});
 
   @override
   Widget build(BuildContext context) {
@@ -832,8 +836,8 @@ class _VetProfileTab extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) => _VetSettingsTab(
-                    scaffoldKey: _scaffoldKey,
-                    bottomNavBar: _buildBottomNavigationBar(context),
+                    scaffoldKey: scaffoldKey,
+                    bottomNavBar: buildBottomNavBar != null ? buildBottomNavBar!(context) : null,
                   ),
                 ),
               );
@@ -901,13 +905,13 @@ class _VetLivestockTabState extends ConsumerState<_VetLivestockTab> {
                         final livestock = livestockState.filteredLivestock[index];
                         return ListTile(
                           leading: PlaceholderImage(
-                            networkUrl: livestock.photos.isNotEmpty ? livestock.photos.first : null,
+                            networkUrl: null, // Photos not available in current model
                             placeholderIcon: Icons.pets,
                             width: 50,
                             height: 50,
                           ),
                           title: Text(livestock.name ?? 'Unnamed'),
-                          subtitle: Text('${livestock.livestockType?.name ?? 'Unknown'} - ${livestock.status?.displayName ?? 'Unknown'}'),
+                          subtitle: Text('${livestock.livestockType?.name ?? 'Unknown'} - ${livestock.status.name}'),
                           onTap: () {
                             Navigator.push(
                               context,
