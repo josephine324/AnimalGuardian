@@ -36,24 +36,24 @@ class LoginView(generics.GenericAPIView):
     
     def post(self, request):
         try:
-            phone_number = request.data.get('phone_number')
-            email = request.data.get('email')
-            password = request.data.get('password')
-            
-            if not password:
-                return Response({
-                    'error': 'Password is required.'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Try to authenticate with phone number first, then email
-            user = None
-            if phone_number:
+        phone_number = request.data.get('phone_number')
+        email = request.data.get('email')
+        password = request.data.get('password')
+        
+        if not password:
+            return Response({
+                'error': 'Password is required.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Try to authenticate with phone number first, then email
+        user = None
+        if phone_number:
                 try:
-                    user = authenticate(username=phone_number, password=password)
+            user = authenticate(username=phone_number, password=password)
                 except Exception as e:
                     logger.error(f'Error authenticating with phone number: {str(e)}', exc_info=True)
-            elif email:
-                try:
+        elif email:
+            try:
                     # Use filter().first() to avoid MultipleObjectsReturned exception
                     # Load full user object for proper password checking
                     user_obj = User.objects.filter(email=email).first()
@@ -61,7 +61,7 @@ class LoginView(generics.GenericAPIView):
                         logger.info(f'Login attempt for email: {email}, found user: {user_obj.id}, phone: {user_obj.phone_number}, active: {user_obj.is_active}')
                         if user_obj.phone_number:
                             # Try authenticate first (standard Django way)
-                            user = authenticate(username=user_obj.phone_number, password=password)
+                user = authenticate(username=user_obj.phone_number, password=password)
                             if not user:
                                 # If authenticate fails, check password directly
                                 # This handles cases where authenticate() might fail due to backend issues
@@ -77,41 +77,41 @@ class LoginView(generics.GenericAPIView):
                 except Exception as e:
                     logger.error(f'Error during email authentication: {str(e)}', exc_info=True)
         
-            if user:
-                # Check if user is verified (phone verification) - only for farmers
-                if user.user_type == 'farmer' and not user.is_verified:
-                    return Response({
-                        'error': 'Your phone number is not verified. Please verify your phone number first.'
-                    }, status=status.HTTP_403_FORBIDDEN)
-                
-                # Check if farmer is approved by sector vet/admin (only farmers need approval)
-                if user.user_type == 'farmer' and not user.is_approved_by_admin:
-                    return Response({
-                        'error': 'Your account is pending approval from a sector veterinarian. Please wait for approval before logging in.',
-                        'pending_approval': True
-                    }, status=status.HTTP_403_FORBIDDEN)
-                
-                # Check if user is active
-                if not user.is_active:
-                    return Response({
-                        'error': 'Your account has been deactivated. Please contact support.'
-                    }, status=status.HTTP_403_FORBIDDEN)
-                
+        if user:
+            # Check if user is verified (phone verification) - only for farmers
+            if user.user_type == 'farmer' and not user.is_verified:
+                return Response({
+                    'error': 'Your phone number is not verified. Please verify your phone number first.'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Check if farmer is approved by sector vet/admin (only farmers need approval)
+            if user.user_type == 'farmer' and not user.is_approved_by_admin:
+                return Response({
+                    'error': 'Your account is pending approval from a sector veterinarian. Please wait for approval before logging in.',
+                    'pending_approval': True
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Check if user is active
+            if not user.is_active:
+                return Response({
+                    'error': 'Your account has been deactivated. Please contact support.'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
                 try:
-                    refresh = RefreshToken.for_user(user)
+            refresh = RefreshToken.for_user(user)
                 except Exception as e:
                     logger.error(f'Error generating refresh token: {str(e)}', exc_info=True)
                     return Response({
                         'error': 'An error occurred during authentication. Please try again.'
                     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                
-                # Determine redirect based on user type
-                redirect_to = 'admin_dashboard'
-                if user.user_type in ['local_vet', 'sector_vet']:
-                    redirect_to = 'vet_dashboard'
-                elif user.user_type == 'farmer':
-                    redirect_to = 'farmer_dashboard'
-                
+            
+            # Determine redirect based on user type
+            redirect_to = 'admin_dashboard'
+            if user.user_type in ['local_vet', 'sector_vet']:
+                redirect_to = 'vet_dashboard'
+            elif user.user_type == 'farmer':
+                redirect_to = 'farmer_dashboard'
+            
                 try:
                     user_data = UserSerializer(user).data
                 except Exception as e:
@@ -120,16 +120,16 @@ class LoginView(generics.GenericAPIView):
                         'error': 'An error occurred while processing your request. Please try again.'
                     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 
-                return Response({
-                    'access': str(refresh.access_token),
-                    'refresh': str(refresh),
+            return Response({
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
                     'user': user_data,
-                    'redirect_to': redirect_to
-                })
-            else:
-                return Response({
-                    'error': 'Invalid credentials.'
-                }, status=status.HTTP_401_UNAUTHORIZED)
+                'redirect_to': redirect_to
+            })
+        else:
+            return Response({
+                'error': 'Invalid credentials.'
+            }, status=status.HTTP_401_UNAUTHORIZED)
         except Exception as e:
             # Catch any unexpected errors and return a proper error response
             error_traceback = traceback.format_exc()
@@ -503,6 +503,50 @@ class VeterinarianViewSet(viewsets.ReadOnlyModelViewSet):
             return Response({
                 'error': 'Veterinarian profile not found.'
             }, status=status.HTTP_404_NOT_FOUND)
+    
+    @action(detail=False, methods=['post'])
+    def create_missing_profiles(self, request):
+        """Create VeterinarianProfile for all veterinarians that don't have one (admin only)."""
+        if not (request.user.is_staff or request.user.is_superuser or request.user.user_type == 'admin'):
+            return Response({
+                'error': 'Only administrators can create missing profiles.'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        import secrets
+        vets = User.objects.filter(user_type__in=['local_vet', 'sector_vet'])
+        created_count = 0
+        skipped_count = 0
+        
+        for vet in vets:
+            try:
+                # Check if profile already exists
+                if hasattr(vet, 'vet_profile'):
+                    skipped_count += 1
+                    continue
+                
+                # Generate a unique license number
+                license_number = f'VET-{vet.id}-{secrets.token_hex(4).upper()}'
+                while VeterinarianProfile.objects.filter(license_number=license_number).exists():
+                    license_number = f'VET-{vet.id}-{secrets.token_hex(4).upper()}'
+                
+                # Create profile
+                VeterinarianProfile.objects.create(
+                    user=vet,
+                    license_number=license_number,
+                    license_type='licensed',
+                    specialization='General Practice',
+                    is_available=True
+                )
+                created_count += 1
+            except Exception as e:
+                logger.error(f'Error creating profile for {vet.email}: {str(e)}', exc_info=True)
+        
+        return Response({
+            'message': f'Created {created_count} profiles, skipped {skipped_count} existing profiles.',
+            'created': created_count,
+            'skipped': skipped_count,
+            'total': vets.count()
+        }, status=status.HTTP_200_OK)
     
     @action(detail=True, methods=['post'])
     def toggle_availability(self, request, pk=None):
