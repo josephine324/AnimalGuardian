@@ -28,15 +28,24 @@ class RegisterView(generics.CreateAPIView):
         user = serializer.save()
         
         # Auto-verify users (no email verification needed)
-        # Users will be approved by sector vet instead
         user.is_verified = True
-        user.save()
         
-        # Return response
-        return Response({
-            'message': 'User created successfully. Your account is pending approval from a sector veterinarian. You will receive an email once approved.',
-            'user_id': user.id
-        }, status=status.HTTP_201_CREATED)
+        # Auto-approve farmers - they can login immediately
+        # Local vets still need approval from sector vet
+        if user.user_type == 'farmer':
+            user.is_approved_by_admin = True
+            user.save()
+            return Response({
+                'message': 'Account created successfully! You can now login.',
+                'user_id': user.id
+            }, status=status.HTTP_201_CREATED)
+        else:
+            # Local vets need approval
+            user.save()
+            return Response({
+                'message': 'User created successfully. Your account is pending approval from a sector veterinarian. You will receive an email once approved.',
+                'user_id': user.id
+            }, status=status.HTTP_201_CREATED)
 
 class LoginView(generics.GenericAPIView):
     """Login user with phone number, email, or username and password."""
@@ -86,8 +95,9 @@ class LoginView(generics.GenericAPIView):
                     logger.error(f'Error during email authentication: {str(e)}', exc_info=True)
             
             if user:
-                # Check if user is approved by sector vet/admin (both farmers and local vets need approval)
-                if user.user_type in ['farmer', 'local_vet'] and not user.is_approved_by_admin:
+                # Only local vets need approval from sector vet/admin
+                # Farmers can login immediately after registration
+                if user.user_type == 'local_vet' and not user.is_approved_by_admin:
                     return Response({
                         'error': 'Your account is pending approval from a sector veterinarian. Please wait for approval before logging in. You will receive an email once approved.',
                         'pending_approval': True

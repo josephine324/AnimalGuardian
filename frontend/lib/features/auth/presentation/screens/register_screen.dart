@@ -57,7 +57,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       };
 
       // Email is now required for both farmers and local vets
-      registrationData['email'] = _emailController.text.trim();
+        registrationData['email'] = _emailController.text.trim();
 
       // Call registration API
       final response = await _apiService.register(registrationData);
@@ -67,11 +67,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           _isLoading = false;
         });
         
+        // Show different message based on user type
+        String successMessage;
+        if (_selectedUserType == 'farmer') {
+          successMessage = 'Account created successfully! You can now login.';
+        } else {
+          successMessage = 'Registration successful! Your account is pending approval from a sector veterinarian. You will receive an email once approved.';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Registration successful! Your account is pending approval from a sector veterinarian. You will receive an email once approved.'),
+          SnackBar(
+            content: Text(successMessage),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 5),
+            duration: const Duration(seconds: 5),
           ),
         );
         
@@ -241,30 +249,55 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           });
                         },
                       ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.all(12.0),
-                        decoration: BoxDecoration(
-                          color: Colors.blue[50],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.blue[200]!),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Your registration will require approval from a Sector Veterinarian via the web dashboard. You will receive an email once approved.',
-                                style: TextStyle(
-                                  color: Colors.blue[900],
-                                  fontSize: 12,
-                                ),
-                              ),
+                        const SizedBox(height: 8),
+                        if (_selectedUserType == 'local_vet')
+                          Container(
+                            padding: const EdgeInsets.all(12.0),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.blue[200]!),
                             ),
-                          ],
-                        ),
-                      ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Your registration will require approval from a Sector Veterinarian via the web dashboard. You will receive an email once approved.',
+                                    style: TextStyle(
+                                      color: Colors.blue[900],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        if (_selectedUserType == 'farmer')
+                          Container(
+                            padding: const EdgeInsets.all(12.0),
+                            decoration: BoxDecoration(
+                              color: Colors.green[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.green[200]!),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.check_circle_outline, color: Colors.green[700], size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Farmers can login immediately after registration. No approval needed!',
+                                    style: TextStyle(
+                                      color: Colors.green[900],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _passwordController,
