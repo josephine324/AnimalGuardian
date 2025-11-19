@@ -56,10 +56,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         'last_name': lastName.isNotEmpty ? lastName : firstName, // Use first name as last name if not provided
       };
 
-      // Add email if provided
-      if (_emailController.text.trim().isNotEmpty) {
-        registrationData['email'] = _emailController.text.trim();
-      }
+      // Email is now required for both farmers and local vets
+      registrationData['email'] = _emailController.text.trim();
 
       // Call registration API
       final response = await _apiService.register(registrationData);
@@ -71,13 +69,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Registration successful! Please verify your phone number.'),
+            content: Text('Registration successful! Please verify your email address.'),
             backgroundColor: Colors.green,
           ),
         );
         
-        // Navigate to OTP verification with user type
-        context.go('/otp-verify?phone=${_phoneController.text}&user_type=${_selectedUserType}');
+        // Navigate to OTP verification with email (both farmers and local vets use email now)
+        context.go('/otp-verify?email=${_emailController.text.trim()}&user_type=${_selectedUserType}');
       }
     } catch (e) {
       if (mounted) {
@@ -200,13 +198,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _emailController,
-                        decoration: const InputDecoration(
-                          labelText: 'Email (Optional)',
+                        decoration: InputDecoration(
+                          labelText: 'Email *',
                           hintText: 'Enter your email',
-                          prefixIcon: Icon(Icons.email),
-                          border: OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.email),
+                          border: const OutlineInputBorder(),
                         ),
                         keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Email is required';
+                          }
+                          if (!value.contains('@')) {
+                            return 'Please enter a valid email address';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
@@ -226,32 +233,30 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           });
                         },
                       ),
-                      if (_selectedUserType == 'local_vet') ...[
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.all(12.0),
-                          decoration: BoxDecoration(
-                            color: Colors.blue[50],
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.blue[200]!),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Your registration will require approval from a Sector Veterinarian via the web dashboard.',
-                                  style: TextStyle(
-                                    color: Colors.blue[900],
-                                    fontSize: 12,
-                                  ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(12.0),
+                        decoration: BoxDecoration(
+                          color: Colors.blue[50],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blue[200]!),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Your registration will require approval from a Sector Veterinarian via the web dashboard after email verification.',
+                                style: TextStyle(
+                                  color: Colors.blue[900],
+                                  fontSize: 12,
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _passwordController,

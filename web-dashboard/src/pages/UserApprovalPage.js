@@ -180,7 +180,20 @@ const UserApprovalPage = () => {
                       {new Date(user.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
+                      <div className="flex justify-end items-center space-x-3">
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          user.is_verified && !user.is_approved_by_admin 
+                            ? 'bg-yellow-100 text-yellow-800' 
+                            : user.is_approved_by_admin 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {user.is_verified && !user.is_approved_by_admin 
+                            ? 'Pending Approval' 
+                            : user.is_approved_by_admin 
+                            ? 'Approved' 
+                            : 'Not Verified'}
+                        </span>
                         <button
                           onClick={() => {
                             const notes = prompt('Approval notes (optional):');
@@ -188,8 +201,8 @@ const UserApprovalPage = () => {
                               handleApprove(user.id, notes);
                             }
                           }}
-                          disabled={actionLoading[user.id]}
-                          className="text-green-600 hover:text-green-900 disabled:opacity-50"
+                          disabled={actionLoading[user.id] || user.is_approved_by_admin}
+                          className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {actionLoading[user.id] ? 'Processing...' : 'Approve'}
                         </button>
@@ -200,8 +213,8 @@ const UserApprovalPage = () => {
                               handleReject(user.id, notes);
                             }
                           }}
-                          disabled={actionLoading[user.id]}
-                          className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                          disabled={actionLoading[user.id] || !user.is_approved_by_admin}
+                          className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {actionLoading[user.id] ? 'Processing...' : 'Reject'}
                         </button>

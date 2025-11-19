@@ -93,6 +93,14 @@ class UserSerializer(serializers.ModelSerializer):
                 attrs['password_confirm'] = attrs['password']
             if attrs['password'] != attrs['password_confirm']:
                 raise serializers.ValidationError("Passwords don't match.")
+            
+            # Email is required for farmers and local_vets
+            user_type = attrs.get('user_type')
+            if user_type in ['farmer', 'local_vet']:
+                if not attrs.get('email'):
+                    raise serializers.ValidationError({
+                        'email': 'Email is required for farmers and local veterinarians.'
+                    })
         elif 'password' in attrs or 'password_confirm' in attrs:
             # Update password
             if 'password' not in attrs:
