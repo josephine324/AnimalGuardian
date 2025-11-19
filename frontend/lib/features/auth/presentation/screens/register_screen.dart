@@ -18,9 +18,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
   bool _isLoading = false;
   String? _selectedUserType = 'farmer';
 
@@ -30,22 +28,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
-    _confirmPasswordController.dispose();
     super.dispose();
   }
 
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Passwords do not match'),
-          backgroundColor: Colors.red,
-        ),
-      );
       return;
     }
 
@@ -60,10 +47,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
 
       // Prepare registration data
+      // Backend will auto-fill password_confirm from password if not provided
       final registrationData = {
         'phone_number': _phoneController.text.trim(),
         'password': _passwordController.text,
-        'password_confirm': _confirmPasswordController.text,
         'user_type': _selectedUserType,
         'first_name': firstName,
         'last_name': lastName.isNotEmpty ? lastName : firstName, // Use first name as last name if not provided
