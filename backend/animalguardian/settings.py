@@ -38,9 +38,11 @@ if config('RAILWAY_ENVIRONMENT', default=None) or config('RAILWAY_PUBLIC_DOMAIN'
         if domain_without_port not in ALLOWED_HOSTS:
             ALLOWED_HOSTS.append(domain_without_port)
     
-    # Add the specific Railway production domain
+    # Add the specific Railway production domain (both old and new URLs for compatibility)
     if 'animalguardian-backend-production.up.railway.app' not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append('animalguardian-backend-production.up.railway.app')
+    if 'animalguardian-backend-production-b5a8.up.railway.app' not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append('animalguardian-backend-production-b5a8.up.railway.app')
 
 # Application definition
 DJANGO_APPS = [

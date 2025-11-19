@@ -5,7 +5,7 @@ publish = "build"
 
 [build.environment]
 NODE_VERSION = "18"
-REACT_APP_API_URL = "https://animalguardian-backend-production-b5a8.up.railway.app/api"
+REACT_APP_API_URL = "https://animalguardian-backend-production.up.railway.app/api"
 CI = "false"
 
 [[redirects]]
