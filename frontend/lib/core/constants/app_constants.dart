@@ -14,6 +14,7 @@ class AppConstants {
   static const String authTokenKey = 'auth_token';
   static const String refreshTokenKey = 'refresh_token';
   static const String userIdKey = 'user_id';
+  static const String userTypeKey = 'user_type';
   
   // Timeouts
   static const Duration connectionTimeout = Duration(seconds: 60); // Increased for registration (email sending)
