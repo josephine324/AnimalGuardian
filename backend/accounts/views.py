@@ -258,9 +258,9 @@ class VerifyOTPView(generics.GenericAPIView):
                     })
                 except Exception as e:
                     logger.error(f'Error generating tokens: {str(e)}', exc_info=True)
-                    return Response({
+                return Response({
                         'message': 'Verification successful. Please login.'
-                    })
+                })
             else:
                 return Response({
                     'error': 'Invalid or expired OTP code.'
