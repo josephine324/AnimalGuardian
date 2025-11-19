@@ -13,7 +13,6 @@ import LivestockPage from './pages/LivestockPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import SettingsPage from './pages/SettingsPage';
-import UserApprovalPage from './pages/UserApprovalPage';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -133,7 +132,6 @@ function App() {
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="settings" element={<SettingsPage />} />
-          <Route path="user-approval" element={<UserApprovalPage />} />
         </Route>
       </Routes>
     </Router>

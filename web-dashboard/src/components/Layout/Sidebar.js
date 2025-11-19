@@ -119,16 +119,6 @@ const Sidebar = ({ isOpen, onClose, currentPath, user }) => {
       badge: unreadNotificationsCount > 0 ? unreadNotificationsCount : null
     },
     { 
-      name: 'User Approval', 
-      href: '/user-approval', 
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
-      adminOnly: true
-    },
-    { 
       name: 'Settings', 
       href: '/settings', 
       icon: (
@@ -164,15 +154,6 @@ const Sidebar = ({ isOpen, onClose, currentPath, user }) => {
         <nav className="mt-8 px-4">
           <div className="space-y-1">
             {navigation.map((item) => {
-              // Check if item requires admin/sector vet access (NOT local vets)
-              if (item.adminOnly) {
-                const userType = user?.user_type;
-                // Only Sector Vets and Admins can see admin-only items (like User Approval)
-                const isAdmin = user?.is_staff || user?.is_superuser || userType === 'admin' || userType === 'sector_vet';
-                if (!isAdmin) {
-                  return null; // Don't show this item
-                }
-              }
 
               const isActive = currentPath === item.href || 
                               (item.href !== '/' && currentPath.startsWith(item.href));
