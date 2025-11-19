@@ -2865,7 +2865,7 @@ class _ProfileTabState extends State<_ProfileTab> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => _SettingsTab(
-                    scaffoldKey: scaffoldKey,
+                    scaffoldKey: widget.scaffoldKey,
                     bottomNavBar: _buildBottomNavigationBarForChild(context),
                   ),
                 ),
