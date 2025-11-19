@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file first (for better Docker layer caching)
-# Railway build context is repository root, so copy from backend/
+# Railway build context should be repository root
 COPY backend/requirements.txt /app/requirements.txt
 
 # Upgrade pip and install Python dependencies
@@ -26,7 +26,6 @@ COPY backend/start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
 # Copy all project files from backend directory to /app
-# Railway build context is repository root, so copy from backend/
 COPY backend/ /app/
 
 # Collect static files (allow failure in case static files are not configured)
