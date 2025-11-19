@@ -27,6 +27,7 @@ class _AddLivestockScreenState extends ConsumerState<AddLivestockScreen> {
   DateTime? _selectedBirthDate;
   bool _isPregnant = false;
   bool _isLoadingTypes = false;
+  bool _isLoading = false;
 
   @override
   void initState() {

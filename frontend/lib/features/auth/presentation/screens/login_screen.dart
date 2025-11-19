@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../shared/presentation/widgets/placeholder_image.dart';
+import '../../../../core/services/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,14 +12,15 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _emailOrPhoneController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
+  final ApiService _apiService = ApiService();
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _emailOrPhoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -32,24 +34,66 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = true;
     });
 
-    // TODO: Implement actual login logic with API
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      final emailOrPhone = _emailOrPhoneController.text.trim();
+      final password = _passwordController.text;
 
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-      
-      // Navigate to main app (for now, just show success)
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Login successful! (Demo mode)'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      
-      // Navigate to main dashboard
-      context.go('/dashboard');
+      // Try login with phone number first (backend supports both email and phone)
+      final response = await _apiService.login(emailOrPhone, password);
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        // Check user type and navigate accordingly
+        final user = response['user'] as Map<String, dynamic>?;
+        final userType = user?['user_type'] as String?;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Login successful!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // Navigate based on user type
+        if (userType == 'local_vet' || userType == 'sector_vet') {
+          context.go('/vet-dashboard');
+        } else {
+          context.go('/dashboard');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        String errorMessage = 'Login failed. Please check your credentials.';
+        if (e.toString().contains('401') || e.toString().contains('Invalid credentials')) {
+          errorMessage = 'Invalid phone number/email or password.';
+        } else if (e.toString().contains('403')) {
+          if (e.toString().contains('not verified')) {
+            errorMessage = 'Your phone number is not verified. Please verify it first.';
+          } else if (e.toString().contains('pending approval')) {
+            errorMessage = 'Your account is pending approval. Please wait for approval.';
+          } else if (e.toString().contains('deactivated')) {
+            errorMessage = 'Your account has been deactivated. Please contact support.';
+          }
+        } else if (e.toString().isNotEmpty) {
+          errorMessage = e.toString().replaceAll('Exception: ', '');
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     }
   }
 
@@ -120,17 +164,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 32),
                       TextFormField(
-                        controller: _emailController,
+                        controller: _emailOrPhoneController,
                         decoration: const InputDecoration(
-                          labelText: 'Mobile Number:',
-                          hintText: 'Enter the Mobile Number',
-                          prefixIcon: Icon(Icons.phone),
+                          labelText: 'Phone Number or Email:',
+                          hintText: 'Enter phone number or email',
+                          prefixIcon: Icon(Icons.person),
                           border: OutlineInputBorder(),
                         ),
-                        keyboardType: TextInputType.phone,
+                        keyboardType: TextInputType.text,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'Please enter your mobile number';
+                            return 'Please enter your phone number or email';
                           }
                           return null;
                         },
