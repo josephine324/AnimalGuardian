@@ -6,6 +6,8 @@ const FarmersPage = () => {
   const [farmers, setFarmers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedFarmer, setSelectedFarmer] = useState(null);
   // Removed approval filter - farmers don't need approval
 
   useEffect(() => {
@@ -41,6 +43,17 @@ const FarmersPage = () => {
 
 
   // Removed approval/reject handlers - farmers don't need approval
+
+  const handleContact = (farmer) => {
+    // Open email client or phone dialer
+    if (farmer.email) {
+      window.location.href = `mailto:${farmer.email}`;
+    } else if (farmer.phone_number) {
+      window.location.href = `tel:${farmer.phone_number}`;
+    } else {
+      alert('No contact information available for this farmer.');
+    }
+  };
 
   // Filter farmers by search query only (no approval filtering)
   const filteredFarmers = farmers.filter(farmer => {
@@ -238,10 +251,19 @@ const FarmersPage = () => {
                   </span>
                 </div>
               <div className="pt-3 flex space-x-2">
-                <button className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm font-medium transition-colors">
+                <button 
+                  onClick={() => {
+                    setSelectedFarmer(farmer);
+                    setShowProfileModal(true);
+                  }}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+                >
                   View Profile
                 </button>
-                <button className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors">
+                <button 
+                  onClick={() => handleContact(farmer)}
+                  className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors"
+                >
                   Contact
                 </button>
               </div>
@@ -254,6 +276,104 @@ const FarmersPage = () => {
           </div>
         )}
       </div>
+
+      {/* View Profile Modal */}
+      {showProfileModal && selectedFarmer && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Farmer Profile</h2>
+              <button
+                onClick={() => {
+                  setShowProfileModal(false);
+                  setSelectedFarmer(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex items-center space-x-4">
+                <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-3xl">
+                  {selectedFarmer.first_name?.charAt(0) || selectedFarmer.username?.charAt(0) || 'F'}
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    {selectedFarmer.first_name} {selectedFarmer.last_name || ''}
+                  </h3>
+                  <p className="text-gray-600">{selectedFarmer.farmer_profile?.farm_name || 'No farm name'}</p>
+                  <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                    Active
+                  </span>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                <div>
+                  <p className="text-sm text-gray-600">Phone</p>
+                  <p className="text-lg font-semibold text-gray-900">{selectedFarmer.phone_number || 'No phone'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Email</p>
+                  <p className="text-lg font-semibold text-gray-900">{selectedFarmer.email || 'No email'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Sector</p>
+                  <p className="text-lg font-semibold text-gray-900">{selectedFarmer.sector || 'Not specified'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">District</p>
+                  <p className="text-lg font-semibold text-gray-900">{selectedFarmer.district || 'Not specified'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Village</p>
+                  <p className="text-lg font-semibold text-gray-900">{selectedFarmer.village || 'Not specified'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Farm Size</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {selectedFarmer.farmer_profile?.farm_size 
+                      ? `${selectedFarmer.farmer_profile.farm_size} ${selectedFarmer.farmer_profile.farm_size_unit || 'hectares'}`
+                      : 'Not specified'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Total Livestock</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {selectedFarmer.farmer_profile?.total_livestock_count || 0}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Joined</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {selectedFarmer.created_at ? new Date(selectedFarmer.created_at).toLocaleDateString() : 'N/A'}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-2">
+              <button
+                onClick={() => handleContact(selectedFarmer)}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Contact
+              </button>
+              <button
+                onClick={() => {
+                  setShowProfileModal(false);
+                  setSelectedFarmer(null);
+                }}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
