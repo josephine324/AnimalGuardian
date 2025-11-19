@@ -489,61 +489,237 @@ class _HomeTabState extends State<_HomeTab> {
         ],
       ),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Search Bar
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: TextField(
-                controller: _searchController,
-                onChanged: _handleSearch,
-                decoration: InputDecoration(
-                  hintText: 'Search livestock, breeding tips, or friends',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[100],
+            // Welcome Card with User Name
+            Card(
+              margin: EdgeInsets.zero,
+              color: Theme.of(context).colorScheme.primary,
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _isLoadingUser
+                          ? 'Welcome!'
+                          : 'Welcome, ${_userData?['first_name'] ?? ''} ${_userData?['last_name'] ?? ''}'.trim().isEmpty
+                              ? 'Welcome!'
+                              : 'Welcome, ${_userData?['first_name'] ?? ''} ${_userData?['last_name'] ?? ''}'.trim(),
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Manage your farm and livestock in one place',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.white70,
+                          ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            // Filter Chips
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
+            const SizedBox(height: 24),
+            // Quick Stats
+            Row(
+              children: [
+                Expanded(
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.pets, color: Colors.green, size: 32),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Livestock',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          Text(
+                            '$_totalLivestock',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.report_problem, color: Colors.red, size: 32),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Active Cases',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          Text(
+                            '$_activeCases',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.check_circle, color: Colors.green, size: 32),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Resolved',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          Text(
+                            '$_resolvedCases',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            // Quick Actions
+            Text(
+              'Quick Actions',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Card(
+                    child: InkWell(
+                      onTap: () {
+                        context.push('/cases/report');
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          children: [
+                            const Icon(Icons.add_circle_outline, size: 40, color: Colors.blue),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Report Case',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Card(
+                    child: InkWell(
+                      onTap: () {
+                        context.push('/livestock/add');
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          children: [
+                            const Icon(Icons.add_circle_outline, size: 40, color: Colors.green),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Add Livestock',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            // Recent Cases
+            Text(
+              'Recent Cases',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            _buildRecentCases(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecentCases() {
+    return Consumer(
+      builder: (context, ref, child) {
+        final casesState = ref.watch(casesProvider);
+        final recentCases = casesState.filteredCases.take(3).toList();
+        
+        if (casesState.isLoading && recentCases.isEmpty) {
+          return const Center(child: Padding(
+            padding: EdgeInsets.all(32.0),
+            child: CircularProgressIndicator(),
+          ));
+        }
+        
+        if (recentCases.isEmpty) {
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
                 children: [
-                  _FilterChip(
-                    label: 'All',
-                    isSelected: _selectedFilter == 'All',
-                    onTap: () => _handleFilter('All'),
+                  Icon(Icons.report_problem, size: 60, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No cases yet',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Colors.grey[600],
+                        ),
                   ),
-                  const SizedBox(width: 8),
-                  _FilterChip(
-                    label: 'Livestock',
-                    isSelected: _selectedFilter == 'Livestock',
-                    onTap: () => _handleFilter('Livestock'),
-                  ),
-                  const SizedBox(width: 8),
-                  _FilterChip(
-                    label: 'Market',
-                    isSelected: _selectedFilter == 'Market',
-                    onTap: () => _handleFilter('Market'),
-                  ),
-                  const SizedBox(width: 8),
-                  _FilterChip(
-                    label: 'Tutorial',
-                    isSelected: _selectedFilter == 'Tutorial',
-                    onTap: () => _handleFilter('Tutorial'),
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      context.push('/cases/report');
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Report Your First Case'),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            // Home Feed Cards (from mock data)
-            ..._filteredFeed.map((item) {
+          );
+        }
+        
+        return Column(
+          children: recentCases.map((caseReport) {
               if (item['type'] == 'card') {
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -2413,11 +2589,7 @@ class _WeatherTabState extends State<_WeatherTab> {
   }
 
   void _handleSearch(String query) {
-    if (query.isNotEmpty) {
-      setState(() {
-        _weatherData = MockDataService.getMockWeather(location: query);
-      });
-    }
+    // Weather search coming soon
   }
 
   @override
