@@ -507,11 +507,11 @@ class VeterinarianViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=['post'])
     def toggle_availability(self, request, pk=None):
         """Toggle online/offline status for local veterinarians."""
-        profile = self.get_object()
-        user = request.user
+        user = self.get_object()  # Get the user, not the profile
+        requesting_user = request.user
         
         # Only the veterinarian themselves can toggle their availability
-        if profile.user != requesting_user:
+        if user != requesting_user:
             return Response({
                 'error': 'You can only change your own availability status.'
             }, status=status.HTTP_403_FORBIDDEN)
@@ -521,6 +521,18 @@ class VeterinarianViewSet(viewsets.ReadOnlyModelViewSet):
             return Response({
                 'error': 'Only local veterinarians can toggle their availability status.'
             }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Get or create veterinarian profile
+        try:
+            profile = user.vet_profile
+        except VeterinarianProfile.DoesNotExist:
+            # Create a basic profile if it doesn't exist
+            profile = VeterinarianProfile.objects.create(
+                user=user,
+                license_number=f'VET-{user.id}',
+                license_type='licensed',
+                is_available=True
+            )
         
         # Toggle availability
         profile.is_available = not profile.is_available
