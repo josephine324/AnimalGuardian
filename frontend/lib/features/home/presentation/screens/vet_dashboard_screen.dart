@@ -595,6 +595,32 @@ class _VetCasesTabState extends ConsumerState<_VetCasesTab> {
     }
   }
 
+  Widget _buildStyledFilterChip(
+    BuildContext context,
+    String label,
+    bool isSelected,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) => onTap(),
+      selectedColor: color.withOpacity(0.2),
+      checkmarkColor: color,
+      labelStyle: TextStyle(
+        color: isSelected ? color : Colors.grey[700],
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      ),
+      side: BorderSide(
+        color: isSelected ? color : Colors.grey[300]!,
+        width: isSelected ? 2 : 1,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final casesState = ref.watch(casesProvider);
