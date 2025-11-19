@@ -27,66 +27,14 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         
-        # Generate and send OTP
-        otp_code = str(random.randint(1000, 9999))  # 4-digit OTP
+        # Auto-verify users (no email verification needed)
+        # Users will be approved by sector vet instead
+        user.is_verified = True
+        user.save()
         
-        # Store OTP in OTPVerification model (for verification) - do this first
-        # Use phone_number for OTPVerification model (required field), but verification can use email
-        OTPVerification.objects.create(
-            phone_number=user.phone_number or user.email,  # Use email as fallback if phone not available
-            otp_code=otp_code,
-            expires_at=timezone.now() + timedelta(minutes=15)
-        )
-        
-        # Send OTP via email asynchronously (non-blocking)
-        def send_otp_email():
-            """Send OTP email in background thread."""
-            try:
-                from django.core.mail import send_mail
-                user_type_name = 'Local Veterinarian' if user.user_type == 'local_vet' else 'Farmer'
-                subject = 'AnimalGuardian - Verification Code'
-                message = f'''
-Hello {user.get_full_name() or user.username},
-
-Thank you for registering as a {user_type_name} on AnimalGuardian.
-
-Your verification code is: {otp_code}
-
-Please enter this code to verify your account.
-
-This code will expire in 15 minutes.
-
-Best regards,
-AnimalGuardian Team
-'''
-                send_mail(
-                    subject=subject,
-                    message=message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[user.email],
-                    fail_silently=True,  # Don't fail the request if email fails
-                )
-                logger.info(f'OTP sent via email to {user.email} for user {user.id} (type: {user.user_type})')
-            except Exception as e:
-                logger.error(f'Error sending OTP email: {str(e)}', exc_info=True)
-        
-        # For local_vet and farmer, send OTP via email (email is now required for both)
-        if user.user_type in ['local_vet', 'farmer'] and user.email:
-            # Send email in background thread to avoid blocking the response
-            email_thread = threading.Thread(target=send_otp_email)
-            email_thread.daemon = True
-            email_thread.start()
-            logger.info(f'OTP email sending initiated for {user.email} (user {user.id}, type: {user.user_type})')
-        else:
-            # Fallback: For other user types, OTP would be sent via SMS (not implemented yet)
-            # For now, log it
-            logger.info(f'OTP for phone {user.phone_number}: {otp_code} (SMS not implemented)')
-        
-        verification_message = 'Please verify your email address.' if user.user_type in ['local_vet', 'farmer'] and user.email else 'Please verify your phone number.'
-        
-        # Return response immediately (email is sent in background)
+        # Return response
         return Response({
-            'message': f'User created successfully. {verification_message}',
+            'message': 'User created successfully. Your account is pending approval from a sector veterinarian. You will receive an email once approved.',
             'user_id': user.id
         }, status=status.HTTP_201_CREATED)
 
@@ -138,16 +86,10 @@ class LoginView(generics.GenericAPIView):
                     logger.error(f'Error during email authentication: {str(e)}', exc_info=True)
             
             if user:
-                # Check if user is verified (email verification for farmers and local vets)
-                if user.user_type in ['farmer', 'local_vet'] and not user.is_verified:
-                    return Response({
-                        'error': 'Your email is not verified. Please verify your email first.'
-                    }, status=status.HTTP_403_FORBIDDEN)
-                
                 # Check if user is approved by sector vet/admin (both farmers and local vets need approval)
                 if user.user_type in ['farmer', 'local_vet'] and not user.is_approved_by_admin:
                     return Response({
-                        'error': 'Your account is pending approval from a sector veterinarian. Please wait for approval before logging in.',
+                        'error': 'Your account is pending approval from a sector veterinarian. Please wait for approval before logging in. You will receive an email once approved.',
                         'pending_approval': True
                     }, status=status.HTTP_403_FORBIDDEN)
                 
@@ -566,8 +508,46 @@ class UserViewSet(viewsets.ModelViewSet):
         user_to_approve.approval_notes = approval_notes
         user_to_approve.save()
         
+        # Send approval email to user
+        def send_approval_email():
+            """Send approval email in background thread."""
+            try:
+                from django.core.mail import send_mail
+                user_type_name = 'Local Veterinarian' if user_to_approve.user_type == 'local_vet' else 'Farmer'
+                subject = 'AnimalGuardian - Account Approved'
+                message = f'''
+Hello {user_to_approve.get_full_name() or user_to_approve.username},
+
+Great news! Your {user_type_name} account on AnimalGuardian has been approved by a Sector Veterinarian.
+
+You can now log in to the AnimalGuardian mobile app and start using all the features.
+
+Login with your registered email/phone number and password.
+
+Best regards,
+AnimalGuardian Team
+'''
+                if user_to_approve.email:
+                    send_mail(
+                        subject=subject,
+                        message=message,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[user_to_approve.email],
+                        fail_silently=True,  # Don't fail the request if email fails
+                    )
+                    logger.info(f'Approval email sent to {user_to_approve.email} for user {user_to_approve.id} (type: {user_to_approve.user_type})')
+            except Exception as e:
+                logger.error(f'Error sending approval email: {str(e)}', exc_info=True)
+        
+        # Send approval email in background thread
+        if user_to_approve.email:
+            email_thread = threading.Thread(target=send_approval_email)
+            email_thread.daemon = True
+            email_thread.start()
+            logger.info(f'Approval email sending initiated for {user_to_approve.email} (user {user_to_approve.id})')
+        
         return Response({
-            'message': f'User {user_to_approve.username} has been approved.',
+            'message': f'User {user_to_approve.username} has been approved. Approval email sent.',
             'user': UserSerializer(user_to_approve).data
         }, status=status.HTTP_200_OK)
     
@@ -608,8 +588,8 @@ class UserViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_403_FORBIDDEN)
         
         pending_users = User.objects.filter(
-            is_verified=True,
-            is_approved_by_admin=False
+            is_approved_by_admin=False,
+            user_type__in=['farmer', 'local_vet']
         ).order_by('-created_at')
         
         serializer = self.get_serializer(pending_users, many=True)
@@ -630,11 +610,6 @@ class FarmerViewSet(viewsets.ReadOnlyModelViewSet):
             # Convert string to boolean
             is_approved_bool = is_approved.lower() in ('true', '1', 'yes')
             queryset = queryset.filter(is_approved_by_admin=is_approved_bool)
-            
-            # For pending approval, only show verified users
-            # For approved, show all approved users (they should be verified anyway)
-            if not is_approved_bool:
-                queryset = queryset.filter(is_verified=True)
         
         return queryset.order_by('-created_at')
     

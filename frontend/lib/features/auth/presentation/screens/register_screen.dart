@@ -69,13 +69,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Registration successful! Please verify your email address.'),
+            content: Text('Registration successful! Your account is pending approval from a sector veterinarian. You will receive an email once approved.'),
             backgroundColor: Colors.green,
+            duration: Duration(seconds: 5),
           ),
         );
         
-        // Navigate to OTP verification with email (both farmers and local vets use email now)
-        context.go('/otp-verify?email=${_emailController.text.trim()}&user_type=${_selectedUserType}');
+        // Navigate to login page after registration
+        context.go('/login');
       }
     } catch (e) {
       if (mounted) {
@@ -84,18 +85,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         });
         
         String errorMessage = 'Registration failed. Please try again.';
-        if (e.toString().contains('phone_number')) {
+        
+        // Handle timeout specifically
+        if (e.toString().contains('TimeoutException') || e.toString().contains('timeout')) {
+          errorMessage = 'Registration is taking longer than expected. Your account may have been created. Please try logging in or contact support.';
+        } else if (e.toString().contains('phone_number')) {
           errorMessage = 'This phone number is already registered.';
         } else if (e.toString().contains('email')) {
           errorMessage = 'This email is already registered.';
+        } else if (e.toString().contains('network') || e.toString().contains('connection')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
         } else if (e.toString().isNotEmpty) {
-          errorMessage = e.toString().replaceAll('Exception: ', '');
+          errorMessage = e.toString().replaceAll('Exception: ', '').replaceAll('TimeoutException after 0:00:60.000000: Future not completed', 'Request timed out. Please try again.');
         }
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5), // Show error longer
           ),
         );
       }
@@ -247,7 +255,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Your registration will require approval from a Sector Veterinarian via the web dashboard after email verification.',
+                                'Your registration will require approval from a Sector Veterinarian via the web dashboard. You will receive an email once approved.',
                                 style: TextStyle(
                                   color: Colors.blue[900],
                                   fontSize: 12,
@@ -325,6 +333,35 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Already have an account? ',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 14,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => context.go('/login'),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: Text(
+                              'Login',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

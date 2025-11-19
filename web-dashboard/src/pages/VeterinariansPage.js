@@ -192,6 +192,31 @@ const VeterinariansPage = () => {
     }
   };
 
+  const handleApproveVet = async (vetId) => {
+    try {
+      await usersAPI.approveUser(vetId);
+      await fetchVeterinarians();
+      alert('Veterinarian approved successfully! Approval email sent.');
+    } catch (err) {
+      console.error('Error approving veterinarian:', err);
+      alert(err.response?.data?.error || err.response?.data?.detail || 'Failed to approve veterinarian');
+    }
+  };
+
+  const handleRejectVet = async (vetId) => {
+    if (!window.confirm('Are you sure you want to reject this veterinarian?')) {
+      return;
+    }
+    try {
+      await usersAPI.rejectUser(vetId);
+      await fetchVeterinarians();
+      alert('Veterinarian rejected.');
+    } catch (err) {
+      console.error('Error rejecting veterinarian:', err);
+      alert(err.response?.data?.error || err.response?.data?.detail || 'Failed to reject veterinarian');
+    }
+  };
+
   const stats = {
     total: veterinarians.length,
     available: veterinarians.filter(v => v.veterinarian_profile?.status === 'available' || v.is_active).length,
@@ -369,19 +394,48 @@ const VeterinariansPage = () => {
                     <p className="text-lg font-bold text-gray-900">{vet.user_type || 'vet'}</p>
                   </div>
                 </div>
+              <div className="pt-3 border-t border-gray-200 flex justify-between items-center mb-3">
+                <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                  vet.is_approved_by_admin 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {vet.is_approved_by_admin ? 'Approved' : 'Pending Approval'}
+                </span>
+              </div>
               <div className="pt-3 flex space-x-2">
-                <button 
-                  onClick={() => handleViewProfile(vet)}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
-                >
-                  View Profile
-                </button>
-                <button 
-                  onClick={() => handleAssignCase(vet)}
-                  className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors"
-                >
-                  Assign Case
-                </button>
+                {vet.user_type === 'local_vet' && !vet.is_approved_by_admin && (
+                  <>
+                    <button 
+                      onClick={() => handleApproveVet(vet.id)}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Approve
+                    </button>
+                    <button 
+                      onClick={() => handleRejectVet(vet.id)}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Reject
+                    </button>
+                  </>
+                )}
+                {vet.is_approved_by_admin && (
+                  <>
+                    <button 
+                      onClick={() => handleViewProfile(vet)}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      View Profile
+                    </button>
+                    <button 
+                      onClick={() => handleAssignCase(vet)}
+                      className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Assign Case
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
