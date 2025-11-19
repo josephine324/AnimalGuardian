@@ -153,7 +153,7 @@ class UserSerializer(serializers.ModelSerializer):
                 license_number=license_number,
                 license_type='licensed',
                 specialization=validated_data.get('specialization', 'General Practice'),
-                is_available=True
+                is_available=False  # Start as offline - vet must set themselves to online via app
             )
         
         # Automatically create FarmerProfile if user is a farmer

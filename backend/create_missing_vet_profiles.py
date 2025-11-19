@@ -44,7 +44,7 @@ def create_missing_profiles():
                 license_number=license_number,
                 license_type='licensed',
                 specialization='General Practice',
-                is_available=True
+                is_available=False  # Start as offline - vet must set themselves to online via app
             )
             
             print(f"[OK] Created profile for {vet.email} (ID: {vet.id})")
