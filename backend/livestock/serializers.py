@@ -15,12 +15,25 @@ class BreedSerializer(serializers.ModelSerializer):
 
 class LivestockSerializer(serializers.ModelSerializer):
     livestock_type = LivestockTypeSerializer(read_only=True)
+    livestock_type_id = serializers.PrimaryKeyRelatedField(
+        queryset=LivestockType.objects.all(),
+        source='livestock_type',
+        write_only=True,
+        required=True
+    )
     breed = BreedSerializer(read_only=True)
+    breed_id = serializers.PrimaryKeyRelatedField(
+        queryset=Breed.objects.all(),
+        source='breed',
+        write_only=True,
+        required=False,
+        allow_null=True
+    )
     
     class Meta:
         model = Livestock
         fields = [
-            'id', 'livestock_type', 'breed', 'name', 'tag_number',
+            'id', 'livestock_type', 'livestock_type_id', 'breed', 'breed_id', 'name', 'tag_number',
             'gender', 'status', 'birth_date', 'weight_kg', 'color',
             'description', 'last_vaccination_date', 'last_deworming_date',
             'last_health_check', 'is_pregnant', 'pregnancy_start_date',

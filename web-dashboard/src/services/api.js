@@ -387,13 +387,13 @@ export const communityAPI = {
     return response.data;
   },
 
-  getComments: async (params = {}) => {
-    const response = await api.get('/community/comments/', { params });
+  getComments: async (postId) => {
+    const response = await api.get('/community/comments/', { params: { post: postId } });
     return response.data;
   },
 
-  createComment: async (commentData) => {
-    const response = await api.post('/community/comments/', commentData);
+  createComment: async (postId, commentData) => {
+    const response = await api.post('/community/comments/', { ...commentData, post: postId });
     return response.data;
   },
 };

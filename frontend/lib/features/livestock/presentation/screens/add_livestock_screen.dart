@@ -114,8 +114,8 @@ class _AddLivestockScreenState extends ConsumerState<AddLivestockScreen> {
     }
 
     final livestockData = {
-      'livestock_type': _selectedLivestockTypeId,
-      if (_selectedBreedId != null) 'breed': _selectedBreedId,
+      'livestock_type_id': _selectedLivestockTypeId,
+      if (_selectedBreedId != null) 'breed_id': _selectedBreedId,
       if (_nameController.text.trim().isNotEmpty) 'name': _nameController.text.trim(),
       if (_tagNumberController.text.trim().isNotEmpty) 'tag_number': _tagNumberController.text.trim(),
       'gender': _selectedGender.apiValue,
