@@ -41,12 +41,12 @@ class LoginView(generics.GenericAPIView):
             password = request.data.get('password')
             
             if not password:
-                return Response({
-                    'error': 'Password is required.'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Try to authenticate with phone number first, then email
-            user = None
+            return Response({
+                'error': 'Password is required.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Try to authenticate with phone number first, then email
+        user = None
             if phone_number:
                 try:
                     user = authenticate(username=phone_number, password=password)
@@ -76,7 +76,7 @@ class LoginView(generics.GenericAPIView):
                         logger.warning(f'No user found with email: {email}')
                 except Exception as e:
                     logger.error(f'Error during email authentication: {str(e)}', exc_info=True)
-            
+        
             if user:
                 # Check if user is verified (phone verification) - only for farmers
                 if user.user_type == 'farmer' and not user.is_verified:
