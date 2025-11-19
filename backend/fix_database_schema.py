@@ -14,28 +14,54 @@ django.setup()
 
 from django.db import connection
 from django.core.management import call_command
+from django.conf import settings
 
 def fix_schema():
     """Fix the database schema by renaming the column if needed."""
     print("Checking database schema...")
     
+    # Check database engine
+    db_engine = settings.DATABASES['default']['ENGINE']
+    is_postgresql = 'postgresql' in db_engine.lower()
+    is_sqlite = 'sqlite' in db_engine.lower()
+    
+    print(f"Database engine: {db_engine}")
+    
     try:
-        with connection.cursor() as cursor:
-            # Check if old column exists
-            cursor.execute("""
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name='users' AND column_name='password_reset_code'
-            """)
-            old_column_exists = cursor.fetchone() is not None
-            
-            # Check if new column exists
-            cursor.execute("""
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name='users' AND column_name='password_reset_token'
-            """)
-            new_column_exists = cursor.fetchone() is not None
+        old_column_exists = False
+        new_column_exists = False
+        
+        if is_postgresql:
+            # PostgreSQL uses information_schema
+            with connection.cursor() as cursor:
+                # Check if old column exists
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name='users' AND column_name='password_reset_code'
+                """)
+                old_column_exists = cursor.fetchone() is not None
+                
+                # Check if new column exists
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name='users' AND column_name='password_reset_token'
+                """)
+                new_column_exists = cursor.fetchone() is not None
+        elif is_sqlite:
+            # SQLite uses pragma table_info
+            with connection.cursor() as cursor:
+                cursor.execute("PRAGMA table_info(users)")
+                columns = cursor.fetchall()
+                column_names = [col[1] for col in columns]  # Column name is at index 1
+                old_column_exists = 'password_reset_code' in column_names
+                new_column_exists = 'password_reset_token' in column_names
+        else:
+            print(f"⚠️  Unsupported database engine: {db_engine}")
+            print("Attempting to run migrations anyway...")
+            call_command('migrate', verbosity=2)
+            return
         
         if old_column_exists and not new_column_exists:
             print("Found old column 'password_reset_code' but not 'password_reset_token'.")
@@ -43,10 +69,18 @@ def fix_schema():
             
             # Rename the column directly in the database
             with connection.cursor() as cursor:
-                cursor.execute("""
-                    ALTER TABLE users 
-                    RENAME COLUMN password_reset_code TO password_reset_token;
-                """)
+                if is_postgresql:
+                    cursor.execute("""
+                        ALTER TABLE users 
+                        RENAME COLUMN password_reset_code TO password_reset_token;
+                    """)
+                elif is_sqlite:
+                    # SQLite doesn't support RENAME COLUMN directly, need to recreate table
+                    print("⚠️  SQLite detected. SQLite doesn't support RENAME COLUMN.")
+                    print("Running migrations instead (which will handle the column rename)...")
+                    call_command('migrate', 'accounts', '0006_rename_password_reset_code_to_token', verbosity=2)
+                    print("✅ Migration completed!")
+                    return
             
             print("✅ Successfully renamed password_reset_code to password_reset_token!")
             
