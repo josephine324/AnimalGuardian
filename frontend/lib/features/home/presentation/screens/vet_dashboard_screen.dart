@@ -56,6 +56,10 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
           label: 'Cases',
         ),
         BottomNavigationBarItem(
+          icon: Icon(Icons.chat_bubble_outline),
+          label: 'Chat',
+        ),
+        BottomNavigationBarItem(
           icon: Icon(Icons.people),
           label: 'Community',
         ),
@@ -620,40 +624,72 @@ class _VetCasesTabState extends ConsumerState<_VetCasesTab> {
           : Column(
               children: [
                 // Status filters
-                Padding(
+                Container(
                   padding: const EdgeInsets.all(16.0),
-                  child: Wrap(
-                    spacing: 8,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey[200]!),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      FilterChip(
-                        label: const Text('All'),
-                        selected: _selectedFilter == 'All',
-                        onSelected: (selected) => _filterCases('All'),
+                      Text(
+                        'Filter Cases',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[700],
+                            ),
                       ),
-                      FilterChip(
-                        label: const Text('Assigned'),
-                        selected: _selectedFilter == 'Assigned',
-                        onSelected: (selected) => _filterCases('Assigned'),
-                      ),
-                      FilterChip(
-                        label: const Text('In Progress'),
-                        selected: _selectedFilter == 'In Progress',
-                        onSelected: (selected) => _filterCases('In Progress'),
-                      ),
-                      FilterChip(
-                        label: const Text('Resolved'),
-                        selected: _selectedFilter == 'Resolved',
-                        onSelected: (selected) => _filterCases('Resolved'),
-                      ),
-                      FilterChip(
-                        label: const Text('Diagnosed'),
-                        selected: _selectedFilter == 'Diagnosed',
-                        onSelected: (selected) => _filterCases('Diagnosed'),
-                      ),
-                      FilterChip(
-                        label: const Text('Treated'),
-                        selected: _selectedFilter == 'Treated',
-                        onSelected: (selected) => _filterCases('Treated'),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _buildStyledFilterChip(
+                            context,
+                            'All',
+                            _selectedFilter == 'All',
+                            Colors.blue,
+                            () => _filterCases('All'),
+                          ),
+                          _buildStyledFilterChip(
+                            context,
+                            'Assigned',
+                            _selectedFilter == 'Assigned',
+                            Colors.orange,
+                            () => _filterCases('Assigned'),
+                          ),
+                          _buildStyledFilterChip(
+                            context,
+                            'In Progress',
+                            _selectedFilter == 'In Progress',
+                            Colors.blue,
+                            () => _filterCases('In Progress'),
+                          ),
+                          _buildStyledFilterChip(
+                            context,
+                            'Resolved',
+                            _selectedFilter == 'Resolved',
+                            Colors.green,
+                            () => _filterCases('Resolved'),
+                          ),
+                          _buildStyledFilterChip(
+                            context,
+                            'Diagnosed',
+                            _selectedFilter == 'Diagnosed',
+                            Colors.purple,
+                            () => _filterCases('Diagnosed'),
+                          ),
+                          _buildStyledFilterChip(
+                            context,
+                            'Treated',
+                            _selectedFilter == 'Treated',
+                            Colors.teal,
+                            () => _filterCases('Treated'),
+                          ),
+                        ],
                       ),
                     ],
                   ),
