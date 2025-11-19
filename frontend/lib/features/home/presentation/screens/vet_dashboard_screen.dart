@@ -124,11 +124,19 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.chat_bubble_outline, color: Colors.blue),
+            title: const Text('Chat'),
+            onTap: () {
+              Navigator.pop(context);
+              changeTab(2);
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.people, color: Colors.purple),
             title: const Text('Community'),
             onTap: () {
               Navigator.pop(context);
-              changeTab(2);
+              changeTab(3);
             },
           ),
           ListTile(
@@ -136,7 +144,7 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
             title: const Text('Profile'),
             onTap: () {
               Navigator.pop(context);
-              changeTab(3);
+              changeTab(4);
             },
           ),
           const Divider(),
