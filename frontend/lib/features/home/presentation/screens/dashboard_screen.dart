@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/services/mock_data_service.dart';
+import '../../../../core/services/api_service.dart';
+import '../../../../core/models/community_model.dart';
 import '../../../../shared/presentation/widgets/placeholder_image.dart';
 import '../../../cases/presentation/screens/report_case_screen.dart';
 import '../../../cases/presentation/screens/case_detail_screen.dart';
@@ -1207,27 +1209,50 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
   late TabController _tabController;
   String _selectedTab = 'Community';
   final TextEditingController _searchController = TextEditingController();
-  List<Map<String, dynamic>> _communityCards = MockDataService.getMockCommunityCards();
-  List<Map<String, dynamic>> _posts = MockDataService.getMockPosts();
-  List<Map<String, dynamic>> _chats = MockDataService.getMockChats();
+  final ApiService _apiService = ApiService();
   
-  List<Map<String, dynamic>> _filteredCommunityCards = [];
-  List<Map<String, dynamic>> _filteredPosts = [];
-  List<Map<String, dynamic>> _filteredChats = [];
+  List<Post> _posts = [];
+  bool _isLoading = true;
+  String? _error;
+  
+  List<Post> _filteredPosts = [];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() {
       setState(() {
-        final tabs = ['Community', 'Post', 'Video', 'Chats'];
+        final tabs = ['Posts', 'Create'];
         _selectedTab = tabs[_tabController.index];
       });
     });
-    _filteredCommunityCards = _communityCards;
-    _filteredPosts = _posts;
-    _filteredChats = _chats;
+    _loadPosts();
+  }
+
+  Future<void> _loadPosts() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final posts = await _apiService.getPosts();
+      if (mounted) {
+        setState(() {
+          _posts = posts;
+          _filteredPosts = posts;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -1240,28 +1265,108 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
   void _handleSearch(String query) {
     setState(() {
       if (query.isEmpty) {
-        _filteredCommunityCards = _communityCards;
         _filteredPosts = _posts;
-        _filteredChats = _chats;
       } else {
-        _filteredCommunityCards = _communityCards.where((card) {
-          return card['title'].toString().toLowerCase().contains(query.toLowerCase()) ||
-                 card['description'].toString().toLowerCase().contains(query.toLowerCase());
-        }).toList();
-        
         _filteredPosts = _posts.where((post) {
-          return post['author'].toString().toLowerCase().contains(query.toLowerCase()) ||
-                 post['content'].toString().toLowerCase().contains(query.toLowerCase()) ||
-                 post['location'].toString().toLowerCase().contains(query.toLowerCase()) ||
-                 (post['tags'] as List).any((tag) => tag.toString().toLowerCase().contains(query.toLowerCase()));
-        }).toList();
-        
-        _filteredChats = _chats.where((chat) {
-          return chat['name'].toString().toLowerCase().contains(query.toLowerCase()) ||
-                 chat['lastMessage'].toString().toLowerCase().contains(query.toLowerCase());
+          return post.title.toLowerCase().contains(query.toLowerCase()) ||
+                 post.content.toLowerCase().contains(query.toLowerCase()) ||
+                 post.authorName.toLowerCase().contains(query.toLowerCase()) ||
+                 post.tags.any((tag) => tag.toLowerCase().contains(query.toLowerCase()));
         }).toList();
       }
     });
+  }
+
+  Future<void> _createPost(String title, String content) async {
+    try {
+      await _apiService.createPost({
+        'title': title,
+        'content': content,
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Post created successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        await _loadPosts();
+        _tabController.animateTo(0); // Switch to Posts tab
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create post: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showCreatePostDialog(BuildContext context) {
+    final titleController = TextEditingController();
+    final contentController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create New Post'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  border: OutlineInputBorder(),
+                ),
+                maxLength: 200,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: contentController,
+                decoration: const InputDecoration(
+                  labelText: 'Content',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 5,
+                maxLength: 2000,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (titleController.text.trim().isNotEmpty && 
+                  contentController.text.trim().isNotEmpty) {
+                _createPost(
+                  titleController.text.trim(),
+                  contentController.text.trim(),
+                );
+                Navigator.pop(context);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please fill in both title and content'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              }
+            },
+            child: const Text('Post'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _handleLike(int postId) {
@@ -1296,11 +1401,9 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.person_outline),
+            icon: const Icon(Icons.add_circle_outline),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Profile feature coming soon!')),
-              );
+              _showCreatePostDialog(context);
             },
           ),
         ],
@@ -1314,7 +1417,7 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
               controller: _searchController,
               onChanged: _handleSearch,
               decoration: InputDecoration(
-                hintText: 'Search Community Topics Or Members',
+                hintText: 'Search Community Posts',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1334,10 +1437,8 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
               unselectedLabelColor: Theme.of(context).colorScheme.primary,
               indicatorColor: Theme.of(context).colorScheme.primary,
               tabs: const [
-                Tab(text: 'Community'),
-                Tab(text: 'Post'),
-                Tab(text: 'Video'),
-                Tab(text: 'Chats'),
+                Tab(text: 'Posts'),
+                Tab(text: 'Create'),
               ],
             ),
           ),
@@ -1346,10 +1447,8 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildCommunityFeed(),
                 _buildPostFeed(),
-                _buildVideoFeed(),
-                _buildChatsList(),
+                _buildCreatePostTab(),
               ],
             ),
           ),
@@ -1358,68 +1457,278 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
     );
   }
 
-  Widget _buildCommunityFeed() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: _filteredCommunityCards.isEmpty
-          ? const Center(
-              child: Padding(
-                padding: EdgeInsets.all(32.0),
-                child: Text('No community cards found'),
+  Widget _buildPostFeed() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 60, color: Colors.red[400]),
+            const SizedBox(height: 16),
+            Text(
+              'Error loading posts',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.red[600],
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _error!,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[500],
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadPosts,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_filteredPosts.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.post_add, size: 60, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'No posts yet',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Be the first to start a discussion!',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[500],
+                  ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadPosts,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16.0),
+        itemCount: _filteredPosts.length,
+        itemBuilder: (context, index) {
+          final post = _filteredPosts[index];
+          return Card(
+            margin: const EdgeInsets.only(bottom: 16.0),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        child: Text(post.authorName.isNotEmpty 
+                            ? post.authorName[0].toUpperCase() 
+                            : 'U'),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              post.authorName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              _formatDate(post.createdAt),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    post.title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(post.content),
+                  if (post.tags.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: post.tags.map((tag) {
+                        return Chip(
+                          label: Text(tag),
+                          labelStyle: const TextStyle(fontSize: 12),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                  const Divider(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildActionButton(
+                        Icons.favorite_border,
+                        '${post.likesCount}',
+                        post.isLiked ? Colors.red : Colors.grey,
+                        () => _handleLikePost(post.id),
+                      ),
+                      _buildActionButton(
+                        Icons.comment_outlined,
+                        '${post.commentsCount}',
+                        Colors.grey,
+                        () => _handleComment(post.id),
+                      ),
+                      _buildActionButton(
+                        Icons.share_outlined,
+                        'Share',
+                        Colors.grey,
+                        () => _handleShare(post.id),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            )
-          : Column(
-              children: _filteredCommunityCards.map((card) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: _CommunityCard(
-              imagePath: card['image'],
-              placeholderIcon: Icons.agriculture,
-              title: card['title'],
-              description: card['description'],
             ),
           );
-        }).toList(),
+        },
       ),
     );
   }
 
-  Widget _buildPostFeed() {
-    final postItems = _filteredPosts.where((p) => p['type'] == 'post').toList();
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: postItems.isEmpty
-          ? const Center(
-              child: Padding(
-                padding: EdgeInsets.all(32.0),
-                child: Text('No posts found'),
-              ),
-            )
-          : Column(
-              children: postItems.map((post) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: _PostCard(
-              postId: post['id'],
-              authorName: post['author'],
-              location: post['location'],
-              time: post['time'],
-              imagePath: post['image'],
-              placeholderIcon: Icons.image,
-              content: post['content'],
-              tags: List<String>.from(post['tags'] ?? []),
-              likes: post['likes'],
-              comments: post['comments'],
-              saves: post['saves'],
-              shares: post['shares'],
-              onLike: () => _handleLike(post['id']),
-              onComment: () => _handleComment(post['id']),
-              onShare: () => _handleShare(post['id']),
-            ),
-          );
-        }).toList(),
+  Widget _buildActionButton(IconData icon, String label, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(color: color, fontSize: 14)),
+        ],
       ),
     );
+  }
+
+  Widget _buildCreatePostTab() {
+    final titleController = TextEditingController();
+    final contentController = TextEditingController();
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Create a New Post',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 24),
+          TextField(
+            controller: titleController,
+            decoration: const InputDecoration(
+              labelText: 'Title',
+              hintText: 'Enter a catchy title for your post',
+              border: OutlineInputBorder(),
+            ),
+            maxLength: 200,
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: contentController,
+            decoration: const InputDecoration(
+              labelText: 'Content',
+              hintText: 'Share your thoughts, questions, or experiences...',
+              border: OutlineInputBorder(),
+              alignLabelWithHint: true,
+            ),
+            maxLines: 10,
+            maxLength: 2000,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () {
+              if (titleController.text.trim().isNotEmpty && 
+                  contentController.text.trim().isNotEmpty) {
+                _createPost(
+                  titleController.text.trim(),
+                  contentController.text.trim(),
+                );
+                titleController.clear();
+                contentController.clear();
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please fill in both title and content'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              }
+            },
+            icon: const Icon(Icons.post_add),
+            label: const Text('Publish Post'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays > 7) {
+      return '${date.day}/${date.month}/${date.year}';
+    } else if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'Just now';
+    }
+  }
+
+  Future<void> _handleLikePost(int postId) async {
+    try {
+      await _apiService.likePost(postId);
+      await _loadPosts();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to like post: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildVideoFeed() {
