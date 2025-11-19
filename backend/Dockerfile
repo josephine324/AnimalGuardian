@@ -14,18 +14,20 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file first (for better caching)
-COPY backend/requirements.txt /app/requirements.txt
+# When Railway uses backend/ as root, we copy from current directory
+COPY requirements.txt /app/requirements.txt
 
 # Upgrade pip and install Python dependencies
 RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
+    pip install -r /app/requirements.txt
 
-# Copy startup script first
-COPY backend/start.sh /app/start.sh
+# Copy startup script
+COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
-# Copy all project files from backend directory to /app
-COPY backend/ /app/
+# Copy all project files to /app
+# When Railway uses backend/ as root directory, this copies from current directory
+COPY . /app/
 
 # Collect static files (allow failure in case static files are not configured)
 RUN python manage.py collectstatic --noinput || true
