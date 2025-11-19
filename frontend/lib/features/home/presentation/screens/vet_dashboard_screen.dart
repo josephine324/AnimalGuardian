@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/services/mock_data_service.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../shared/presentation/widgets/placeholder_image.dart';
 import '../../../cases/presentation/screens/case_detail_screen.dart';
@@ -228,7 +227,8 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
     final List<Widget> screens = [
       _VetHomeTab(scaffoldKey: _scaffoldKey),
       _VetCasesTab(scaffoldKey: _scaffoldKey),
-      _VetCommunityTab(scaffoldKey: _scaffoldKey),
+      _VetChatTab(scaffoldKey: _scaffoldKey), // Chat with farmers
+      _VetCommunityTab(scaffoldKey: _scaffoldKey), // Community - connect with farmers
       _VetProfileTab(
         scaffoldKey: _scaffoldKey,
         buildBottomNavBar: _buildBottomNavigationBar,
@@ -798,6 +798,66 @@ class _VetCasesTabState extends ConsumerState<_VetCasesTab> {
   }
 }
 
+// Vet Chat Tab
+class _VetChatTab extends StatelessWidget {
+  final GlobalKey<ScaffoldState> scaffoldKey;
+  
+  const _VetChatTab({required this.scaffoldKey});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => scaffoldKey.currentState?.openDrawer(),
+        ),
+        title: const Text('Chat with Farmers'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              // TODO: Implement search for farmers
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Search functionality coming soon')),
+              );
+            },
+          ),
+        ],
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.chat_bubble_outline, size: 80, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'Chat with Farmers',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              child: Text(
+                'Connect with farmers to discuss cases, provide advice, and build relationships. Chat functionality will be available soon.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey[500],
+                    ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // Vet Community Tab (same as farmer)
 class _VetCommunityTab extends StatelessWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
@@ -1175,8 +1235,6 @@ class _VetMarketTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final products = MockDataService.getMockProducts();
-    
     return Scaffold(
       bottomNavigationBar: bottomNavBar,
       appBar: AppBar(
@@ -1189,52 +1247,28 @@ class _VetMarketTab extends StatelessWidget {
         foregroundColor: Colors.black,
         elevation: 0,
       ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 0.75,
-        ),
-        itemCount: products.length,
-        itemBuilder: (context, index) {
-          final product = products[index];
-          return Card(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: PlaceholderImage(
-                    networkUrl: product['image'],
-                    placeholderIcon: Icons.eco,
-                    width: double.infinity,
-                    height: double.infinity,
-                    fit: BoxFit.cover,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.store, size: 80, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'Marketplace Coming Soon',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: Colors.grey[600],
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        product['name'],
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        product['price'],
-                        style: TextStyle(color: Theme.of(context).colorScheme.primary),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
             ),
-          );
-        },
+            const SizedBox(height: 8),
+            Text(
+              'The marketplace feature will be available soon',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[500],
+                  ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1249,8 +1283,6 @@ class _VetWeatherTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final weather = MockDataService.getMockWeather();
-    
     return Scaffold(
       bottomNavigationBar: bottomNavBar,
       appBar: AppBar(
@@ -1263,49 +1295,27 @@ class _VetWeatherTab extends StatelessWidget {
         foregroundColor: Colors.black,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                Text(
-                  weather['location'] ?? 'Nyagatare, Rwanda',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  '${weather['temperature']}°C',
-                  style: Theme.of(context).textTheme.displayLarge,
-                ),
-                Text(
-                  weather['condition'] ?? 'Sunny',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    Column(
-                      children: [
-                        const Icon(Icons.water_drop),
-                        Text('${weather['humidity']}%'),
-                        const Text('Humidity'),
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        const Icon(Icons.air),
-                        Text('${weather['windSpeed']} km/h'),
-                        const Text('Wind'),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.wb_sunny, size: 80, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'Weather Service Coming Soon',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: Colors.grey[600],
+                  ),
             ),
-          ),
+            const SizedBox(height: 8),
+            Text(
+              'Weather information will be available soon',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[500],
+                  ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );

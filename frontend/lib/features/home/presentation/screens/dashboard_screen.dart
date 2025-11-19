@@ -37,9 +37,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _screens.addAll([
       _HomeTab(scaffoldKey: _scaffoldKey),
+      _LivestockTab(scaffoldKey: _scaffoldKey, bottomNavBar: _buildBottomNavigationBar(context)),
       _CasesTab(scaffoldKey: _scaffoldKey),
-      _CommunityTab(scaffoldKey: _scaffoldKey),
-      _ProfileTab(scaffoldKey: _scaffoldKey, onTabChanged: changeTab),
+      _ChatTab(scaffoldKey: _scaffoldKey), // Chat with vets
+      _CommunityTab(scaffoldKey: _scaffoldKey), // Community - connect with other farmers
     ]);
   }
 
@@ -126,16 +127,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
           label: 'Home',
         ),
         BottomNavigationBarItem(
+          icon: Icon(Icons.pets),
+          label: 'Livestock',
+        ),
+        BottomNavigationBarItem(
           icon: Icon(Icons.report_problem),
           label: 'Cases',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.people),
-          label: 'Community',
+          icon: Icon(Icons.chat_bubble_outline),
+          label: 'Chat',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Profile',
+          icon: Icon(Icons.people_outline),
+          label: 'Community',
         ),
       ],
     );
@@ -2391,7 +2396,7 @@ class _ProfileTab extends StatelessWidget {
 
   Widget _buildBottomNavigationBarForChild(BuildContext context) {
     return BottomNavigationBar(
-      currentIndex: 3, // Profile tab index
+      currentIndex: 4, // Profile tab index (now 4th position)
       onTap: (index) {
         Navigator.of(context).popUntil((route) => route.isFirst);
         // Use callback if provided to change tab

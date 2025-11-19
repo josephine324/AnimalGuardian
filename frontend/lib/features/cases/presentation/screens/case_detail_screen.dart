@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../providers/cases_provider.dart';
 import '../../../../core/models/case_model.dart';
+import '../../../../core/services/api_service.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../../../core/constants/app_constants.dart';
 
-class CaseDetailScreen extends ConsumerWidget {
+class CaseDetailScreen extends ConsumerStatefulWidget {
   final int caseId;
 
   const CaseDetailScreen({
@@ -13,12 +16,80 @@ class CaseDetailScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CaseDetailScreen> createState() => _CaseDetailScreenState();
+}
+
+class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
+  final ApiService _apiService = ApiService();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  bool _isUpdating = false;
+  String? _userType;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserType();
+  }
+
+  Future<void> _loadUserType() async {
+    final userType = await _storage.read(key: AppConstants.userTypeKey);
+    if (mounted) {
+      setState(() {
+        _userType = userType;
+      });
+    }
+  }
+
+  Future<void> _updateCaseStatus(CaseStatus newStatus) async {
+    if (_isUpdating) return;
+
+    setState(() {
+      _isUpdating = true;
+    });
+
+    try {
+      await _apiService.updateCase(widget.caseId, {
+        'status': newStatus.apiValue,
+      });
+
+      // Refresh cases
+      ref.read(casesProvider.notifier).loadCases(refresh: true);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Case status updated to ${newStatus.name}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update status: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUpdating = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final casesState = ref.watch(casesProvider);
     final caseReport = casesState.cases.firstWhere(
-      (c) => c.id == caseId,
+      (c) => c.id == widget.caseId,
       orElse: () => throw Exception('Case not found'),
     );
+    
+    final canUpdateStatus = _userType == 'local_vet' || _userType == 'sector_vet';
 
     return Scaffold(
       appBar: AppBar(
@@ -122,6 +193,81 @@ class CaseDetailScreen extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 16),
+
+            // Update Status Section (for vets only)
+            if (canUpdateStatus) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Update Case Status',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Divider(),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          if (caseReport.status != CaseStatus.underReview)
+                            _buildStatusButton(
+                              context,
+                              'Start Review',
+                              CaseStatus.underReview,
+                              Colors.blue,
+                              caseReport.status,
+                            ),
+                          if (caseReport.status != CaseStatus.diagnosed)
+                            _buildStatusButton(
+                              context,
+                              'Mark Diagnosed',
+                              CaseStatus.diagnosed,
+                              Colors.purple,
+                              caseReport.status,
+                            ),
+                          if (caseReport.status != CaseStatus.treated)
+                            _buildStatusButton(
+                              context,
+                              'Mark Treated',
+                              CaseStatus.treated,
+                              Colors.teal,
+                              caseReport.status,
+                            ),
+                          if (caseReport.status != CaseStatus.resolved)
+                            _buildStatusButton(
+                              context,
+                              'Mark Resolved',
+                              CaseStatus.resolved,
+                              Colors.green,
+                              caseReport.status,
+                            ),
+                          if (caseReport.status != CaseStatus.escalated)
+                            _buildStatusButton(
+                              context,
+                              'Escalate',
+                              CaseStatus.escalated,
+                              Colors.red,
+                              caseReport.status,
+                            ),
+                        ],
+                      ),
+                      if (_isUpdating)
+                        const Padding(
+                          padding: EdgeInsets.only(top: 16.0),
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
 
             // Case Information
             Card(
@@ -329,6 +475,27 @@ class CaseDetailScreen extends ConsumerWidget {
       case CaseUrgency.urgent:
         return Colors.purple;
     }
+  }
+
+  Widget _buildStatusButton(
+    BuildContext context,
+    String label,
+    CaseStatus status,
+    Color color,
+    CaseStatus currentStatus,
+  ) {
+    final isCurrentStatus = status == currentStatus;
+    return ElevatedButton(
+      onPressed: _isUpdating || isCurrentStatus
+          ? null
+          : () => _updateCaseStatus(status),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isCurrentStatus ? Colors.grey : color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+      child: Text(label),
+    );
   }
 }
 
