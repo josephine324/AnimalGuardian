@@ -616,11 +616,11 @@ const CasesPage = () => {
                   </div>
                   <div>
                     <h4 className="text-sm font-medium text-gray-500 mb-1">Phone</h4>
-                    <p className="text-gray-900">{selectedCaseDetail.reporter?.phone_number || 'N/A'}</p>
+                    <p className="text-gray-900">{selectedCaseDetail.reporter_phone || selectedCaseDetail.reporter?.phone_number || 'N/A'}</p>
                   </div>
                   <div>
                     <h4 className="text-sm font-medium text-gray-500 mb-1">Email</h4>
-                    <p className="text-gray-900">{selectedCaseDetail.reporter?.email || 'N/A'}</p>
+                    <p className="text-gray-900">{selectedCaseDetail.reporter_email || selectedCaseDetail.reporter?.email || 'N/A'}</p>
                   </div>
                   <div>
                     <h4 className="text-sm font-medium text-gray-500 mb-1">Location</h4>
@@ -681,6 +681,14 @@ const CasesPage = () => {
                     <div>
                       <h4 className="text-sm font-medium text-gray-500 mb-1">Veterinarian</h4>
                       <p className="text-gray-900">{selectedCaseDetail.assigned_veterinarian_name}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500 mb-1">Phone</h4>
+                      <p className="text-gray-900">{selectedCaseDetail.assigned_veterinarian_phone || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500 mb-1">Email</h4>
+                      <p className="text-gray-900">{selectedCaseDetail.assigned_veterinarian_email || 'N/A'}</p>
                     </div>
                     {selectedCaseDetail.assigned_at && (
                       <div>

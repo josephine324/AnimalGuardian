@@ -307,6 +307,60 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
             ),
             const SizedBox(height: 16),
 
+            // Reporter Information
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Reporter Information',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Divider(),
+                    _buildInfoRow('Name', caseReport.reporterName ?? 'Unknown'),
+                    if (caseReport.reporterPhone != null && caseReport.reporterPhone!.isNotEmpty)
+                      _buildInfoRow('Phone', caseReport.reporterPhone!),
+                    if (caseReport.reporterEmail != null && caseReport.reporterEmail!.isNotEmpty)
+                      _buildInfoRow('Email', caseReport.reporterEmail!),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Assigned Veterinarian Information (if assigned)
+            if (caseReport.assignedVeterinarianName != null && caseReport.assignedVeterinarianName!.isNotEmpty)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Assigned Veterinarian',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Divider(),
+                      _buildInfoRow('Name', caseReport.assignedVeterinarianName!),
+                      if (caseReport.assignedVeterinarianPhone != null && caseReport.assignedVeterinarianPhone!.isNotEmpty)
+                        _buildInfoRow('Phone', caseReport.assignedVeterinarianPhone!),
+                      if (caseReport.assignedVeterinarianEmail != null && caseReport.assignedVeterinarianEmail!.isNotEmpty)
+                        _buildInfoRow('Email', caseReport.assignedVeterinarianEmail!),
+                    ],
+                  ),
+                ),
+              ),
+            if (caseReport.assignedVeterinarianName != null && caseReport.assignedVeterinarianName!.isNotEmpty)
+              const SizedBox(height: 16),
+
             // Symptoms
             Card(
               child: Padding(

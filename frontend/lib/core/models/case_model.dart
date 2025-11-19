@@ -150,6 +150,11 @@ class CaseReport {
   final String? livestockName;
   final String? livestockType;
   final String? reporterName;
+  final String? reporterPhone;
+  final String? reporterEmail;
+  final String? assignedVeterinarianName;
+  final String? assignedVeterinarianPhone;
+  final String? assignedVeterinarianEmail;
 
   const CaseReport({
     required this.id,
@@ -171,6 +176,11 @@ class CaseReport {
     this.livestockName,
     this.livestockType,
     this.reporterName,
+    this.reporterPhone,
+    this.reporterEmail,
+    this.assignedVeterinarianName,
+    this.assignedVeterinarianPhone,
+    this.assignedVeterinarianEmail,
   });
 
   factory CaseReport.fromMap(Map<String, dynamic> map) {
@@ -198,6 +208,11 @@ class CaseReport {
       livestockName: map['livestock_name'],
       livestockType: map['livestock_type'],
       reporterName: map['reporter_name'],
+      reporterPhone: map['reporter_phone'],
+      reporterEmail: map['reporter_email'],
+      assignedVeterinarianName: map['assigned_veterinarian_name'],
+      assignedVeterinarianPhone: map['assigned_veterinarian_phone'],
+      assignedVeterinarianEmail: map['assigned_veterinarian_email'],
     );
   }
 
@@ -240,6 +255,11 @@ class CaseReport {
     String? livestockName,
     String? livestockType,
     String? reporterName,
+    String? reporterPhone,
+    String? reporterEmail,
+    String? assignedVeterinarianName,
+    String? assignedVeterinarianPhone,
+    String? assignedVeterinarianEmail,
   }) {
     return CaseReport(
       id: id ?? this.id,
@@ -261,6 +281,11 @@ class CaseReport {
       livestockName: livestockName ?? this.livestockName,
       livestockType: livestockType ?? this.livestockType,
       reporterName: reporterName ?? this.reporterName,
+      reporterPhone: reporterPhone ?? this.reporterPhone,
+      reporterEmail: reporterEmail ?? this.reporterEmail,
+      assignedVeterinarianName: assignedVeterinarianName ?? this.assignedVeterinarianName,
+      assignedVeterinarianPhone: assignedVeterinarianPhone ?? this.assignedVeterinarianPhone,
+      assignedVeterinarianEmail: assignedVeterinarianEmail ?? this.assignedVeterinarianEmail,
     );
   }
 }
