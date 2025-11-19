@@ -245,16 +245,59 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
 }
 
 // Vet Home Tab
-class _VetHomeTab extends StatelessWidget {
+class _VetHomeTab extends ConsumerStatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   
   const _VetHomeTab({required this.scaffoldKey});
 
   @override
+  ConsumerState<_VetHomeTab> createState() => _VetHomeTabState();
+}
+
+class _VetHomeTabState extends ConsumerState<_VetHomeTab> {
+  final ApiService _apiService = ApiService();
+  Map<String, dynamic>? _userData;
+  bool _isLoadingUser = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+    // Load assigned cases when tab is initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(casesProvider.notifier).loadCases(refresh: true);
+    });
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final user = await _apiService.getCurrentUser();
+      if (mounted) {
+        setState(() {
+          _userData = user;
+          _isLoadingUser = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingUser = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final assignedCases = MockDataService.getMockVetAssignedCases();
-    final activeCases = assignedCases.where((c) => c['status'] != 'resolved').length;
-    final resolvedCases = assignedCases.where((c) => c['status'] == 'resolved').length;
+    final casesState = ref.watch(casesProvider);
+    final assignedCases = casesState.filteredCases;
+    final activeCases = assignedCases.where((c) => c.status != CaseStatus.resolved).length;
+    final resolvedCases = assignedCases.where((c) => c.status == CaseStatus.resolved).length;
+    
+    final firstName = _userData?['first_name'] ?? '';
+    final lastName = _userData?['last_name'] ?? '';
+    final fullName = '${firstName} ${lastName}'.trim();
+    final displayName = fullName.isNotEmpty ? 'Dr. $fullName' : 'Dr. Veterinarian';
 
     return Scaffold(
       appBar: AppBar(
@@ -282,7 +325,7 @@ class _VetHomeTab extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Welcome, Dr. Veterinarian',
+                      'Welcome, $displayName',
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -361,94 +404,119 @@ class _VetHomeTab extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: 16),
-            assignedCases.isEmpty
-                ? Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        children: [
-                          Icon(Icons.inbox, size: 60, color: Colors.grey[400]),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No cases assigned yet',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: Colors.grey[600],
-                                ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Cases assigned to you will appear here',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Colors.grey[500],
-                                ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: assignedCases.take(3).length,
-                    itemBuilder: (context, index) {
-                      final caseItem = assignedCases[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: _getStatusColor(caseItem['status']),
-                            child: PlaceholderImage(
-                              networkUrl: caseItem['image'],
-                              placeholderIcon: Icons.report_problem,
-                              width: 40,
-                              height: 40,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                          ),
-                          title: Text(caseItem['caseId']),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+            casesState.isLoading && assignedCases.isEmpty
+                ? const Center(child: Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: CircularProgressIndicator(),
+                  ))
+                : casesState.error != null && assignedCases.isEmpty
+                    ? Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
                             children: [
-                              Text(caseItem['livestock']),
+                              Icon(Icons.error_outline, size: 60, color: Colors.red[400]),
+                              const SizedBox(height: 16),
                               Text(
-                                'Farmer: ${caseItem['farmer']}',
-                                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                'Error loading cases',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      color: Colors.red[600],
+                                    ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                casesState.error ?? 'Unknown error',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Colors.grey[500],
+                                    ),
+                                textAlign: TextAlign.center,
                               ),
                             ],
                           ),
-                          trailing: Chip(
-                            label: Text(
-                              caseItem['status'].toString().replaceAll('_', ' ').toUpperCase(),
-                              style: const TextStyle(fontSize: 10),
-                            ),
-                            backgroundColor: _getStatusColor(caseItem['status']).withOpacity(0.2),
-                          ),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => CaseDetailScreen(caseId: caseItem['id']),
-                              ),
-                            );
-                          },
                         ),
-                      );
-                    },
-                  ),
+                      )
+                    : assignedCases.isEmpty
+                        ? Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                children: [
+                                  Icon(Icons.inbox, size: 60, color: Colors.grey[400]),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No cases assigned yet',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          color: Colors.grey[600],
+                                        ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Cases assigned to you will appear here',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: Colors.grey[500],
+                                        ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: assignedCases.take(3).length,
+                            itemBuilder: (context, index) {
+                              final caseReport = assignedCases[index];
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: _getStatusColorFromCaseStatus(caseReport.status),
+                                    child: const Icon(Icons.report_problem, color: Colors.white),
+                                  ),
+                                  title: Text(caseReport.caseId),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(caseReport.livestockName ?? 'Unknown Livestock'),
+                                      Text(
+                                        'Farmer: ${caseReport.reporterName ?? 'Unknown'}',
+                                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                      ),
+                                    ],
+                                  ),
+                                  trailing: Chip(
+                                    label: Text(
+                                      caseReport.status.name.toUpperCase().replaceAll('_', ' '),
+                                      style: const TextStyle(fontSize: 10),
+                                    ),
+                                    backgroundColor: _getStatusColorFromCaseStatus(caseReport.status).withOpacity(0.2),
+                                  ),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => CaseDetailScreen(caseId: caseReport.id),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          ),
           ],
         ),
       ),
     );
   }
 
-  Color _getStatusColor(String status) {
+  Color _getStatusColorFromCaseStatus(CaseStatus status) {
     switch (status) {
-      case 'assigned':
+      case CaseStatus.pending:
         return Colors.orange;
-      case 'in_progress':
+      case CaseStatus.underReview:
         return Colors.blue;
-      case 'resolved':
+      case CaseStatus.resolved:
         return Colors.green;
       default:
         return Colors.grey;
@@ -492,12 +560,17 @@ class _VetCasesTabState extends ConsumerState<_VetCasesTab> {
       return cases;
     }
     final statusMap = {
-      'Assigned': 'pending',
-      'In Progress': 'under_review',
-      'Resolved': 'resolved',
+      'Assigned': CaseStatus.pending,
+      'In Progress': CaseStatus.underReview,
+      'Resolved': CaseStatus.resolved,
+      'Diagnosed': CaseStatus.diagnosed,
+      'Treated': CaseStatus.treated,
     };
-    final statusValue = statusMap[_selectedFilter] ?? '';
-    return cases.where((c) => c.status.apiValue == statusValue).toList();
+    final statusValue = statusMap[_selectedFilter];
+    if (statusValue == null) {
+      return cases;
+    }
+    return cases.where((c) => c.status == statusValue).toList();
   }
 
   Color _getStatusColor(CaseStatus status) {
@@ -506,8 +579,14 @@ class _VetCasesTabState extends ConsumerState<_VetCasesTab> {
         return Colors.orange;
       case CaseStatus.underReview:
         return Colors.blue;
+      case CaseStatus.diagnosed:
+        return Colors.purple;
+      case CaseStatus.treated:
+        return Colors.teal;
       case CaseStatus.resolved:
         return Colors.green;
+      case CaseStatus.escalated:
+        return Colors.red;
       default:
         return Colors.grey;
     }
@@ -578,6 +657,16 @@ class _VetCasesTabState extends ConsumerState<_VetCasesTab> {
                         label: const Text('Resolved'),
                         selected: _selectedFilter == 'Resolved',
                         onSelected: (selected) => _filterCases('Resolved'),
+                      ),
+                      FilterChip(
+                        label: const Text('Diagnosed'),
+                        selected: _selectedFilter == 'Diagnosed',
+                        onSelected: (selected) => _filterCases('Diagnosed'),
+                      ),
+                      FilterChip(
+                        label: const Text('Treated'),
+                        selected: _selectedFilter == 'Treated',
+                        onSelected: (selected) => _filterCases('Treated'),
                       ),
                     ],
                   ),
