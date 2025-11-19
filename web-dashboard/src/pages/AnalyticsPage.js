@@ -53,9 +53,9 @@ const AnalyticsPage = () => {
       const farmers = Array.isArray(farmersData) ? farmersData : (farmersData.results || []);
       const livestock = Array.isArray(livestockData) ? livestockData : (livestockData.results || []);
 
-      // Calculate disease data from cases (if disease field exists)
-      // This is a placeholder - actual implementation depends on backend structure
-      setDiseaseData([]);
+      // Calculate disease data from cases
+      const diseases = calculateDiseaseData(cases);
+      setDiseaseData(diseases);
 
       // Calculate monthly data from cases
       const monthly = calculateMonthlyData(cases);
@@ -76,78 +76,182 @@ const AnalyticsPage = () => {
     // Group cases by month
     const monthly = {};
     cases.forEach(case_ => {
-      const date = new Date(case_.reported_at || case_.created_at);
-      const monthKey = date.toLocaleString('default', { month: 'short' });
-      if (!monthly[monthKey]) {
-        monthly[monthKey] = { month: monthKey, cases: 0, resolved: 0 };
-      }
-      monthly[monthKey].cases++;
-      if (case_.status === 'resolved') {
-        monthly[monthKey].resolved++;
+      try {
+        const dateStr = case_.reported_at || case_.created_at;
+        if (!dateStr) return;
+        
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return; // Invalid date
+        
+        // Create a key with year and month for proper sorting
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+        const monthName = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+        
+        if (!monthly[monthKey]) {
+          monthly[monthKey] = { 
+            month: monthName, 
+            monthKey: monthKey,
+            cases: 0, 
+            resolved: 0 
+          };
+        }
+        monthly[monthKey].cases++;
+        if (case_.status === 'resolved') {
+          monthly[monthKey].resolved++;
+        }
+      } catch (e) {
+        console.error('Error processing case date:', e, case_);
       }
     });
-    return Object.values(monthly).slice(-6); // Last 6 months
+    
+    // Sort by monthKey (chronologically) and get last 6 months
+    return Object.values(monthly)
+      .sort((a, b) => a.monthKey.localeCompare(b.monthKey))
+      .slice(-6);
+  };
+
+  const calculateDiseaseData = (cases) => {
+    // Group cases by suspected disease
+    const diseaseMap = {};
+    
+    cases.forEach(case_ => {
+      const diseaseName = case_.suspected_disease?.name || 
+                         case_.suspected_disease || 
+                         'Unknown Disease';
+      
+      if (!diseaseMap[diseaseName]) {
+        diseaseMap[diseaseName] = {
+          disease: diseaseName,
+          cases: 0,
+          severity: case_.suspected_disease?.severity || 'medium',
+          resolved: 0,
+        };
+      }
+      
+      diseaseMap[diseaseName].cases++;
+      if (case_.status === 'resolved') {
+        diseaseMap[diseaseName].resolved++;
+      }
+    });
+    
+    // Convert to array and calculate trends
+    const diseases = Object.values(diseaseMap).map(disease => {
+      // Calculate trend (simplified - could be improved with historical data)
+      const resolutionRate = disease.cases > 0 
+        ? (disease.resolved / disease.cases * 100).toFixed(1) 
+        : 0;
+      
+      return {
+        ...disease,
+        trend: resolutionRate > 50 ? '↓ Improving' : '↑ Needs Attention',
+      };
+    });
+    
+    // Sort by number of cases (descending)
+    return diseases.sort((a, b) => b.cases - a.cases).slice(0, 10); // Top 10 diseases
   };
 
   const calculateSectorData = (cases, farmers, livestock) => {
     // Group data by sector
     const sectors = {};
     
+    // Helper function to get sector name
+    const getSectorName = (sector) => {
+      if (!sector || sector.trim() === '') return 'Unknown';
+      return sector.trim();
+    };
+    
     // Process cases
     cases.forEach(case_ => {
-      const sector = case_.reporter?.sector || case_.sector || case_.location_notes || 'Unknown';
-      if (!sectors[sector]) {
-        sectors[sector] = { 
-          sector, 
-          cases: 0, 
-          farmers: new Set(), 
-          livestock: new Set() 
-        };
-      }
-      sectors[sector].cases++;
-      if (case_.reporter) {
-        sectors[sector].farmers.add(case_.reporter.id);
+      try {
+        // Try to get sector from reporter first, then fallback to location_notes
+        const sector = getSectorName(
+          case_.reporter?.sector || 
+          case_.reporter?.farmer_profile?.sector ||
+          case_.sector || 
+          case_.location_notes
+        );
+        
+        if (!sectors[sector]) {
+          sectors[sector] = { 
+            sector, 
+            cases: 0, 
+            farmers: new Set(), 
+            livestock: new Set() 
+          };
+        }
+        sectors[sector].cases++;
+        if (case_.reporter?.id) {
+          sectors[sector].farmers.add(case_.reporter.id);
+        }
+      } catch (e) {
+        console.error('Error processing case sector:', e, case_);
       }
     });
     
     // Process farmers
     farmers.forEach(farmer => {
-      const sector = farmer.sector || 'Unknown';
-      if (!sectors[sector]) {
-        sectors[sector] = { 
-          sector, 
-          cases: 0, 
-          farmers: new Set(), 
-          livestock: new Set() 
-        };
-      }
-      if (farmer.id) {
-        sectors[sector].farmers.add(farmer.id);
+      try {
+        const sector = getSectorName(
+          farmer.sector || 
+          farmer.farmer_profile?.sector
+        );
+        
+        if (!sectors[sector]) {
+          sectors[sector] = { 
+            sector, 
+            cases: 0, 
+            farmers: new Set(), 
+            livestock: new Set() 
+          };
+        }
+        if (farmer.id) {
+          sectors[sector].farmers.add(farmer.id);
+        }
+      } catch (e) {
+        console.error('Error processing farmer sector:', e, farmer);
       }
     });
     
     // Process livestock
     livestock.forEach(animal => {
-      const sector = animal.owner?.sector || 'Unknown';
-      if (!sectors[sector]) {
-        sectors[sector] = { 
-          sector, 
-          cases: 0, 
-          farmers: new Set(), 
-          livestock: new Set() 
-        };
-      }
-      if (animal.id) {
-        sectors[sector].livestock.add(animal.id);
+      try {
+        const sector = getSectorName(
+          animal.owner?.sector || 
+          animal.owner?.farmer_profile?.sector
+        );
+        
+        if (!sectors[sector]) {
+          sectors[sector] = { 
+            sector, 
+            cases: 0, 
+            farmers: new Set(), 
+            livestock: new Set() 
+          };
+        }
+        if (animal.id) {
+          sectors[sector].livestock.add(animal.id);
+        }
+        // Also add the owner as a farmer
+        if (animal.owner?.id) {
+          sectors[sector].farmers.add(animal.owner.id);
+        }
+      } catch (e) {
+        console.error('Error processing livestock sector:', e, animal);
       }
     });
     
-    return Object.values(sectors).map(s => ({
-      sector: s.sector,
-      cases: s.cases,
-      farmers: s.farmers.size,
-      livestock: s.livestock.size,
-    })).sort((a, b) => b.cases - a.cases); // Sort by cases descending
+    return Object.values(sectors)
+      .map(s => ({
+        sector: s.sector,
+        cases: s.cases,
+        farmers: s.farmers.size,
+        livestock: s.livestock.size,
+      }))
+      .filter(s => s.sector !== 'Unknown' || s.cases > 0 || s.farmers > 0 || s.livestock > 0) // Filter out empty Unknown sectors
+      .sort((a, b) => b.cases - a.cases); // Sort by cases descending
   };
 
   if (loading) {
@@ -269,12 +373,23 @@ const AnalyticsPage = () => {
                     </div>
                   </div>
                   <div className="flex space-x-2">
-                    <div className="flex-1 bg-gray-200 rounded-full h-3">
-                      <div className="bg-blue-500 h-3 rounded-full" style={{width: `${(month.cases / 70) * 100}%`}}></div>
-                    </div>
-                    <div className="flex-1 bg-gray-200 rounded-full h-3">
-                      <div className="bg-green-500 h-3 rounded-full" style={{width: `${(month.resolved / 70) * 100}%`}}></div>
-                    </div>
+                    {(() => {
+                      const maxCases = monthlyData.length > 0 
+                        ? Math.max(...monthlyData.map(m => Math.max(m.cases, m.resolved)), 1) 
+                        : 1;
+                      const casesPercentage = Math.min((month.cases / maxCases) * 100, 100);
+                      const resolvedPercentage = Math.min((month.resolved / maxCases) * 100, 100);
+                      return (
+                        <>
+                          <div className="flex-1 bg-gray-200 rounded-full h-3">
+                            <div className="bg-blue-500 h-3 rounded-full" style={{width: `${casesPercentage}%`}}></div>
+                          </div>
+                          <div className="flex-1 bg-gray-200 rounded-full h-3">
+                            <div className="bg-green-500 h-3 rounded-full" style={{width: `${resolvedPercentage}%`}}></div>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -310,10 +425,18 @@ const AnalyticsPage = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sector.livestock}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="w-32 bg-gray-200 rounded-full h-2 mr-2">
-                        <div className="bg-green-500 h-2 rounded-full" style={{width: `${(sector.cases / 50) * 100}%`}}></div>
-                      </div>
-                      <span className="text-xs text-gray-600">{Math.round((sector.cases / 50) * 100)}%</span>
+                      {(() => {
+                        const maxCases = sectorData.length > 0 ? Math.max(...sectorData.map(s => s.cases), 1) : 1;
+                        const percentage = Math.min((sector.cases / maxCases) * 100, 100);
+                        return (
+                          <>
+                            <div className="w-32 bg-gray-200 rounded-full h-2 mr-2">
+                              <div className="bg-green-500 h-2 rounded-full" style={{width: `${percentage}%`}}></div>
+                            </div>
+                            <span className="text-xs text-gray-600">{Math.round(percentage)}%</span>
+                          </>
+                        );
+                      })()}
                     </div>
                   </td>
                 </tr>
