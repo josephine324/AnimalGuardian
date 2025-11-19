@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/services/api_service.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
   final String phoneNumber;
+  final String? email;
   final String? userType;
   
   const OTPVerificationScreen({
     super.key,
     required this.phoneNumber,
+    this.email,
     this.userType,
   });
 
@@ -24,6 +27,8 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     4,
     (index) => FocusNode(),
   );
+  final ApiService _apiService = ApiService();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -45,23 +50,61 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     }
   }
 
-  void _verifyOTP() {
+  Future<void> _verifyOTP() async {
     final otp = _controllers.map((c) => c.text).join();
-    if (otp.length == 4) {
-      // TODO: Verify OTP with backend
-      // Route to vet dashboard if user is local vet, otherwise farmer dashboard
-      if (widget.userType == 'local_vet') {
-        context.go('/vet-dashboard');
-      } else {
-        context.go('/dashboard');
-      }
-    } else {
+    if (otp.length != 4) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter the complete 4-digit code'),
           backgroundColor: Colors.red,
         ),
       );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _apiService.verifyOTP(
+        widget.phoneNumber,
+        otp,
+        email: widget.email,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Verification successful!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Route to vet dashboard if user is local vet, otherwise farmer dashboard
+        if (widget.userType == 'local_vet') {
+          context.go('/vet-dashboard');
+        } else {
+          context.go('/dashboard');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Verification failed: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -105,7 +148,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                widget.phoneNumber,
+                widget.email ?? widget.phoneNumber,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.primary,
@@ -188,7 +231,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _verifyOTP,
+                      onPressed: _isLoading ? null : _verifyOTP,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Colors.white,
@@ -197,13 +240,22 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text(
-                        'Next',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Next',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ),
                 ],

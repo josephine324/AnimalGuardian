@@ -398,15 +398,23 @@ class ApiService {
     return data;
   }
 
-  Future<Map<String, dynamic>> verifyOTP(String phoneNumber, String otpCode) async {
+  Future<Map<String, dynamic>> verifyOTP(String phoneNumber, String otpCode, {String? email}) async {
     final headers = await _getHeaders(includeAuth: false);
+    final payload = {
+      'otp_code': otpCode,
+    };
+    
+    // Use email if provided (for local_vet), otherwise use phone_number
+    if (email != null && email.isNotEmpty) {
+      payload['email'] = email;
+    } else {
+      payload['phone_number'] = phoneNumber;
+    }
+    
     final response = await http.post(
       Uri.parse('$baseUrl/auth/verify-otp/'),
       headers: headers,
-      body: json.encode({
-        'phone_number': phoneNumber,
-        'otp_code': otpCode,
-      }),
+      body: json.encode(payload),
     ).timeout(AppConstants.connectionTimeout);
 
     final data = _handleResponse(response) as Map<String, dynamic>;
@@ -426,6 +434,48 @@ class ApiService {
     await _storage.delete(key: AppConstants.authTokenKey);
     await _storage.delete(key: AppConstants.refreshTokenKey);
     await _storage.delete(key: AppConstants.userIdKey);
+  }
+
+  // User Profile API
+  Future<Map<String, dynamic>> getCurrentUser() async {
+    final headers = await _getHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/users/profile/'),
+      headers: headers,
+    ).timeout(AppConstants.connectionTimeout);
+
+    return _handleResponse(response) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updateUserProfile(Map<String, dynamic> payload) async {
+    final headers = await _getHeaders();
+    final userId = await _storage.read(key: AppConstants.userIdKey);
+    if (userId == null) {
+      throw Exception('User ID not found. Please login again.');
+    }
+    
+    final response = await http.patch(
+      Uri.parse('$baseUrl/users/$userId/'),
+      headers: headers,
+      body: json.encode(payload),
+    ).timeout(AppConstants.connectionTimeout);
+
+    return _handleResponse(response) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> changePassword(String currentPassword, String newPassword) async {
+    final headers = await _getHeaders();
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/change-password/'),
+      headers: headers,
+      body: json.encode({
+        'current_password': currentPassword,
+        'new_password': newPassword,
+        'password_confirm': newPassword,
+      }),
+    ).timeout(AppConstants.connectionTimeout);
+
+    return _handleResponse(response) as Map<String, dynamic>;
   }
 }
 

@@ -16,5 +16,6 @@ urlpatterns = [
     path('auth/password-reset/request/', views.RequestPasswordResetView.as_view(), name='request-password-reset'),
     path('auth/password-reset/verify-otp/', views.VerifyPasswordResetOTPView.as_view(), name='verify-password-reset-otp'),
     path('auth/password-reset/reset/', views.ResetPasswordView.as_view(), name='reset-password'),
+    path('auth/change-password/', views.ChangePasswordView.as_view(), name='change-password'),
     path('', include(router.urls)),
 ]

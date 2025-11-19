@@ -29,16 +29,17 @@ class RegisterView(generics.CreateAPIView):
         # Generate and send OTP
         otp_code = str(random.randint(1000, 9999))  # 4-digit OTP
         
-        # For local_vet, send OTP via email; for others, send via phone (SMS)
-        if user.user_type == 'local_vet' and user.email:
+        # For local_vet and farmer, send OTP via email (email is now required for both)
+        if user.user_type in ['local_vet', 'farmer'] and user.email:
             # Send OTP via email
             from django.core.mail import send_mail
             try:
+                user_type_name = 'Local Veterinarian' if user.user_type == 'local_vet' else 'Farmer'
                 subject = 'AnimalGuardian - Verification Code'
                 message = f'''
 Hello {user.get_full_name() or user.username},
 
-Thank you for registering as a Local Veterinarian on AnimalGuardian.
+Thank you for registering as a {user_type_name} on AnimalGuardian.
 
 Your verification code is: {otp_code}
 
@@ -56,22 +57,23 @@ AnimalGuardian Team
                     recipient_list=[user.email],
                     fail_silently=False,
                 )
-                logger.info(f'OTP sent via email to {user.email} for user {user.id}')
+                logger.info(f'OTP sent via email to {user.email} for user {user.id} (type: {user.user_type})')
             except Exception as e:
                 logger.error(f'Error sending OTP email: {str(e)}', exc_info=True)
         else:
-            # For farmers, OTP would be sent via SMS (not implemented yet)
+            # Fallback: For other user types, OTP would be sent via SMS (not implemented yet)
             # For now, log it
             logger.info(f'OTP for phone {user.phone_number}: {otp_code} (SMS not implemented)')
         
         # Store OTP in OTPVerification model (for verification)
+        # Use phone_number for OTPVerification model (required field), but verification can use email
         OTPVerification.objects.create(
-            phone_number=user.phone_number,
+            phone_number=user.phone_number or user.email,  # Use email as fallback if phone not available
             otp_code=otp_code,
             expires_at=timezone.now() + timedelta(minutes=15)
         )
         
-        verification_message = 'Please verify your email address.' if user.user_type == 'local_vet' and user.email else 'Please verify your phone number.'
+        verification_message = 'Please verify your email address.' if user.user_type in ['local_vet', 'farmer'] and user.email else 'Please verify your phone number.'
         
         return Response({
             'message': f'User created successfully. {verification_message}',
@@ -126,14 +128,8 @@ class LoginView(generics.GenericAPIView):
                     logger.error(f'Error during email authentication: {str(e)}', exc_info=True)
             
             if user:
-                # Check if user is verified (phone/email verification)
-                if user.user_type == 'farmer' and not user.is_verified:
-                    return Response({
-                        'error': 'Your phone number is not verified. Please verify your phone number first.'
-                    }, status=status.HTTP_403_FORBIDDEN)
-                
-                # Check if user is verified (for local_vet)
-                if user.user_type == 'local_vet' and not user.is_verified:
+                # Check if user is verified (email verification for farmers and local vets)
+                if user.user_type in ['farmer', 'local_vet'] and not user.is_verified:
                     return Response({
                         'error': 'Your email is not verified. Please verify your email first.'
                     }, status=status.HTTP_403_FORBIDDEN)
@@ -228,12 +224,22 @@ class VerifyOTPView(generics.GenericAPIView):
             }, status=status.HTTP_404_NOT_FOUND)
         
         # Check OTP from OTPVerification model
+        # For farmers and local vets, OTP is sent via email, but stored with phone_number or email
         try:
+            # Try to find OTP by phone_number first, then by email (if phone_number is actually email)
             otp_verification = OTPVerification.objects.filter(
                 phone_number=user.phone_number,
                 otp_code=otp_code,
                 is_used=False
             ).order_by('-created_at').first()
+            
+            # If not found and user has email, try searching by email (in case phone_number field contains email)
+            if not otp_verification and user.email:
+                otp_verification = OTPVerification.objects.filter(
+                    phone_number=user.email,
+                    otp_code=otp_code,
+                    is_used=False
+                ).order_by('-created_at').first()
             
             # Also accept hardcoded OTP for development
             if otp_code == '123456' or (otp_verification and otp_verification.expires_at > timezone.now()):
@@ -470,6 +476,51 @@ class ResetPasswordView(generics.GenericAPIView):
         
         return Response({
             'message': 'Password reset successfully. You can now login with your new password.'
+        }, status=status.HTTP_200_OK)
+
+
+class ChangePasswordView(generics.GenericAPIView):
+    """Change password for authenticated user."""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        current_password = request.data.get('current_password')
+        new_password = request.data.get('new_password')
+        password_confirm = request.data.get('password_confirm')
+        
+        if not all([current_password, new_password]):
+            return Response({
+                'error': 'Current password and new password are required.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if password_confirm and new_password != password_confirm:
+            return Response({
+                'error': 'New password and confirmation do not match.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        user = request.user
+        
+        # Verify current password
+        if not user.check_password(current_password):
+            return Response({
+                'error': 'Current password is incorrect.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate new password
+        try:
+            from django.contrib.auth.password_validation import validate_password
+            validate_password(new_password, user)
+        except Exception as e:
+            return Response({
+                'error': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Set new password
+        user.set_password(new_password)
+        user.save()
+        
+        return Response({
+            'message': 'Password changed successfully.'
         }, status=status.HTTP_200_OK)
 
 
