@@ -44,6 +44,22 @@ if config('RAILWAY_ENVIRONMENT', default=None) or config('RAILWAY_PUBLIC_DOMAIN'
     if 'animalguardian-backend-production-b5a8.up.railway.app' not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append('animalguardian-backend-production-b5a8.up.railway.app')
 
+# Add Azure App Service domains automatically
+# Azure sets WEBSITE_HOSTNAME environment variable
+WEBSITE_HOSTNAME = config('WEBSITE_HOSTNAME', default=None)
+if WEBSITE_HOSTNAME:
+    domain_without_port = WEBSITE_HOSTNAME.split(':')[0]
+    if domain_without_port not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(domain_without_port)
+    # Also add the azurewebsites.net pattern
+    if '.azurewebsites.net' in domain_without_port:
+        base_domain = domain_without_port.split('.azurewebsites.net')[0]
+        if f'{base_domain}.azurewebsites.net' not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(f'{base_domain}.azurewebsites.net')
+        # Add wildcard for Azure
+        if '*.azurewebsites.net' not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append('*.azurewebsites.net')
+
 # Application definition
 DJANGO_APPS = [
     'django.contrib.admin',
