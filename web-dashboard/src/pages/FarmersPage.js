@@ -26,10 +26,13 @@ const FarmersPage = () => {
       }
       const params = {};
       if (filterApproval === 'pending') {
+        // Pending approval: verified but not approved
         params.is_approved_by_admin = false;
       } else if (filterApproval === 'approved') {
+        // Approved: must be approved
         params.is_approved_by_admin = true;
       }
+      // 'all' doesn't set params, so backend returns all farmers
       
       const data = await usersAPI.getFarmers(params);
       // Handle both array and object with results property
@@ -69,11 +72,28 @@ const FarmersPage = () => {
     }
   };
 
-  const filteredFarmers = farmers.filter(farmer =>
-    `${farmer.first_name} ${farmer.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    farmer.phone_number?.includes(searchQuery) ||
-    farmer.sector?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter farmers by search query and approval status (client-side fallback)
+  const filteredFarmers = farmers.filter(farmer => {
+    // Search filter
+    const matchesSearch = 
+      `${farmer.first_name} ${farmer.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      farmer.phone_number?.includes(searchQuery) ||
+      farmer.sector?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      farmer.email?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Approval status filter (client-side fallback if backend doesn't filter)
+    let matchesApproval = true;
+    if (filterApproval === 'pending') {
+      // Pending approval: verified but not approved
+      matchesApproval = farmer.is_verified === true && farmer.is_approved_by_admin !== true;
+    } else if (filterApproval === 'approved') {
+      // Approved: must be approved
+      matchesApproval = farmer.is_approved_by_admin === true;
+    }
+    // 'all' shows everyone, so matchesApproval stays true
+    
+    return matchesSearch && matchesApproval;
+  });
 
   // Fetch livestock statistics from backend
   const [livestockStats, setLivestockStats] = useState({ cattle: 0, goats: 0, chickens: 0 });
@@ -161,8 +181,12 @@ const FarmersPage = () => {
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 font-medium">Total Farmers</p>
-              <p className="text-3xl font-bold text-gray-900">{farmers.length}</p>
+              <p className="text-sm text-gray-600 font-medium">
+                {filterApproval === 'all' ? 'Total Farmers' : 
+                 filterApproval === 'pending' ? 'Pending Approval' : 
+                 'Approved Farmers'}
+              </p>
+              <p className="text-3xl font-bold text-gray-900">{filteredFarmers.length}</p>
             </div>
             <span className="text-4xl">👨‍🌾</span>
           </div>
@@ -288,13 +312,19 @@ const FarmersPage = () => {
                   <span className={`px-2 py-1 text-xs rounded-full font-medium ${
                     farmer.is_approved_by_admin 
                       ? 'bg-green-100 text-green-800' 
-                      : 'bg-yellow-100 text-yellow-800'
+                      : farmer.is_verified
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-gray-100 text-gray-800'
                   }`}>
-                    {farmer.is_approved_by_admin ? 'Approved' : 'Pending Approval'}
+                    {farmer.is_approved_by_admin 
+                      ? 'Approved' 
+                      : farmer.is_verified
+                      ? 'Pending Approval'
+                      : 'Not Verified'}
                   </span>
                 </div>
               <div className="pt-3 flex space-x-2">
-                {!farmer.is_approved_by_admin && (
+                {farmer.is_verified && !farmer.is_approved_by_admin && (
                   <>
                     <button
                       onClick={() => handleApproveFarmer(farmer.id)}
@@ -319,6 +349,11 @@ const FarmersPage = () => {
                       Contact
                     </button>
                   </>
+                )}
+                {!farmer.is_verified && (
+                  <div className="flex-1 text-center text-xs text-gray-500 py-2">
+                    Waiting for email verification
+                  </div>
                 )}
               </div>
             </div>

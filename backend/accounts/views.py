@@ -9,6 +9,7 @@ from datetime import timedelta
 import random
 import logging
 import traceback
+import threading
 from django.conf import settings
 from .models import User, VeterinarianProfile, FarmerProfile, OTPVerification
 from .serializers import UserSerializer, VeterinarianProfileSerializer, FarmerProfileSerializer
@@ -29,11 +30,19 @@ class RegisterView(generics.CreateAPIView):
         # Generate and send OTP
         otp_code = str(random.randint(1000, 9999))  # 4-digit OTP
         
-        # For local_vet and farmer, send OTP via email (email is now required for both)
-        if user.user_type in ['local_vet', 'farmer'] and user.email:
-            # Send OTP via email
-            from django.core.mail import send_mail
+        # Store OTP in OTPVerification model (for verification) - do this first
+        # Use phone_number for OTPVerification model (required field), but verification can use email
+        OTPVerification.objects.create(
+            phone_number=user.phone_number or user.email,  # Use email as fallback if phone not available
+            otp_code=otp_code,
+            expires_at=timezone.now() + timedelta(minutes=15)
+        )
+        
+        # Send OTP via email asynchronously (non-blocking)
+        def send_otp_email():
+            """Send OTP email in background thread."""
             try:
+                from django.core.mail import send_mail
                 user_type_name = 'Local Veterinarian' if user.user_type == 'local_vet' else 'Farmer'
                 subject = 'AnimalGuardian - Verification Code'
                 message = f'''
@@ -55,26 +64,27 @@ AnimalGuardian Team
                     message=message,
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[user.email],
-                    fail_silently=False,
+                    fail_silently=True,  # Don't fail the request if email fails
                 )
                 logger.info(f'OTP sent via email to {user.email} for user {user.id} (type: {user.user_type})')
             except Exception as e:
                 logger.error(f'Error sending OTP email: {str(e)}', exc_info=True)
+        
+        # For local_vet and farmer, send OTP via email (email is now required for both)
+        if user.user_type in ['local_vet', 'farmer'] and user.email:
+            # Send email in background thread to avoid blocking the response
+            email_thread = threading.Thread(target=send_otp_email)
+            email_thread.daemon = True
+            email_thread.start()
+            logger.info(f'OTP email sending initiated for {user.email} (user {user.id}, type: {user.user_type})')
         else:
             # Fallback: For other user types, OTP would be sent via SMS (not implemented yet)
             # For now, log it
             logger.info(f'OTP for phone {user.phone_number}: {otp_code} (SMS not implemented)')
         
-        # Store OTP in OTPVerification model (for verification)
-        # Use phone_number for OTPVerification model (required field), but verification can use email
-        OTPVerification.objects.create(
-            phone_number=user.phone_number or user.email,  # Use email as fallback if phone not available
-            otp_code=otp_code,
-            expires_at=timezone.now() + timedelta(minutes=15)
-        )
-        
         verification_message = 'Please verify your email address.' if user.user_type in ['local_vet', 'farmer'] and user.email else 'Please verify your phone number.'
         
+        # Return response immediately (email is sent in background)
         return Response({
             'message': f'User created successfully. {verification_message}',
             'user_id': user.id
@@ -611,8 +621,22 @@ class FarmerViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        """Return users who are farmers."""
-        return User.objects.filter(user_type='farmer').order_by('-created_at')
+        """Return users who are farmers, optionally filtered by approval status."""
+        queryset = User.objects.filter(user_type='farmer')
+        
+        # Filter by approval status if provided in query params
+        is_approved = self.request.query_params.get('is_approved_by_admin')
+        if is_approved is not None:
+            # Convert string to boolean
+            is_approved_bool = is_approved.lower() in ('true', '1', 'yes')
+            queryset = queryset.filter(is_approved_by_admin=is_approved_bool)
+            
+            # For pending approval, only show verified users
+            # For approved, show all approved users (they should be verified anyway)
+            if not is_approved_bool:
+                queryset = queryset.filter(is_verified=True)
+        
+        return queryset.order_by('-created_at')
     
     def list(self, request, *args, **kwargs):
         """List all farmers with their profiles."""
