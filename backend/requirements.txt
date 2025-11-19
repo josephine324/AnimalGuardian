@@ -4,8 +4,8 @@ djangorestframework==3.14.0
 django-cors-headers==4.3.1
 django-environ==0.11.2
 
-# Database (using SQLite for development)
-# psycopg2-binary==2.9.9  # Uncomment for PostgreSQL
+# Database
+psycopg2-binary==2.9.9  # PostgreSQL adapter (required for Azure/Railway)
 dj-database-url==2.1.0
 
 # Authentication & Security
