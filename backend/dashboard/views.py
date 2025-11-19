@@ -12,18 +12,54 @@ from notifications.models import Notification
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def health_check(request):
-    """Health check endpoint that pings the database to keep it alive"""
+    """Health check endpoint that pings the database to keep it alive and checks schema"""
     try:
         # Simple database query to keep connection alive
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
             cursor.fetchone()
         
-        return Response({
+        # Check database schema for common issues
+        schema_status = {}
+        try:
+            with connection.cursor() as cursor:
+                # Check if old password_reset_code column exists
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name='users' AND column_name='password_reset_code'
+                """)
+                old_column = cursor.fetchone()
+                
+                # Check if new password_reset_token column exists
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name='users' AND column_name='password_reset_token'
+                """)
+                new_column = cursor.fetchone()
+                
+                schema_status = {
+                    'password_reset_code_exists': old_column is not None,
+                    'password_reset_token_exists': new_column is not None,
+                    'schema_issue': old_column is not None and new_column is None,
+                }
+        except Exception as schema_error:
+            schema_status = {'schema_check_error': str(schema_error)}
+        
+        response_data = {
             'status': 'healthy',
             'database': 'connected',
             'timestamp': timezone.now().isoformat(),
-        }, status=status.HTTP_200_OK)
+            'schema': schema_status,
+        }
+        
+        # If schema issue detected, add warning
+        if schema_status.get('schema_issue'):
+            response_data['warning'] = 'Database schema mismatch detected. Run fix_database_schema.py to fix.'
+            response_data['status'] = 'degraded'
+        
+        return Response(response_data, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({
             'status': 'unhealthy',
