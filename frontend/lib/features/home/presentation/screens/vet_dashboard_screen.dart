@@ -152,7 +152,7 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Text(
-              'Features',
+              'Veterinarian Tools',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
@@ -161,8 +161,8 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
             ),
           ),
           ListTile(
-            leading: const Icon(Icons.pets, color: Colors.green),
-            title: const Text('Livestock'),
+            leading: const Icon(Icons.people, color: Colors.green),
+            title: const Text('My Farmers'),
             onTap: () {
               Navigator.pop(context);
               // Navigate to livestock screen (vet can view assigned farmers' livestock)
@@ -178,34 +178,12 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.store, color: Colors.orange),
-            title: const Text('Market'),
+            leading: const Icon(Icons.analytics, color: Colors.blue),
+            title: const Text('Analytics'),
             onTap: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => _VetMarketTab(
-                    scaffoldKey: _scaffoldKey,
-                    bottomNavBar: _buildBottomNavigationBar(context),
-                  ),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.wb_sunny, color: Colors.amber),
-            title: const Text('Weather'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => _VetWeatherTab(
-                    scaffoldKey: _scaffoldKey,
-                    bottomNavBar: _buildBottomNavigationBar(context),
-                  ),
-                ),
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Analytics feature coming soon')),
               );
             },
           ),
