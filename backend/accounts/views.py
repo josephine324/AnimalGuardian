@@ -471,18 +471,33 @@ class FarmerViewSet(viewsets.ModelViewSet):
                 'error': 'Farmer profile not found.'
             }, status=status.HTTP_404_NOT_FOUND)
 
-class VeterinarianViewSet(viewsets.ModelViewSet):
-    """ViewSet for Veterinarian profiles."""
-    queryset = VeterinarianProfile.objects.all()
-    serializer_class = VeterinarianProfileSerializer
+class VeterinarianViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet for Veterinarian users (returns users with vet profiles)."""
+    serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Return users who are veterinarians (local_vet or sector_vet)."""
+        return User.objects.filter(user_type__in=['local_vet', 'sector_vet']).order_by('-created_at')
+    
+    def list(self, request, *args, **kwargs):
+        """List all veterinarians with their profiles."""
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Retrieve a specific veterinarian."""
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
     def profile(self, request):
-        """Get veterinarian profile."""
+        """Get current user's veterinarian profile."""
         try:
             profile = request.user.vet_profile
-            serializer = self.get_serializer(profile)
+            serializer = VeterinarianProfileSerializer(profile)
             return Response(serializer.data)
         except VeterinarianProfile.DoesNotExist:
             return Response({
@@ -496,13 +511,13 @@ class VeterinarianViewSet(viewsets.ModelViewSet):
         user = request.user
         
         # Only the veterinarian themselves can toggle their availability
-        if profile.user != user:
+        if profile.user != requesting_user:
             return Response({
                 'error': 'You can only change your own availability status.'
             }, status=status.HTTP_403_FORBIDDEN)
         
         # Only local vets can toggle availability
-        if user.user_type != 'local_vet':
+        if requesting_user.user_type != 'local_vet':
             return Response({
                 'error': 'Only local veterinarians can toggle their availability status.'
             }, status=status.HTTP_403_FORBIDDEN)
@@ -518,5 +533,5 @@ class VeterinarianViewSet(viewsets.ModelViewSet):
         return Response({
             'message': f'You are now {"online" if profile.is_available else "offline"}',
             'is_available': profile.is_available,
-            'profile': self.get_serializer(profile).data
+            'user': UserSerializer(user).data
         }, status=status.HTTP_200_OK)
