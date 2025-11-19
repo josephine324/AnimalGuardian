@@ -113,11 +113,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     // Cow image with placeholder
                     PlaceholderImage(
-                      assetPath: 'assets/images/login_cow.jpg',
                       placeholderIcon: Icons.pets,
                       width: double.infinity,
                       height: double.infinity,
                       fit: BoxFit.cover,
+                      backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                     ),
                     // Back button
                     Positioned(

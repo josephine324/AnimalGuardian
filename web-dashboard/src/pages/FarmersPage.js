@@ -6,12 +6,12 @@ const FarmersPage = () => {
   const [farmers, setFarmers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filterApproval, setFilterApproval] = useState('all'); // all, pending, approved
+  // Removed approval filter - farmers don't need approval
 
   useEffect(() => {
     fetchFarmers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterApproval]);
+  }, []);
 
   const fetchFarmers = async () => {
     try {
@@ -24,15 +24,8 @@ const FarmersPage = () => {
         window.location.href = '/login';
         return;
       }
+      // No approval filtering - farmers are auto-approved
       const params = {};
-      if (filterApproval === 'pending') {
-        // Pending approval: verified but not approved
-        params.is_approved_by_admin = false;
-      } else if (filterApproval === 'approved') {
-        // Approved: must be approved
-        params.is_approved_by_admin = true;
-      }
-      // 'all' doesn't set params, so backend returns all farmers
       
       const data = await usersAPI.getFarmers(params);
       // Handle both array and object with results property
@@ -47,32 +40,9 @@ const FarmersPage = () => {
   };
 
 
-  const handleApproveFarmer = async (farmerId) => {
-    try {
-      await usersAPI.approveUser(farmerId);
-      await fetchFarmers();
-      alert('Farmer approved successfully!');
-    } catch (err) {
-      console.error('Error approving farmer:', err);
-      alert(err.response?.data?.error || err.response?.data?.detail || 'Failed to approve farmer');
-    }
-  };
+  // Removed approval/reject handlers - farmers don't need approval
 
-  const handleRejectFarmer = async (farmerId) => {
-    if (!window.confirm('Are you sure you want to reject this farmer?')) {
-      return;
-    }
-    try {
-      await usersAPI.rejectUser(farmerId);
-      await fetchFarmers();
-      alert('Farmer rejected.');
-    } catch (err) {
-      console.error('Error rejecting farmer:', err);
-      alert(err.response?.data?.error || err.response?.data?.detail || 'Failed to reject farmer');
-    }
-  };
-
-  // Filter farmers by search query and approval status (client-side fallback)
+  // Filter farmers by search query only (no approval filtering)
   const filteredFarmers = farmers.filter(farmer => {
     // Search filter
     const matchesSearch = 
@@ -81,18 +51,7 @@ const FarmersPage = () => {
       farmer.sector?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       farmer.email?.toLowerCase().includes(searchQuery.toLowerCase());
     
-    // Approval status filter (client-side fallback if backend doesn't filter)
-    let matchesApproval = true;
-    if (filterApproval === 'pending') {
-      // Pending approval: not approved
-      matchesApproval = farmer.is_approved_by_admin !== true;
-    } else if (filterApproval === 'approved') {
-      // Approved: must be approved
-      matchesApproval = farmer.is_approved_by_admin === true;
-    }
-    // 'all' shows everyone, so matchesApproval stays true
-    
-    return matchesSearch && matchesApproval;
+    return matchesSearch;
   });
 
   // Fetch livestock statistics from backend
@@ -172,7 +131,7 @@ const FarmersPage = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Farmers Management</h1>
           <p className="text-gray-600 mt-1">Manage registered farmers and their livestock</p>
-          <p className="text-sm text-gray-500 mt-1">Note: Farmers register via mobile app. You can approve or reject them here.</p>
+          <p className="text-sm text-gray-500 mt-1">Note: Farmers register via mobile app and can login immediately after registration.</p>
         </div>
       </div>
 
@@ -181,11 +140,7 @@ const FarmersPage = () => {
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 font-medium">
-                {filterApproval === 'all' ? 'Total Farmers' : 
-                 filterApproval === 'pending' ? 'Pending Approval' : 
-                 'Approved Farmers'}
-              </p>
+              <p className="text-sm text-gray-600 font-medium">Total Farmers</p>
               <p className="text-3xl font-bold text-gray-900">{filteredFarmers.length}</p>
             </div>
             <span className="text-4xl">👨‍🌾</span>
@@ -234,38 +189,7 @@ const FarmersPage = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setFilterApproval('all')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filterApproval === 'all' 
-                ? 'bg-green-600 text-white' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            All Farmers
-          </button>
-          <button
-            onClick={() => setFilterApproval('pending')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filterApproval === 'pending' 
-                ? 'bg-yellow-600 text-white' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Pending Approval
-          </button>
-          <button
-            onClick={() => setFilterApproval('approved')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filterApproval === 'approved' 
-                ? 'bg-green-600 text-white' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Approved
-          </button>
-        </div>
+        {/* Removed approval filters - farmers don't need approval */}
       </div>
 
       {/* Farmers Grid */}
@@ -309,43 +233,17 @@ const FarmersPage = () => {
                 </div>
                 <div className="pt-3 border-t border-gray-200 flex justify-between items-center">
                   <span className="text-xs text-gray-500">User Type: {farmer.user_type || 'farmer'}</span>
-                  <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                    farmer.is_approved_by_admin 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {farmer.is_approved_by_admin 
-                      ? 'Approved' 
-                      : 'Pending Approval'}
+                  <span className="px-2 py-1 text-xs rounded-full font-medium bg-green-100 text-green-800">
+                    Active
                   </span>
                 </div>
               <div className="pt-3 flex space-x-2">
-                {!farmer.is_approved_by_admin && (
-                  <>
-                    <button
-                      onClick={() => handleApproveFarmer(farmer.id)}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => handleRejectFarmer(farmer.id)}
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
-                    >
-                      Reject
-                    </button>
-                  </>
-                )}
-                {farmer.is_approved_by_admin && (
-                  <>
-                    <button className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm font-medium transition-colors">
-                      View Profile
-                    </button>
-                    <button className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors">
-                      Contact
-                    </button>
-                  </>
-                )}
+                <button className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm font-medium transition-colors">
+                  View Profile
+                </button>
+                <button className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors">
+                  Contact
+                </button>
               </div>
             </div>
           </div>
