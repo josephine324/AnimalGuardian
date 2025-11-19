@@ -14,12 +14,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy all project files to /app
-# Railway's build context might be 'backend', so we need to check
-# First, try copying from current directory (if build context is backend)
-# If that doesn't work, Railway might need to be configured differently
+# Railway's build context appears to be the backend directory, so copy current directory
 COPY . /app/
 
-# Debug: List contents to verify start.sh was copied
+# Debug: List contents to verify files were copied
 RUN echo "=== Checking for start.sh ===" && \
     if [ -f /app/start.sh ]; then \
         echo "✓ start.sh found"; \
