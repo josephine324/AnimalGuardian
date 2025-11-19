@@ -298,6 +298,25 @@ export const usersAPI = {
     const response = await api.post(`/users/${userId}/reject/`, { notes });
     return response.data;
   },
+
+  getCurrentUser: async () => {
+    const response = await api.get('/users/profile/');
+    return response.data;
+  },
+
+  updateProfile: async (userId, userData) => {
+    const response = await api.patch(`/users/${userId}/`, userData);
+    return response.data;
+  },
+
+  changePassword: async (currentPassword, newPassword, passwordConfirm) => {
+    const response = await api.post('/auth/change-password/', {
+      current_password: currentPassword,
+      new_password: newPassword,
+      password_confirm: passwordConfirm || newPassword,
+    });
+    return response.data;
+  },
 };
 
 // Notifications API
