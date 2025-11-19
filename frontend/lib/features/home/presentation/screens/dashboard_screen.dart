@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/services/mock_data_service.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/models/community_model.dart';
 import '../../../../shared/presentation/widgets/placeholder_image.dart';
@@ -404,15 +403,19 @@ class _HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<_HomeTab> {
-  String _selectedFilter = 'All';
+  final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
-  List<Map<String, dynamic>> _homeFeed = MockDataService.getMockHomeFeed();
-  List<Map<String, dynamic>> _filteredFeed = MockDataService.getMockHomeFeed();
+  Map<String, dynamic>? _userData;
+  bool _isLoadingUser = true;
+  int _totalLivestock = 0;
+  int _activeCases = 0;
+  int _resolvedCases = 0;
 
   @override
   void initState() {
     super.initState();
-    _filteredFeed = _homeFeed;
+    _loadUserData();
+    _loadStats();
   }
 
   @override
@@ -421,29 +424,45 @@ class _HomeTabState extends State<_HomeTab> {
     super.dispose();
   }
 
-  void _handleFilter(String filter) {
-    setState(() {
-      _selectedFilter = filter;
-      _filteredFeed = MockDataService.getMockHomeFeed(filter: filter);
-    });
+  Future<void> _loadUserData() async {
+    try {
+      final user = await _apiService.getCurrentUser();
+      if (mounted) {
+        setState(() {
+          _userData = user;
+          _isLoadingUser = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingUser = false;
+        });
+      }
+    }
   }
 
-  void _handleSearch(String query) {
-    setState(() {
-      if (query.isEmpty) {
-        _filteredFeed = MockDataService.getMockHomeFeed(filter: _selectedFilter);
-      } else {
-        _filteredFeed = _homeFeed.where((item) {
-          if (item['type'] == 'news') {
-            return item['data']['title'].toString().toLowerCase().contains(query.toLowerCase()) ||
-                   item['data']['location'].toString().toLowerCase().contains(query.toLowerCase());
-          } else {
-            return item['title'].toString().toLowerCase().contains(query.toLowerCase()) ||
-                   item['description'].toString().toLowerCase().contains(query.toLowerCase());
-          }
-        }).toList();
+  Future<void> _loadStats() async {
+    try {
+      // Load livestock count
+      final livestock = await _apiService.getLivestock();
+      final livestockCount = livestock.length;
+      
+      // Load cases count
+      final cases = await _apiService.getCases();
+      final activeCasesCount = cases.where((c) => c.status != CaseStatus.resolved).length;
+      final resolvedCasesCount = cases.where((c) => c.status == CaseStatus.resolved).length;
+      
+      if (mounted) {
+        setState(() {
+          _totalLivestock = livestockCount;
+          _activeCases = activeCasesCount;
+          _resolvedCases = resolvedCasesCount;
+        });
       }
-    });
+    } catch (e) {
+      // Ignore errors for stats
+    }
   }
 
   @override
@@ -2216,7 +2235,7 @@ class _MarketTabState extends State<_MarketTab> {
 
   void _updateProducts() {
     setState(() {
-      _products = MockDataService.getMockProducts(category: _selectedCategory);
+      _products = []; // Marketplace coming soon
       _applyFilters();
     });
   }
@@ -2314,28 +2333,28 @@ class _MarketTabState extends State<_MarketTab> {
             ),
             const SizedBox(height: 24),
             // Product Grid
-            _filteredProducts.isEmpty
-                ? const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(32.0),
-                      child: Text('No products found'),
-                    ),
-                  )
-                : GridView.count(
-                    crossAxisCount: 2,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.75,
-                    children: _filteredProducts.map<Widget>((product) {
-                return _ProductCard(
-                  name: product['name'],
-                  price: product['price'],
-                  imagePath: product['image'],
-                  placeholderIcon: Icons.eco,
-                );
-              }).toList(),
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.store, size: 80, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Marketplace Coming Soon',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'The marketplace feature will be available soon',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[500],
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -2357,13 +2376,11 @@ class _WeatherTab extends StatefulWidget {
 
 class _WeatherTabState extends State<_WeatherTab> {
   final TextEditingController _searchController = TextEditingController();
-  Map<String, dynamic> _weatherData = MockDataService.getMockWeather();
   bool _isRefreshing = false;
 
   @override
   void initState() {
     super.initState();
-    _loadWeather();
   }
 
   @override
@@ -2373,8 +2390,9 @@ class _WeatherTabState extends State<_WeatherTab> {
   }
 
   Future<void> _loadWeather() async {
+    // Weather service coming soon
     setState(() {
-      _weatherData = MockDataService.getMockWeather();
+      _isRefreshing = false;
     });
   }
 
@@ -2447,9 +2465,9 @@ class _WeatherTabState extends State<_WeatherTab> {
               ),
             ),
             const SizedBox(height: 24),
-            // Welcome message
+            // Welcome message - will be updated by parent widget
             Text(
-              'Welcome, Ravi',
+              'Welcome!',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -2462,7 +2480,7 @@ class _WeatherTabState extends State<_WeatherTab> {
                   ),
             ),
             const SizedBox(height: 24),
-            // Today's Weather Card (Green)
+            // Weather Coming Soon Card
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24.0),
@@ -2471,187 +2489,46 @@ class _WeatherTabState extends State<_WeatherTab> {
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const Icon(Icons.wb_cloudy, size: 64, color: Colors.white),
+                  const SizedBox(height: 16),
                   Text(
-                    'Today\'s Weather',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    'Weather Service Coming Soon',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           color: Colors.white,
+                          fontWeight: FontWeight.bold,
                         ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _weatherData['location'] ?? 'Nyagatare, Rwanda',
+                    'Weather information will be available soon',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.white70,
                         ),
+                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${_weatherData['temperature'] ?? 28}°',
-                            style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                          Text(
-                            _weatherData['condition'] ?? 'Partly Cloudy',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: Colors.white,
-                                ),
-                          ),
-                        ],
-                      ),
-                      const Icon(Icons.wb_cloudy, size: 64, color: Colors.white),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  // Hourly forecast
-                  if (_weatherData['hourlyForecast'] != null)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: (_weatherData['hourlyForecast'] as List).map((forecast) {
-                        IconData icon;
-                        switch (forecast['icon']) {
-                          case 'sunny':
-                            icon = Icons.wb_sunny;
-                            break;
-                          case 'cloudy':
-                            icon = Icons.wb_cloudy;
-                            break;
-                          case 'night':
-                            icon = Icons.nightlight_round;
-                            break;
-                          default:
-                            icon = Icons.wb_sunny;
-                        }
-                        return _HourlyForecast(
-                          time: forecast['time'],
-                          icon: icon,
-                          temp: '${forecast['temp']}°',
-                        );
-                      }).toList(),
-                    ),
                 ],
               ),
             ),
             const SizedBox(height: 24),
-            // Today's Weather Details
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            // Additional weather info coming soon
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    Icon(Icons.info_outline, color: Colors.grey[600]),
+                    const SizedBox(width: 8),
                     Text(
-                      'Today\'s Weather',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _weatherData['location'] ?? 'Nyagatare, Rwanda',
+                      'Detailed weather information coming soon',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                    ),
-                    Text(
-                      '${_weatherData['temperature'] ?? 28}° ${_weatherData['condition'] ?? 'Partly Cloudy'}',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
+                            color: Colors.grey[600],
                           ),
                     ),
                   ],
                 ),
-                ElevatedButton(
-                  onPressed: _isRefreshing ? null : _handleRefresh,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: _isRefreshing
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text('Refresh'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            // Humidity and Wind Speed
-            Row(
-              children: [
-                Expanded(
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Humidity',
-                            style: Theme.of(context).textTheme.titleSmall,
-                          ),
-                          const SizedBox(height: 8),
-                          LinearProgressIndicator(
-                            value: (_weatherData['humidity'] ?? 65) / 100,
-                            backgroundColor: Colors.grey[200],
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${_weatherData['humidity'] ?? 65}%',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Wind Speed',
-                            style: Theme.of(context).textTheme.titleSmall,
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Icon(Icons.air, color: Colors.orange, size: 32),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${_weatherData['windSpeed'] ?? 12} km/h',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ),
