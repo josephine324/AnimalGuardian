@@ -10,7 +10,7 @@ import random
 import logging
 import traceback
 from django.conf import settings
-from .models import User, VeterinarianProfile, FarmerProfile
+from .models import User, VeterinarianProfile, FarmerProfile, OTPVerification
 from .serializers import UserSerializer, VeterinarianProfileSerializer, FarmerProfileSerializer
 
 logger = logging.getLogger(__name__)
@@ -25,8 +25,56 @@ class RegisterView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        
+        # Generate and send OTP
+        otp_code = str(random.randint(1000, 9999))  # 4-digit OTP
+        
+        # For local_vet, send OTP via email; for others, send via phone (SMS)
+        if user.user_type == 'local_vet' and user.email:
+            # Send OTP via email
+            from django.core.mail import send_mail
+            try:
+                subject = 'AnimalGuardian - Verification Code'
+                message = f'''
+Hello {user.get_full_name() or user.username},
+
+Thank you for registering as a Local Veterinarian on AnimalGuardian.
+
+Your verification code is: {otp_code}
+
+Please enter this code to verify your account.
+
+This code will expire in 15 minutes.
+
+Best regards,
+AnimalGuardian Team
+'''
+                send_mail(
+                    subject=subject,
+                    message=message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=False,
+                )
+                logger.info(f'OTP sent via email to {user.email} for user {user.id}')
+            except Exception as e:
+                logger.error(f'Error sending OTP email: {str(e)}', exc_info=True)
+        else:
+            # For farmers, OTP would be sent via SMS (not implemented yet)
+            # For now, log it
+            logger.info(f'OTP for phone {user.phone_number}: {otp_code} (SMS not implemented)')
+        
+        # Store OTP in OTPVerification model (for verification)
+        OTPVerification.objects.create(
+            phone_number=user.phone_number,
+            otp_code=otp_code,
+            expires_at=timezone.now() + timedelta(minutes=15)
+        )
+        
+        verification_message = 'Please verify your email address.' if user.user_type == 'local_vet' and user.email else 'Please verify your phone number.'
+        
         return Response({
-            'message': 'User created successfully. Please verify your phone number.',
+            'message': f'User created successfully. {verification_message}',
             'user_id': user.id
         }, status=status.HTTP_201_CREATED)
 
@@ -78,14 +126,20 @@ class LoginView(generics.GenericAPIView):
                     logger.error(f'Error during email authentication: {str(e)}', exc_info=True)
             
             if user:
-                # Check if user is verified (phone verification) - only for farmers
+                # Check if user is verified (phone/email verification)
                 if user.user_type == 'farmer' and not user.is_verified:
                     return Response({
                         'error': 'Your phone number is not verified. Please verify your phone number first.'
                     }, status=status.HTTP_403_FORBIDDEN)
                 
-                # Check if farmer is approved by sector vet/admin (only farmers need approval)
-                if user.user_type == 'farmer' and not user.is_approved_by_admin:
+                # Check if user is verified (for local_vet)
+                if user.user_type == 'local_vet' and not user.is_verified:
+                    return Response({
+                        'error': 'Your email is not verified. Please verify your email first.'
+                    }, status=status.HTTP_403_FORBIDDEN)
+                
+                # Check if user is approved by sector vet/admin (both farmers and local vets need approval)
+                if user.user_type in ['farmer', 'local_vet'] and not user.is_approved_by_admin:
                     return Response({
                         'error': 'Your account is pending approval from a sector veterinarian. Please wait for approval before logging in.',
                         'pending_approval': True
@@ -145,30 +199,77 @@ class LoginView(generics.GenericAPIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class VerifyOTPView(generics.GenericAPIView):
-    """Verify OTP for phone number."""
+    """Verify OTP for phone number or email."""
     permission_classes = [AllowAny]
     
     def post(self, request):
         phone_number = request.data.get('phone_number')
+        email = request.data.get('email')
         otp_code = request.data.get('otp_code')
         
-        # Simple OTP verification (in production, use proper OTP service)
-        if otp_code == '123456':  # Default OTP for development
-            try:
+        if not otp_code:
+            return Response({
+                'error': 'OTP code is required.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get user by phone_number or email
+        try:
+            if email:
+                user = User.objects.get(email=email)
+            elif phone_number:
                 user = User.objects.get(phone_number=phone_number)
+            else:
+                return Response({
+                    'error': 'Phone number or email is required.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist:
+            return Response({
+                'error': 'User not found.'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check OTP from OTPVerification model
+        try:
+            otp_verification = OTPVerification.objects.filter(
+                phone_number=user.phone_number,
+                otp_code=otp_code,
+                is_used=False
+            ).order_by('-created_at').first()
+            
+            # Also accept hardcoded OTP for development
+            if otp_code == '123456' or (otp_verification and otp_verification.expires_at > timezone.now()):
                 user.is_verified = True
                 user.save()
+                
+                # Mark OTP as used if it exists
+                if otp_verification:
+                    otp_verification.is_used = True
+                    otp_verification.save()
+                
+                # Generate tokens for automatic login
+                try:
+                    refresh = RefreshToken.for_user(user)
+                    user_data = UserSerializer(user).data
+                    
+                    return Response({
+                        'message': 'Verification successful.',
+                        'access': str(refresh.access_token),
+                        'refresh': str(refresh),
+                        'user': user_data
+                    })
+                except Exception as e:
+                    logger.error(f'Error generating tokens: {str(e)}', exc_info=True)
+                    return Response({
+                        'message': 'Verification successful. Please login.'
+                    })
+            else:
                 return Response({
-                    'message': 'Phone number verified successfully.'
-                })
-            except User.DoesNotExist:
-                return Response({
-                    'error': 'User not found.'
-                }, status=status.HTTP_404_NOT_FOUND)
-        else:
+                    'error': 'Invalid or expired OTP code.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f'Error verifying OTP: {str(e)}', exc_info=True)
             return Response({
-                'error': 'Invalid OTP code.'
-            }, status=status.HTTP_400_BAD_REQUEST)
+                'error': 'An error occurred during verification.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class RequestPasswordResetView(generics.GenericAPIView):
     """Request password reset - sends OTP to phone/email."""
