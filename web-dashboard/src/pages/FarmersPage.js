@@ -251,21 +251,21 @@ const FarmersPage = () => {
                   </span>
                 </div>
               <div className="pt-3 flex space-x-2">
-                <button 
+                    <button
                   onClick={() => {
                     setSelectedFarmer(farmer);
                     setShowProfileModal(true);
                   }}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
-                >
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+                    >
                   View Profile
-                </button>
-                <button 
+                    </button>
+                    <button
                   onClick={() => handleContact(farmer)}
                   className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors"
                 >
-                  Contact
-                </button>
+                      Contact
+                    </button>
               </div>
             </div>
           </div>
