@@ -13,30 +13,20 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy all project files from backend directory to /app
-# Railway's build context is the repository root, so we need to copy from backend/
-COPY backend/ /app/
-
-# Debug: List contents to verify files were copied
-RUN echo "=== Checking for start.sh ===" && \
-    if [ -f /app/start.sh ]; then \
-        echo "✓ start.sh found"; \
-        ls -lh /app/start.sh; \
-    else \
-        echo "✗ start.sh NOT found"; \
-        echo "Files in /app/:"; \
-        ls -la /app/ | head -30; \
-        echo "Looking for .sh files:"; \
-        find /app -name "*.sh" 2>/dev/null || echo "No .sh files found"; \
-        exit 1; \
-    fi
-
-# Make startup script executable
-RUN chmod +x /app/start.sh
+# Copy requirements file first (for better Docker layer caching)
+COPY backend/requirements.txt /app/requirements.txt
 
 # Upgrade pip and install Python dependencies
 RUN pip install --upgrade pip && \
     pip install -r /app/requirements.txt
+
+# Copy startup script
+COPY backend/start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
+# Copy all project files from backend directory to /app
+# Railway's build context is the repository root, so we need to copy from backend/
+COPY backend/ /app/
 
 # Collect static files (allow failure in case static files are not configured)
 RUN python manage.py collectstatic --noinput || true
