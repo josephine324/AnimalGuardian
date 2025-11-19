@@ -738,12 +738,14 @@ class _LivestockTabState extends ConsumerState<_LivestockTab> {
         return Colors.green;
       case LivestockStatus.sick:
         return Colors.red;
-      case LivestockStatus.recovering:
-        return Colors.orange;
-      case LivestockStatus.quarantined:
-        return Colors.purple;
-      default:
+      case LivestockStatus.pregnant:
+        return Colors.blue;
+      case LivestockStatus.inHeat:
+        return Colors.pink;
+      case LivestockStatus.deceased:
         return Colors.grey;
+      case LivestockStatus.sold:
+        return Colors.orange;
     }
   }
 
@@ -875,9 +877,7 @@ class _LivestockTabState extends ConsumerState<_LivestockTab> {
                           itemCount: filteredLivestock.length,
                           itemBuilder: (context, index) {
                             final livestock = filteredLivestock[index];
-                            final photoUrl = livestock.photos.isNotEmpty 
-                                ? livestock.photos.first 
-                                : null;
+                            final photoUrl = null; // Photos not available in current model
                             return Card(
                               margin: const EdgeInsets.only(bottom: 12),
                               child: ListTile(
