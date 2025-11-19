@@ -2721,11 +2721,44 @@ class _HourlyForecast extends StatelessWidget {
 }
 
 // Profile Tab
-class _ProfileTab extends StatelessWidget {
+class _ProfileTab extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final Function(int)? onTabChanged;
   
   const _ProfileTab({required this.scaffoldKey, this.onTabChanged});
+
+  @override
+  State<_ProfileTab> createState() => _ProfileTabState();
+}
+
+class _ProfileTabState extends State<_ProfileTab> {
+  final ApiService _apiService = ApiService();
+  Map<String, dynamic>? _userData;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final user = await _apiService.getCurrentUser();
+      if (mounted) {
+        setState(() {
+          _userData = user;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   Widget _buildBottomNavigationBarForChild(BuildContext context) {
     return BottomNavigationBar(
@@ -2733,9 +2766,9 @@ class _ProfileTab extends StatelessWidget {
       onTap: (index) {
         Navigator.of(context).popUntil((route) => route.isFirst);
         // Use callback if provided to change tab
-        if (onTabChanged != null) {
+        if (widget.onTabChanged != null) {
           Future.delayed(const Duration(milliseconds: 100), () {
-            onTabChanged!(index);
+            widget.onTabChanged!(index);
           });
         } else {
           // Fallback: navigate to dashboard
@@ -2779,32 +2812,38 @@ class _ProfileTab extends StatelessWidget {
         foregroundColor: Colors.white,
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () => scaffoldKey.currentState?.openDrawer(),
+          onPressed: () => widget.scaffoldKey.currentState?.openDrawer(),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          const CircleAvatar(
-            radius: 50,
-            child: Icon(Icons.person, size: 50),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'User Name',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.all(16.0),
+              children: [
+                const CircleAvatar(
+                  radius: 50,
+                  child: Icon(Icons.person, size: 50),
                 ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'user@example.com',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
+                const SizedBox(height: 16),
+                Text(
+                  _userData != null
+                      ? '${_userData!['first_name'] ?? ''} ${_userData!['last_name'] ?? ''}'.trim().isEmpty
+                          ? _userData!['username'] ?? 'User'
+                          : '${_userData!['first_name'] ?? ''} ${_userData!['last_name'] ?? ''}'.trim()
+                      : 'User',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                  textAlign: TextAlign.center,
                 ),
-            textAlign: TextAlign.center,
-          ),
+                const SizedBox(height: 8),
+                Text(
+                  _userData?['email'] ?? 'No email',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                  textAlign: TextAlign.center,
+                ),
           const SizedBox(height: 32),
           ListTile(
             leading: const Icon(Icons.edit),
