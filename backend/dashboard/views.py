@@ -22,28 +22,33 @@ def health_check(request):
         # Check database schema for common issues
         schema_status = {}
         try:
-            with connection.cursor() as cursor:
-                # Check if old password_reset_code column exists
-                cursor.execute("""
-                    SELECT column_name 
-                    FROM information_schema.columns 
-                    WHERE table_name='users' AND column_name='password_reset_code'
-                """)
-                old_column = cursor.fetchone()
-                
-                # Check if new password_reset_token column exists
-                cursor.execute("""
-                    SELECT column_name 
-                    FROM information_schema.columns 
-                    WHERE table_name='users' AND column_name='password_reset_token'
-                """)
-                new_column = cursor.fetchone()
-                
-                schema_status = {
-                    'password_reset_code_exists': old_column is not None,
-                    'password_reset_token_exists': new_column is not None,
-                    'schema_issue': old_column is not None and new_column is None,
-                }
+            db_engine = connection.vendor
+            if db_engine == 'postgresql':
+                with connection.cursor() as cursor:
+                    # Check if old password_reset_code column exists
+                    cursor.execute("""
+                        SELECT column_name 
+                        FROM information_schema.columns 
+                        WHERE table_name='users' AND column_name='password_reset_code'
+                    """)
+                    old_column = cursor.fetchone()
+                    
+                    # Check if new password_reset_token column exists
+                    cursor.execute("""
+                        SELECT column_name 
+                        FROM information_schema.columns 
+                        WHERE table_name='users' AND column_name='password_reset_token'
+                    """)
+                    new_column = cursor.fetchone()
+                    
+                    schema_status = {
+                        'password_reset_code_exists': old_column is not None,
+                        'password_reset_token_exists': new_column is not None,
+                        'schema_issue': old_column is not None and new_column is None,
+                    }
+            else:
+                # For other databases, skip schema check
+                schema_status = {'note': f'Schema check skipped for {db_engine}'}
         except Exception as schema_error:
             schema_status = {'schema_check_error': str(schema_error)}
         
