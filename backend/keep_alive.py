@@ -36,7 +36,7 @@ def ping_health_endpoint():
         # Get backend URL from environment or use default
         backend_url = os.environ.get(
             'BACKEND_URL',
-            'https://animalguardian-backend-production.up.railway.app'
+            'https://animalguardian-backend-production-b5a8.up.railway.app'
         )
         response = requests.get(f"{backend_url}/api/dashboard/health/", timeout=10)
         if response.status_code == 200:

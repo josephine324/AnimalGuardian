@@ -7,7 +7,7 @@ import json
 import sys
 
 # Railway backend URL
-BACKEND_URL = "https://animalguardian-backend-production.up.railway.app"
+BACKEND_URL = "https://animalguardian-backend-production-b5a8.up.railway.app"
 
 def test_login():
     """Test login with provided credentials."""
