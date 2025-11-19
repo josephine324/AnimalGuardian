@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/services/mock_data_service.dart';
+import '../../../../core/services/api_service.dart';
 import '../../../../shared/presentation/widgets/placeholder_image.dart';
 import '../../../cases/presentation/screens/case_detail_screen.dart';
 import '../../../cases/providers/cases_provider.dart';
@@ -735,19 +736,119 @@ class _VetCommunityTab extends StatelessWidget {
 }
 
 // Vet Profile Tab
-class _VetProfileTab extends StatelessWidget {
+class _VetProfileTab extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final Widget Function(BuildContext)? buildBottomNavBar;
   
   const _VetProfileTab({required this.scaffoldKey, this.buildBottomNavBar});
 
   @override
+  State<_VetProfileTab> createState() => _VetProfileTabState();
+}
+
+class _VetProfileTabState extends State<_VetProfileTab> {
+  final ApiService _apiService = ApiService();
+  Map<String, dynamic>? _userData;
+  bool _isLoading = true;
+  bool _isToggling = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final user = await _apiService.getCurrentUser();
+      if (mounted) {
+        setState(() {
+          _userData = user;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleAvailability() async {
+    if (_isToggling || _userData == null) return;
+
+    setState(() {
+      _isToggling = true;
+    });
+
+    try {
+      final currentAvailability = _userData!['veterinarian_profile']?['is_available'] ?? true;
+      final newAvailability = !currentAvailability;
+      
+      await _apiService.toggleAvailability(newAvailability);
+      
+      // Reload user data
+      await _loadUserData();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('You are now ${newAvailability ? "online" : "offline"}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update availability: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isToggling = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => widget.scaffoldKey.currentState?.openDrawer(),
+          ),
+          title: const Text('Profile'),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final firstName = _userData?['first_name'] ?? '';
+    final lastName = _userData?['last_name'] ?? '';
+    final fullName = '${firstName} ${lastName}'.trim();
+    final userType = _userData?['user_type'] ?? 'local_vet';
+    final isApproved = _userData?['is_approved_by_admin'] ?? false;
+    final isAvailable = _userData?['veterinarian_profile']?['is_available'] ?? true;
+    final userTypeLabel = userType == 'sector_vet' ? 'Sector Veterinarian' : 'Local Veterinarian';
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () => scaffoldKey.currentState?.openDrawer(),
+          onPressed: () => widget.scaffoldKey.currentState?.openDrawer(),
         ),
         title: const Text('Profile'),
         backgroundColor: Colors.white,
@@ -763,7 +864,7 @@ class _VetProfileTab extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Dr. Veterinarian Name',
+            fullName.isNotEmpty ? 'Dr. $fullName' : 'Dr. Veterinarian',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -771,27 +872,76 @@ class _VetProfileTab extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Local Veterinarian',
+            userTypeLabel,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey[600],
                 ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.orange[50],
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.orange[200]!),
+          // Show approval status only if not approved
+          if (!isApproved)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.orange[200]!),
+              ),
+              child: const Text(
+                'Pending Approval',
+                style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
             ),
-            child: const Text(
-              'Pending Approval',
-              style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
+          // Show online/offline status if approved
+          if (isApproved)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: isAvailable ? Colors.green[50] : Colors.grey[300],
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: isAvailable ? Colors.green[200]! : Colors.grey[400]!),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    isAvailable ? Icons.check_circle : Icons.cancel,
+                    size: 16,
+                    color: isAvailable ? Colors.green : Colors.grey[700],
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    isAvailable ? 'Online' : 'Offline',
+                    style: TextStyle(
+                      color: isAvailable ? Colors.green[700] : Colors.grey[700],
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
           const SizedBox(height: 32),
+          // Toggle availability button (only if approved)
+          if (isApproved)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: ElevatedButton.icon(
+                onPressed: _isToggling ? null : _toggleAvailability,
+                icon: Icon(_isToggling ? Icons.hourglass_empty : (isAvailable ? Icons.cancel : Icons.check_circle)),
+                label: Text(_isToggling 
+                  ? 'Updating...' 
+                  : (isAvailable ? 'Go Offline' : 'Go Online')),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isAvailable ? Colors.grey[300] : Colors.green,
+                  foregroundColor: isAvailable ? Colors.black87 : Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          if (isApproved) const SizedBox(height: 16),
           ListTile(
             leading: const Icon(Icons.edit),
             title: const Text('Edit Profile'),

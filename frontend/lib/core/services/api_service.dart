@@ -477,5 +477,33 @@ class ApiService {
 
     return _handleResponse(response) as Map<String, dynamic>;
   }
+
+  // Toggle veterinarian availability (online/offline)
+  Future<Map<String, dynamic>> toggleAvailability(bool isOnline) async {
+    final headers = await _getHeaders();
+    
+    // Get current user to get userId and check availability
+    final user = await getCurrentUser();
+    final userId = user['id'];
+    if (userId == null) {
+      throw Exception('User ID not found. Please login again.');
+    }
+    
+    final currentAvailability = user['veterinarian_profile']?['is_available'] ?? true;
+    
+    // Only toggle if different
+    if (currentAvailability == isOnline) {
+      // Already in desired state, just return
+      return user;
+    }
+    
+    // Call toggle endpoint
+    final response = await http.post(
+      Uri.parse('$baseUrl/veterinarians/$userId/toggle_availability/'),
+      headers: headers,
+    ).timeout(AppConstants.connectionTimeout);
+
+    return _handleResponse(response) as Map<String, dynamic>;
+  }
 }
 

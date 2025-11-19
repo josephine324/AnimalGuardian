@@ -736,10 +736,10 @@ class VeterinarianViewSet(viewsets.ReadOnlyModelViewSet):
                 'error': 'You can only change your own availability status.'
             }, status=status.HTTP_403_FORBIDDEN)
         
-        # Only local vets can toggle availability
-        if requesting_user.user_type != 'local_vet':
+        # Only veterinarians (local_vet or sector_vet) can toggle availability
+        if requesting_user.user_type not in ['local_vet', 'sector_vet']:
             return Response({
-                'error': 'Only local veterinarians can toggle their availability status.'
+                'error': 'Only veterinarians can toggle their availability status.'
             }, status=status.HTTP_403_FORBIDDEN)
         
         # Get or create veterinarian profile

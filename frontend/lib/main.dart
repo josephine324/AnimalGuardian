@@ -8,6 +8,7 @@ import 'features/auth/presentation/screens/onboarding_screen.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/register_screen.dart';
 import 'features/auth/presentation/screens/otp_verification_screen.dart';
+import 'features/auth/presentation/screens/vet_availability_screen.dart';
 import 'features/home/presentation/screens/dashboard_screen.dart';
 import 'features/home/presentation/screens/vet_dashboard_screen.dart';
 import 'features/cases/presentation/screens/report_case_screen.dart';
@@ -101,6 +102,11 @@ final _router = GoRouter(
     GoRoute(
       path: '/dashboard',
       builder: (context, state) => const DashboardScreen(),
+    ),
+    // Vet availability screen (shown after login)
+    GoRoute(
+      path: '/vet-availability',
+      builder: (context, state) => const VetAvailabilityScreen(),
     ),
     // Vet dashboard with bottom navigation
     GoRoute(
