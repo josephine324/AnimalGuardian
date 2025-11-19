@@ -146,17 +146,22 @@ const VeterinariansPage = () => {
     vet.sector?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'available':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'busy':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'offline':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+  const getStatusColor = (isAvailable) => {
+    if (isAvailable === true) {
+      return 'bg-green-100 text-green-800 border-green-200';
+    } else if (isAvailable === false) {
+      return 'bg-gray-100 text-gray-800 border-gray-200';
     }
+    return 'bg-gray-100 text-gray-800 border-gray-200';
+  };
+
+  const getStatusText = (isAvailable) => {
+    if (isAvailable === true) {
+      return 'Online';
+    } else if (isAvailable === false) {
+      return 'Offline';
+    }
+    return 'Unknown';
   };
 
   const handleViewProfile = (vet) => {
@@ -219,9 +224,8 @@ const VeterinariansPage = () => {
 
   const stats = {
     total: veterinarians.length,
-    available: veterinarians.filter(v => v.veterinarian_profile?.status === 'available' || v.is_active).length,
-    busy: veterinarians.filter(v => v.veterinarian_profile?.status === 'busy').length,
-    offline: veterinarians.filter(v => !v.is_active).length,
+    available: veterinarians.filter(v => v.veterinarian_profile?.is_available === true).length,
+    offline: veterinarians.filter(v => v.veterinarian_profile?.is_available === false || (v.veterinarian_profile?.is_available === undefined && !v.is_active)).length,
   };
 
   // Get unassigned cases for assignment
@@ -303,15 +307,6 @@ const VeterinariansPage = () => {
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 font-medium">Busy</p>
-              <p className="text-3xl font-bold text-orange-600">{stats.busy}</p>
-            </div>
-            <span className="text-4xl">⏳</span>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
               <p className="text-sm text-gray-600 font-medium">Offline</p>
               <p className="text-3xl font-bold text-gray-600">{stats.offline}</p>
             </div>
@@ -352,8 +347,8 @@ const VeterinariansPage = () => {
                       <p className="text-sm text-blue-100">{vet.veterinarian_profile?.license_number || 'No license'}</p>
                     </div>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(vet.veterinarian_profile?.status || (vet.is_active ? 'available' : 'offline'))}`}>
-                    {vet.veterinarian_profile?.status || (vet.is_active ? 'available' : 'offline')}
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(vet.veterinarian_profile?.is_available)}`}>
+                    {getStatusText(vet.veterinarian_profile?.is_available)}
                   </span>
                 </div>
               </div>
@@ -386,8 +381,10 @@ const VeterinariansPage = () => {
                     <p className="text-lg font-bold text-gray-900">{vet.created_at ? new Date(vet.created_at).getFullYear() : 'N/A'}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Status</p>
-                    <p className="text-lg font-bold text-green-600">{vet.is_active ? 'Active' : 'Inactive'}</p>
+                    <p className="text-xs text-gray-500">Availability</p>
+                    <p className={`text-lg font-bold ${vet.veterinarian_profile?.is_available ? 'text-green-600' : 'text-gray-600'}`}>
+                      {getStatusText(vet.veterinarian_profile?.is_available)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Type</p>
@@ -616,8 +613,8 @@ const VeterinariansPage = () => {
                     Dr. {selectedVet.first_name} {selectedVet.last_name || ''}
                   </h3>
                   <p className="text-gray-600">{selectedVet.veterinarian_profile?.license_number || 'No license'}</p>
-                  <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(selectedVet.veterinarian_profile?.status || (selectedVet.is_active ? 'available' : 'offline'))}`}>
-                    {selectedVet.veterinarian_profile?.status || (selectedVet.is_active ? 'available' : 'offline')}
+                  <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(selectedVet.veterinarian_profile?.is_available)}`}>
+                    {getStatusText(selectedVet.veterinarian_profile?.is_available)}
                   </span>
                 </div>
               </div>
