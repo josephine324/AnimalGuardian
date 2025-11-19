@@ -8,6 +8,8 @@ class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True, required=False)
     approved_by_name = serializers.SerializerMethodField()
+    veterinarian_profile = serializers.SerializerMethodField()
+    farmer_profile = serializers.SerializerMethodField()
     
     class Meta:
         model = User
@@ -17,7 +19,8 @@ class UserSerializer(serializers.ModelSerializer):
             'cell', 'village', 'preferred_language', 'user_type',
             'is_verified', 'is_approved_by_admin', 'approved_by', 'approved_at',
             'approval_notes', 'approved_by_name',
-            'password', 'password_confirm', 'created_at', 'updated_at'
+            'password', 'password_confirm', 'created_at', 'updated_at',
+            'veterinarian_profile', 'farmer_profile'
         ]
         extra_kwargs = {
             'password': {'write_only': True},
@@ -33,6 +36,44 @@ class UserSerializer(serializers.ModelSerializer):
                 return obj.approved_by.get_full_name() or obj.approved_by.username
         except Exception:
             # If there's any error accessing approved_by, return None
+            pass
+        return None
+    
+    def get_veterinarian_profile(self, obj):
+        """Get veterinarian profile if user is a vet."""
+        try:
+            if hasattr(obj, 'vet_profile'):
+                profile = obj.vet_profile
+                return {
+                    'id': profile.id,
+                    'license_number': profile.license_number,
+                    'license_type': profile.license_type,
+                    'specialization': profile.specialization,
+                    'clinic_name': profile.clinic_name,
+                    'clinic_address': profile.clinic_address,
+                    'is_available': profile.is_available,
+                    'working_hours': profile.working_hours,
+                    'years_of_experience': profile.years_of_experience,
+                    'rating': str(profile.rating),
+                    'total_cases_handled': profile.total_cases_handled,
+                }
+        except VeterinarianProfile.DoesNotExist:
+            pass
+        return None
+    
+    def get_farmer_profile(self, obj):
+        """Get farmer profile if user is a farmer."""
+        try:
+            if hasattr(obj, 'farmer_profile'):
+                profile = obj.farmer_profile
+                return {
+                    'id': profile.id,
+                    'farm_size': profile.farm_size,
+                    'livestock_count': profile.livestock_count,
+                    'experience_years': profile.experience_years,
+                    'preferred_communication': profile.preferred_communication,
+                }
+        except FarmerProfile.DoesNotExist:
             pass
         return None
     
