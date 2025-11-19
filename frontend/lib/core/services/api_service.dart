@@ -358,15 +358,25 @@ class ApiService {
     return _handleResponse(response) as Map<String, dynamic>;
   }
 
-  Future<Map<String, dynamic>> login(String phoneNumber, String password) async {
+  Future<Map<String, dynamic>> login(String emailOrPhone, String password) async {
     final headers = await _getHeaders(includeAuth: false);
+    
+    // Determine if input is email or phone number
+    final isEmail = emailOrPhone.contains('@');
+    final payload = {
+      'password': password,
+    };
+    
+    if (isEmail) {
+      payload['email'] = emailOrPhone;
+    } else {
+      payload['phone_number'] = emailOrPhone;
+    }
+    
     final response = await http.post(
       Uri.parse('$baseUrl/auth/login/'),
       headers: headers,
-      body: json.encode({
-        'phone_number': phoneNumber,
-        'password': password,
-      }),
+      body: json.encode(payload),
     ).timeout(AppConstants.connectionTimeout);
 
     final data = _handleResponse(response) as Map<String, dynamic>;
