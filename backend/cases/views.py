@@ -3,9 +3,16 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.utils import timezone
+from django.core.mail import send_mail
+from django.conf import settings
+from django.db import transaction
+import threading
+import logging
 from accounts.models import User
 from .models import CaseReport, Disease
 from .serializers import CaseReportSerializer, DiseaseSerializer
+
+logger = logging.getLogger(__name__)
 
 class CaseReportViewSet(viewsets.ModelViewSet):
     """ViewSet for Case reports."""
@@ -39,6 +46,124 @@ class CaseReportViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Automatically set the reporter to the current user when creating a case."""
         serializer.save(reporter=self.request.user)
+    
+    def perform_update(self, serializer):
+        """Handle case updates and send notifications on status change."""
+        old_instance = self.get_object()
+        old_status = old_instance.status
+        
+        # Save the updated instance
+        instance = serializer.save()
+        new_status = instance.status
+        
+        # If status changed, send notifications
+        if old_status != new_status:
+            self._send_status_change_notifications(instance, old_status, new_status)
+    
+    def _send_status_change_notifications(self, case, old_status, new_status):
+        """Send notifications to farmer and vet when case status changes."""
+        from notifications.models import Notification
+        
+        status_display = dict(CaseReport.STATUS_CHOICES).get(new_status, new_status)
+        old_status_display = dict(CaseReport.STATUS_CHOICES).get(old_status, old_status)
+        
+        # Notify the farmer (reporter)
+        if case.reporter:
+            # In-app notification for farmer
+            Notification.objects.create(
+                recipient=case.reporter,
+                channel='in_app',
+                title='Case Status Updated',
+                message=f'Your case {case.case_id} status has been updated from {old_status_display} to {status_display}.',
+                related_case=case,
+                status='sent',
+                sent_at=timezone.now()
+            )
+            
+            # Email notification to farmer
+            def send_farmer_status_email():
+                try:
+                    if case.reporter.email:
+                        subject = f'AnimalGuardian - Case {case.case_id} Status Updated'
+                        message = f'''
+Hello {case.reporter.get_full_name() or case.reporter.username},
+
+Your case report status has been updated.
+
+Case ID: {case.case_id}
+Previous Status: {old_status_display}
+New Status: {status_display}
+Urgency: {case.get_urgency_display()}
+
+Please check the AnimalGuardian mobile app for more details.
+
+Best regards,
+AnimalGuardian Team
+'''
+                        send_mail(
+                            subject=subject,
+                            message=message,
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            recipient_list=[case.reporter.email],
+                            fail_silently=True,
+                        )
+                        logger.info(f'Status change email sent to farmer {case.reporter.email} for case {case.case_id}')
+                except Exception as e:
+                    logger.error(f'Error sending status email to farmer: {str(e)}', exc_info=True)
+            
+            if case.reporter.email:
+                email_thread = threading.Thread(target=send_farmer_status_email)
+                email_thread.daemon = True
+                email_thread.start()
+        
+        # Notify the assigned veterinarian (if any)
+        if case.assigned_veterinarian:
+            # In-app notification for vet
+            Notification.objects.create(
+                recipient=case.assigned_veterinarian,
+                channel='in_app',
+                title='Case Status Updated',
+                message=f'Case {case.case_id} status has been updated to {status_display}.',
+                related_case=case,
+                status='sent',
+                sent_at=timezone.now()
+            )
+            
+            # Email notification to vet
+            def send_vet_status_email():
+                try:
+                    if case.assigned_veterinarian.email:
+                        subject = f'AnimalGuardian - Case {case.case_id} Status Updated'
+                        message = f'''
+Hello {case.assigned_veterinarian.get_full_name() or case.assigned_veterinarian.username},
+
+The status of case {case.case_id} has been updated.
+
+Case ID: {case.case_id}
+Previous Status: {old_status_display}
+New Status: {status_display}
+Reporter: {case.reporter.get_full_name() or case.reporter.username}
+
+Please check the AnimalGuardian mobile app for more details.
+
+Best regards,
+AnimalGuardian Team
+'''
+                        send_mail(
+                            subject=subject,
+                            message=message,
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            recipient_list=[case.assigned_veterinarian.email],
+                            fail_silently=True,
+                        )
+                        logger.info(f'Status change email sent to vet {case.assigned_veterinarian.email} for case {case.case_id}')
+                except Exception as e:
+                    logger.error(f'Error sending status email to vet: {str(e)}', exc_info=True)
+            
+            if case.assigned_veterinarian.email:
+                email_thread = threading.Thread(target=send_vet_status_email)
+                email_thread.daemon = True
+                email_thread.start()
     
     @action(detail=True, methods=['post'])
     def assign(self, request, pk=None):
@@ -84,16 +209,57 @@ class CaseReportViewSet(viewsets.ModelViewSet):
         case.status = 'under_review'
         case.save()
         
-        # Create notification for the assigned veterinarian
+        # Send notifications to assigned veterinarian
         from notifications.models import Notification
+        
+        # In-app notification
         Notification.objects.create(
             recipient=veterinarian,
             channel='in_app',
             title='New Case Assigned',
             message=f'You have been assigned a new case: {case.case_id}. Urgency: {case.get_urgency_display()}',
             related_case=case,
-            status='sent'
+            status='sent',
+            sent_at=timezone.now()
         )
+        
+        # Email notification to veterinarian
+        def send_assignment_email():
+            try:
+                if veterinarian.email:
+                    subject = f'AnimalGuardian - New Case Assigned: {case.case_id}'
+                    message = f'''
+Hello {veterinarian.get_full_name() or veterinarian.username},
+
+You have been assigned a new case on AnimalGuardian.
+
+Case ID: {case.case_id}
+Urgency: {case.get_urgency_display()}
+Status: {case.get_status_display()}
+Reported by: {case.reporter.get_full_name() or case.reporter.username}
+Location: {case.location_notes or 'Not specified'}
+
+Please review the case details in the AnimalGuardian mobile app and take appropriate action.
+
+Best regards,
+AnimalGuardian Team
+'''
+                    send_mail(
+                        subject=subject,
+                        message=message,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[veterinarian.email],
+                        fail_silently=True,
+                    )
+                    logger.info(f'Assignment email sent to {veterinarian.email} for case {case.case_id}')
+            except Exception as e:
+                logger.error(f'Error sending assignment email: {str(e)}', exc_info=True)
+        
+        # Send email in background thread
+        if veterinarian.email:
+            email_thread = threading.Thread(target=send_assignment_email)
+            email_thread.daemon = True
+            email_thread.start()
         
         return Response({
             'message': f'Case assigned to {veterinarian.get_full_name() or veterinarian.username}',
