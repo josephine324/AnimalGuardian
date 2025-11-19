@@ -183,10 +183,15 @@ class ApiService {
       final data = _handleResponse(response);
       if (data is List) {
         return data.map((json) => LivestockType.fromMap(json as Map<String, dynamic>)).toList();
+      } else if (data is Map && data.containsKey('results')) {
+        // Handle paginated response
+        final results = data['results'] as List;
+        return results.map((json) => LivestockType.fromMap(json as Map<String, dynamic>)).toList();
       }
       return [];
     } catch (e) {
-      return [];
+      // Re-throw error so provider can handle it and show to user
+      throw Exception('Failed to fetch livestock types: ${e.toString()}');
     }
   }
 
@@ -205,10 +210,15 @@ class ApiService {
       final data = _handleResponse(response);
       if (data is List) {
         return data.map((json) => Breed.fromMap(json as Map<String, dynamic>)).toList();
+      } else if (data is Map && data.containsKey('results')) {
+        // Handle paginated response
+        final results = data['results'] as List;
+        return results.map((json) => Breed.fromMap(json as Map<String, dynamic>)).toList();
       }
       return [];
     } catch (e) {
-      return [];
+      // Re-throw error so provider can handle it and show to user
+      throw Exception('Failed to fetch breeds: ${e.toString()}');
     }
   }
 

@@ -99,17 +99,29 @@ class LivestockNotifier extends StateNotifier<LivestockState> {
   Future<void> loadLivestockTypes() async {
     try {
       final types = await _apiService.getLivestockTypes();
-      state = state.copyWith(livestockTypes: types);
-    } catch (_) {
-      // Intentionally swallow errors to avoid UI disruption
+      state = state.copyWith(livestockTypes: types, clearError: true);
+    } catch (error) {
+      state = state.copyWith(
+        error: error.toString(),
+        livestockTypes: const [],
+      );
+      // Re-throw so UI can show error message
+      throw error;
     }
   }
 
   Future<void> loadBreeds({int? livestockTypeId}) async {
     try {
       final breeds = await _apiService.getBreeds(livestockTypeId: livestockTypeId);
-      state = state.copyWith(breeds: breeds);
-    } catch (_) {}
+      state = state.copyWith(breeds: breeds, clearError: true);
+    } catch (error) {
+      state = state.copyWith(
+        error: error.toString(),
+        breeds: const [],
+      );
+      // Re-throw so UI can show error message
+      throw error;
+    }
   }
 
   Future<void> loadMore() async {
