@@ -22,6 +22,7 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'password': {'write_only': True},
             'password_confirm': {'write_only': True},
+            'username': {'required': False},  # Auto-generated if not provided
             'approved_by': {'read_only': True},
             'approved_at': {'read_only': True},
         }
