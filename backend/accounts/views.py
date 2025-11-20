@@ -23,6 +23,24 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = [AllowAny]
     
     def create(self, request, *args, **kwargs):
+        # Check for duplicate accounts before attempting to create
+        phone_number = request.data.get('phone_number')
+        email = request.data.get('email')
+        
+        if phone_number:
+            if User.objects.filter(phone_number=phone_number).exists():
+                return Response({
+                    'error': 'An account with this phone number already exists. Please use a different phone number or try logging in.',
+                    'phone_number': ['An account with this phone number already exists.']
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if email:
+            if User.objects.filter(email=email).exists():
+                return Response({
+                    'error': 'An account with this email address already exists. Please use a different email or try logging in.',
+                    'email': ['An account with this email address already exists.']
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
