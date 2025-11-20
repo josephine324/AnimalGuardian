@@ -48,8 +48,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
       // Prepare registration data
       // Backend will auto-fill password_confirm from password if not provided
+      // Clean phone number (remove spaces/dashes)
+      final cleanedPhone = _phoneController.text.trim().replaceAll(RegExp(r'[\s-]'), '');
       final registrationData = {
-        'phone_number': _phoneController.text.trim(),
+        'phone_number': cleanedPhone,
         'password': _passwordController.text,
         'user_type': _selectedUserType,
         'first_name': firstName,
@@ -211,15 +213,38 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         controller: _phoneController,
                         decoration: const InputDecoration(
                           labelText: 'Phone Number',
-                          hintText: 'Enter your phone number',
+                          hintText: '0781234567 (10 digits)',
                           prefixIcon: Icon(Icons.phone),
                           border: OutlineInputBorder(),
+                          helperText: 'Must start with 078, 079, 073, or 072 and be 10 digits',
                         ),
                         keyboardType: TextInputType.phone,
+                        maxLength: 10,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Please enter your phone number';
                           }
+                          // Remove any spaces or dashes
+                          final cleaned = value.trim().replaceAll(RegExp(r'[\s-]'), '');
+                          
+                          // Check if it's exactly 10 digits
+                          if (cleaned.length != 10) {
+                            return 'Phone number must be exactly 10 digits';
+                          }
+                          
+                          // Check if it starts with valid prefix
+                          if (!cleaned.startsWith('078') && 
+                              !cleaned.startsWith('079') && 
+                              !cleaned.startsWith('073') && 
+                              !cleaned.startsWith('072')) {
+                            return 'Phone number must start with 078, 079, 073, or 072';
+                          }
+                          
+                          // Check if all characters are digits
+                          if (!RegExp(r'^\d+$').hasMatch(cleaned)) {
+                            return 'Phone number must contain only digits';
+                          }
+                          
                           return null;
                         },
                       ),
