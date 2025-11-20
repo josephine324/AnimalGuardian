@@ -28,7 +28,12 @@ class RegisterView(generics.CreateAPIView):
         email = request.data.get('email')
         
         if phone_number:
-            if User.objects.filter(phone_number=phone_number).exists():
+            # Clean phone number (remove spaces, dashes, etc.) for duplicate check
+            import re
+            cleaned_phone = re.sub(r'[^\d]', '', str(phone_number))
+            
+            # Check for duplicates with cleaned phone number
+            if User.objects.filter(phone_number=cleaned_phone).exists():
                 return Response({
                     'error': 'An account with this phone number already exists. Please use a different phone number or try logging in.',
                     'phone_number': ['An account with this phone number already exists.']

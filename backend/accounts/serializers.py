@@ -86,10 +86,23 @@ class UserSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         # Only validate password on create
         if self.instance is None:
-            # Check for duplicate phone number
+            # Clean and validate phone number
             phone_number = attrs.get('phone_number')
             if phone_number:
-                if User.objects.filter(phone_number=phone_number).exists():
+                # Remove spaces, dashes, and other non-digit characters
+                import re
+                cleaned_phone = re.sub(r'[^\d]', '', str(phone_number))
+                
+                # Validate phone number format
+                if not re.match(r'^(078|079|073|072)\d{7}$', cleaned_phone):
+                    raise serializers.ValidationError({
+                        'phone_number': 'Phone number must start with 078, 079, 073, or 072 and be exactly 10 digits (e.g., 0781234567)'
+                    })
+                
+                attrs['phone_number'] = cleaned_phone
+                
+                # Check for duplicate phone number
+                if User.objects.filter(phone_number=cleaned_phone).exists():
                     raise serializers.ValidationError({
                         'phone_number': 'An account with this phone number already exists. Please use a different phone number or try logging in.'
                     })
@@ -210,6 +223,19 @@ class UserSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
         validated_data.pop('password_confirm', None)
+        
+        # Clean and validate phone number if being updated
+        if 'phone_number' in validated_data:
+            import re
+            phone_number = validated_data['phone_number']
+            if phone_number:
+                cleaned_phone = re.sub(r'[^\d]', '', str(phone_number))
+                # Validate phone number format
+                if not re.match(r'^(078|079|073|072)\d{7}$', cleaned_phone):
+                    raise serializers.ValidationError({
+                        'phone_number': 'Phone number must start with 078, 079, 073, or 072 and be exactly 10 digits (e.g., 0781234567)'
+                    })
+                validated_data['phone_number'] = cleaned_phone
         
         if password:
             instance.set_password(password)

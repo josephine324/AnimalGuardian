@@ -30,15 +30,15 @@ class User(AbstractUser):
     )
     
     phone_regex = RegexValidator(
-        regex=r'^\+?1?\d{9,15}$',
-        message="Phone number must be entered in the format: '+250xxxxxxxx'. Up to 15 digits allowed."
+        regex=r'^(078|079|073|072)\d{7}$',
+        message="Phone number must start with 078, 079, 073, or 072 and be exactly 10 digits (e.g., 0781234567)"
     )
     
     phone_number = models.CharField(
         validators=[phone_regex], 
-        max_length=17, 
+        max_length=10, 
         unique=True,
-        help_text="Phone number with country code (e.g., +250xxxxxxxx)"
+        help_text="Rwanda phone number starting with 078, 079, 073, or 072 (10 digits total, e.g., 0781234567)"
     )
     
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True)
