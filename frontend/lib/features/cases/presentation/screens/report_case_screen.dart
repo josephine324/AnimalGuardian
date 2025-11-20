@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -81,39 +82,88 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
       return;
     }
 
-    // For now, we'll upload images as base64 or URLs
-    // In production, you'd want to upload to a file server first
-    final List<String> photoUrls = [];
-    // TODO: Implement image upload to server and get URLs
-
-    final caseData = {
-      if (_selectedLivestockId != null) 'livestock': _selectedLivestockId,
-      'urgency': _selectedUrgency.apiValue,
-      'symptoms_observed': _symptomsController.text.trim(),
-      if (_durationController.text.trim().isNotEmpty) 'duration_of_symptoms': _durationController.text.trim(),
-      'number_of_affected_animals': int.tryParse(_numberOfAnimalsController.text) ?? 1,
-      if (_locationNotesController.text.trim().isNotEmpty) 'location_notes': _locationNotesController.text.trim(),
-      'photos': photoUrls,
-    };
-
-    final casesNotifier = ref.read(casesProvider.notifier);
-    final newCase = await casesNotifier.createCase(caseData);
-
+    // Show loading indicator
     if (mounted) {
-      if (newCase != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Case reported successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        context.pop();
-      } else {
-        // Show the actual error message from the provider
-        final errorMessage = casesNotifier.state.error ?? 'Failed to report case. Please try again.';
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    try {
+      // Convert images to base64 data URLs
+      final List<String> photoUrls = [];
+      for (var imageFile in _selectedImages) {
+        try {
+          final bytes = await imageFile.readAsBytes();
+          final base64String = base64Encode(bytes);
+          // Determine MIME type from file extension
+          final extension = imageFile.path.split('.').last.toLowerCase();
+          String mimeType = 'image/jpeg'; // default
+          if (extension == 'png') {
+            mimeType = 'image/png';
+          } else if (extension == 'gif') {
+            mimeType = 'image/gif';
+          } else if (extension == 'webp') {
+            mimeType = 'image/webp';
+          }
+          final dataUrl = 'data:$mimeType;base64,$base64String';
+          photoUrls.add(dataUrl);
+        } catch (e) {
+          // Skip images that fail to convert
+          print('Error converting image to base64: $e');
+        }
+      }
+
+      final caseData = {
+        if (_selectedLivestockId != null) 'livestock': _selectedLivestockId,
+        'urgency': _selectedUrgency.apiValue,
+        'symptoms_observed': _symptomsController.text.trim(),
+        if (_durationController.text.trim().isNotEmpty) 'duration_of_symptoms': _durationController.text.trim(),
+        'number_of_affected_animals': int.tryParse(_numberOfAnimalsController.text) ?? 1,
+        if (_locationNotesController.text.trim().isNotEmpty) 'location_notes': _locationNotesController.text.trim(),
+        if (photoUrls.isNotEmpty) 'photos': photoUrls,
+      };
+
+      final casesNotifier = ref.read(casesProvider.notifier);
+      final newCase = await casesNotifier.createCase(caseData);
+
+      // Close loading indicator
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (mounted) {
+        if (newCase != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Case reported successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          context.pop();
+        } else {
+          // Show the actual error message from the provider
+          final errorMessage = casesNotifier.state.error ?? 'Failed to report case. Please try again.';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Close loading indicator if still open
+      if (mounted) {
+        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(errorMessage),
+            content: Text('Error uploading images: ${e.toString()}'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
           ),
