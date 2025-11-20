@@ -2527,11 +2527,16 @@ class _WeatherTab extends StatefulWidget {
 
 class _WeatherTabState extends State<_WeatherTab> {
   final TextEditingController _searchController = TextEditingController();
+  final ApiService _apiService = ApiService();
   bool _isRefreshing = false;
+  bool _isLoading = true;
+  Map<String, dynamic>? _weatherData;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    _loadWeather();
   }
 
   @override
@@ -2540,23 +2545,38 @@ class _WeatherTabState extends State<_WeatherTab> {
     super.dispose();
   }
 
-  Future<void> _loadWeather() async {
-    // Weather service coming soon
+  Future<void> _loadWeather({String? location}) async {
     setState(() {
-      _isRefreshing = false;
+      _isLoading = true;
+      _errorMessage = null;
     });
+
+    try {
+      final weatherData = await _apiService.getWeather(location: location);
+      if (mounted) {
+        setState(() {
+          _weatherData = weatherData;
+          _isLoading = false;
+          _isRefreshing = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to load weather data. Please try again.';
+          _isLoading = false;
+          _isRefreshing = false;
+        });
+      }
+    }
   }
 
   Future<void> _handleRefresh() async {
     setState(() {
       _isRefreshing = true;
     });
-    await Future.delayed(const Duration(seconds: 1));
-    await _loadWeather();
+    await _loadWeather(location: _searchController.text.trim().isNotEmpty ? _searchController.text.trim() : null);
     if (mounted) {
-      setState(() {
-        _isRefreshing = false;
-      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Weather data refreshed!')),
       );
@@ -2564,7 +2584,27 @@ class _WeatherTabState extends State<_WeatherTab> {
   }
 
   void _handleSearch(String query) {
-    // Weather search coming soon
+    if (query.trim().isNotEmpty) {
+      _loadWeather(location: query.trim());
+    } else {
+      _loadWeather();
+    }
+  }
+
+  IconData _getWeatherIcon(String condition) {
+    final lowerCondition = condition.toLowerCase();
+    if (lowerCondition.contains('sunny') || lowerCondition.contains('clear')) {
+      return Icons.wb_sunny;
+    } else if (lowerCondition.contains('cloud')) {
+      return Icons.wb_cloudy;
+    } else if (lowerCondition.contains('rain')) {
+      return Icons.grain;
+    } else if (lowerCondition.contains('storm')) {
+      return Icons.flash_on;
+    } else if (lowerCondition.contains('wind')) {
+      return Icons.air;
+    }
+    return Icons.wb_cloudy;
   }
 
   @override
@@ -2591,95 +2631,340 @@ class _WeatherTabState extends State<_WeatherTab> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
+      body: RefreshIndicator(
+        onRefresh: _handleRefresh,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16.0),
+          child: _isLoading
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              : _errorMessage != null
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                            const SizedBox(height: 16),
+                            Text(
+                              _errorMessage!,
+                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    color: Colors.red,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () => _loadWeather(),
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : _weatherData == null
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(32.0),
+                            child: Text('No weather data available'),
+                          ),
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Search Bar
+                            TextField(
+                              controller: _searchController,
+                              onSubmitted: _handleSearch,
+                              onChanged: (value) {
+                                setState(() {}); // Rebuild to show/hide clear button
+                              },
+                              decoration: InputDecoration(
+                                hintText: 'Search for a Farm\'s Location (e.g., Kigali)',
+                                prefixIcon: const Icon(Icons.search),
+                                suffixIcon: _searchController.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear),
+                                        onPressed: () {
+                                          _searchController.clear();
+                                          setState(() {});
+                                          _loadWeather();
+                                        },
+                                      )
+                                    : IconButton(
+                                        icon: const Icon(Icons.search),
+                                        onPressed: () => _handleSearch(_searchController.text),
+                                      ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey[300]!),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey[100],
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            // Location
+                            if (_weatherData!['location'] != null) ...[
+                              Row(
+                                children: [
+                                  Icon(Icons.location_on, color: Theme.of(context).colorScheme.primary),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${_weatherData!['location']['city'] ?? 'Unknown'}, ${_weatherData!['location']['country'] ?? 'Rwanda'}',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+                            ],
+                            // Current Weather Card
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(24.0),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    _getWeatherIcon(_weatherData!['current']?['condition'] ?? 'Cloudy'),
+                                    size: 80,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    '${_weatherData!['current']?['temperature'] ?? 'N/A'}°${_weatherData!['current']?['temperature_unit'] == 'celsius' ? 'C' : 'F'}',
+                                    style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    _weatherData!['current']?['condition'] ?? 'N/A',
+                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                          color: Colors.white,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  // Weather Details
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                    children: [
+                                      _buildWeatherDetail(
+                                        context,
+                                        Icons.water_drop,
+                                        'Humidity',
+                                        '${_weatherData!['current']?['humidity'] ?? 'N/A'}%',
+                                      ),
+                                      _buildWeatherDetail(
+                                        context,
+                                        Icons.air,
+                                        'Wind',
+                                        '${_weatherData!['current']?['wind_speed'] ?? 'N/A'} ${_weatherData!['current']?['wind_unit'] ?? 'km/h'}',
+                                      ),
+                                      _buildWeatherDetail(
+                                        context,
+                                        Icons.grain,
+                                        'Precipitation',
+                                        '${_weatherData!['current']?['precipitation'] ?? '0'} ${_weatherData!['current']?['precipitation_unit'] ?? 'mm'}',
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            // Forecast
+                            if (_weatherData!['forecast'] != null) ...[
+                              Text(
+                                'Forecast',
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildForecastCard(
+                                      context,
+                                      'Today',
+                                      _weatherData!['forecast']['today'],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _buildForecastCard(
+                                      context,
+                                      'Tomorrow',
+                                      _weatherData!['forecast']['tomorrow'],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+                            ],
+                            // Agricultural Advice
+                            if (_weatherData!['agricultural_advice'] != null) ...[
+                              Text(
+                                'Agricultural Advice',
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                              const SizedBox(height: 12),
+                              Card(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      _buildAdviceRow(
+                                        context,
+                                        Icons.pets,
+                                        'Livestock Health',
+                                        _weatherData!['agricultural_advice']['livestock_health'] ?? 'N/A',
+                                      ),
+                                      const Divider(),
+                                      _buildAdviceRow(
+                                        context,
+                                        Icons.grass,
+                                        'Grazing Conditions',
+                                        _weatherData!['agricultural_advice']['grazing_conditions'] ?? 'N/A',
+                                      ),
+                                      const Divider(),
+                                      _buildAdviceRow(
+                                        context,
+                                        Icons.warning_amber,
+                                        'Disease Risk',
+                                        _weatherData!['agricultural_advice']['disease_risk'] ?? 'N/A',
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWeatherDetail(BuildContext context, IconData icon, String label, String value) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.white70, size: 24),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.white70,
+              ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildForecastCard(BuildContext context, String day, Map<String, dynamic> forecast) {
+    return Card(
+      child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Search Bar
-            TextField(
-              controller: _searchController,
-              onChanged: _handleSearch,
-              decoration: InputDecoration(
-                hintText: 'Search for a Farm\'s Location',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
-                ),
-                filled: true,
-                fillColor: Colors.grey[100],
-              ),
-            ),
-            const SizedBox(height: 24),
-            // Welcome message - will be updated by parent widget
             Text(
-              'Welcome!',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              day,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
             const SizedBox(height: 8),
+            Icon(
+              _getWeatherIcon(forecast['condition'] ?? 'Cloudy'),
+              size: 40,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 8),
             Text(
-              'Check today\'s updates for your farm',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              forecast['condition'] ?? 'N/A',
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
-            // Weather Coming Soon Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24.0),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: [
-                  const Icon(Icons.wb_cloudy, size: 64, color: Colors.white),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Weather Service Coming Soon',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Weather information will be available soon',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white70,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            // Additional weather info coming soon
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.info_outline, color: Colors.grey[600]),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Detailed weather information coming soon',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
-                          ),
-                    ),
-                  ],
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '${forecast['high'] ?? 'N/A'}°',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                      ),
                 ),
-              ),
+                Text(
+                  ' / ',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                Text(
+                  '${forecast['low'] ?? 'N/A'}°',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                ),
+              ],
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAdviceRow(BuildContext context, IconData icon, String title, String advice) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: Theme.of(context).colorScheme.primary, size: 24),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                advice,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[700],
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
