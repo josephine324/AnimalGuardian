@@ -94,9 +94,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         
         String errorMessage = 'Registration failed. Please try again.';
         
-        // Handle timeout specifically
+        // Handle specific error cases
         if (e.toString().contains('TimeoutException') || e.toString().contains('timeout')) {
           errorMessage = 'Registration is taking longer than expected. Your account may have been created. Please try logging in or contact support.';
+        } else if (e.toString().contains('phone_number') && e.toString().contains('already exists')) {
+          errorMessage = 'An account with this phone number already exists. Please use a different phone number or try logging in.';
+        } else if (e.toString().contains('email') && e.toString().contains('already exists')) {
+          errorMessage = 'An account with this email address already exists. Please use a different email or try logging in.';
+        } else if (e.toString().contains('username') && e.toString().contains('already exists')) {
+          errorMessage = 'An account with this username already exists. Please use a different username.';
+        } else if (e.toString().contains('Password must be at least 8 characters')) {
+          errorMessage = 'Password must be at least 8 characters long.';
+        } else if (e.toString().contains('Password must contain at least one number')) {
+          errorMessage = 'Password must contain at least one number.';
+        } else if (e.toString().contains('Password must contain at least one letter')) {
+          errorMessage = 'Password must contain at least one letter.';
         } else if (e.toString().contains('phone_number')) {
           errorMessage = 'This phone number is already registered.';
         } else if (e.toString().contains('email')) {
@@ -303,8 +315,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         controller: _passwordController,
                         decoration: InputDecoration(
                           labelText: 'Password',
-                          hintText: 'Enter your password',
+                          hintText: 'Enter your password (min. 8 characters)',
                           prefixIcon: const Icon(Icons.lock),
+                          helperText: 'Password must be at least 8 characters and contain both letters and numbers',
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword ? Icons.visibility : Icons.visibility_off,
@@ -322,8 +335,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           if (value == null || value.isEmpty) {
                             return 'Please enter a password';
                           }
-                          if (value.length < 6) {
-                            return 'Password must be at least 6 characters';
+                          if (value.length < 8) {
+                            return 'Password must be at least 8 characters long';
+                          }
+                          // Check if password contains at least one letter
+                          if (!value.contains(RegExp(r'[a-zA-Z]'))) {
+                            return 'Password must contain at least one letter';
+                          }
+                          // Check if password contains at least one number
+                          if (!value.contains(RegExp(r'[0-9]'))) {
+                            return 'Password must contain at least one number';
                           }
                           return null;
                         },

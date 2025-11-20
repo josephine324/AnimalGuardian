@@ -86,13 +86,58 @@ class UserSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         # Only validate password on create
         if self.instance is None:
+            # Check for duplicate phone number
+            phone_number = attrs.get('phone_number')
+            if phone_number:
+                if User.objects.filter(phone_number=phone_number).exists():
+                    raise serializers.ValidationError({
+                        'phone_number': 'An account with this phone number already exists. Please use a different phone number or try logging in.'
+                    })
+            
+            # Check for duplicate email
+            email = attrs.get('email')
+            if email:
+                if User.objects.filter(email=email).exists():
+                    raise serializers.ValidationError({
+                        'email': 'An account with this email address already exists. Please use a different email or try logging in.'
+                    })
+            
+            # Check for duplicate username (if provided)
+            username = attrs.get('username')
+            if username:
+                if User.objects.filter(username=username).exists():
+                    raise serializers.ValidationError({
+                        'username': 'An account with this username already exists. Please use a different username.'
+                    })
+            
             if 'password' not in attrs:
-                raise serializers.ValidationError("Password is required.")
+                raise serializers.ValidationError({
+                    'password': 'Password is required.'
+                })
+            
+            # Validate password strength
+            password = attrs.get('password')
+            if password:
+                if len(password) < 8:
+                    raise serializers.ValidationError({
+                        'password': 'Password must be at least 8 characters long.'
+                    })
+                if not any(c.isdigit() for c in password):
+                    raise serializers.ValidationError({
+                        'password': 'Password must contain at least one number.'
+                    })
+                if not any(c.isalpha() for c in password):
+                    raise serializers.ValidationError({
+                        'password': 'Password must contain at least one letter.'
+                    })
+            
             # Auto-fill password_confirm from password if not provided (for admin-created users)
             if 'password_confirm' not in attrs:
                 attrs['password_confirm'] = attrs['password']
             if attrs['password'] != attrs['password_confirm']:
-                raise serializers.ValidationError("Passwords don't match.")
+                raise serializers.ValidationError({
+                    'password_confirm': "Passwords don't match."
+                })
             
             # Email is required for farmers and local_vets
             user_type = attrs.get('user_type')
