@@ -39,14 +39,25 @@ class RegisterView(generics.CreateAPIView):
                     'phone_number': ['An account with this phone number already exists.']
                 }, status=status.HTTP_400_BAD_REQUEST)
         
-        if email:
-            if User.objects.filter(email=email).exists():
-                return Response({
-                    'error': 'An account with this email address already exists. Please use a different email or try logging in.',
-                    'email': ['An account with this email address already exists.']
-                }, status=status.HTTP_400_BAD_REQUEST)
+        # Only check for duplicate email if email is provided and not empty
+        # Handle both None and empty string cases
+        # Skip email check entirely if email is not in request data or is empty
+        request_data = request.data.copy()
+        if 'email' in request_data:
+            email_value = request_data.get('email')
+            if email_value is not None:
+                cleaned_email = str(email_value).strip() if email_value else ''
+                if cleaned_email:  # Only check if email is not empty after stripping
+                    if User.objects.filter(email=cleaned_email).exists():
+                        return Response({
+                            'error': 'An account with this email address already exists. Please use a different email or try logging in.',
+                            'email': ['An account with this email address already exists.']
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    # Remove empty email from request data
+                    request_data.pop('email', None)
         
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(data=request_data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         
@@ -66,7 +77,7 @@ class RegisterView(generics.CreateAPIView):
             # Local vets need approval
             user.save()
             return Response({
-                'message': 'User created successfully. Your account is pending approval from a sector veterinarian. You will receive an email once approved.',
+                'message': 'User created successfully. Your account is pending approval from a sector veterinarian. You will receive a notification on your phone number once approved.',
                 'user_id': user.id
             }, status=status.HTTP_201_CREATED)
 

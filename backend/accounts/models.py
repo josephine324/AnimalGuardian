@@ -41,6 +41,9 @@ class User(AbstractUser):
         help_text="Rwanda phone number starting with 078, 079, 073, or 072 (10 digits total, e.g., 0781234567)"
     )
     
+    # Override email field from AbstractUser to make it optional
+    email = models.EmailField(blank=True, null=True, unique=True)
+    
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
     # profile_picture = models.ImageField(upload_to='profiles/', null=True, blank=True)  # Temporarily disabled
@@ -92,7 +95,7 @@ class User(AbstractUser):
     updated_at = models.DateTimeField(auto_now=True)
     
     USERNAME_FIELD = 'phone_number'
-    REQUIRED_FIELDS = ['username', 'email']
+    REQUIRED_FIELDS = ['username']  # Email is optional
     
     class Meta:
         db_table = 'users'

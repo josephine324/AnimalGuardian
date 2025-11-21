@@ -26,6 +26,7 @@ class UserSerializer(serializers.ModelSerializer):
             'password': {'write_only': True},
             'password_confirm': {'write_only': True},
             'username': {'required': False},  # Auto-generated if not provided
+            'email': {'required': False},  # Email is optional
             'approved_by': {'read_only': True},
             'approved_at': {'read_only': True},
         }
@@ -107,13 +108,32 @@ class UserSerializer(serializers.ModelSerializer):
                         'phone_number': 'An account with this phone number already exists. Please use a different phone number or try logging in.'
                     })
             
-            # Check for duplicate email
-            email = attrs.get('email')
-            if email:
-                if User.objects.filter(email=email).exists():
-                    raise serializers.ValidationError({
-                        'email': 'An account with this email address already exists. Please use a different email or try logging in.'
-                    })
+            # Handle email - only validate if email is actually provided and not empty
+            # Skip entirely if email is not in attrs
+            if 'email' in attrs:
+                email = attrs.get('email')
+                if email is not None:
+                    email_str = str(email).strip() if email else ''
+                    if email_str:
+                        # Validate email format if provided
+                        import re
+                        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+                        if not re.match(email_pattern, email_str):
+                            raise serializers.ValidationError({
+                                'email': 'Please enter a valid email address.'
+                            })
+                        attrs['email'] = email_str
+                        # Check for duplicate email only if email is provided and valid
+                        if User.objects.filter(email=email_str).exists():
+                            raise serializers.ValidationError({
+                                'email': 'An account with this email address already exists. Please use a different email or try logging in.'
+                            })
+                    else:
+                        # Convert empty string to None - no validation needed
+                        attrs['email'] = None
+                else:
+                    # Email is None, remove it from attrs
+                    attrs.pop('email', None)
             
             # Check for duplicate username (if provided)
             username = attrs.get('username')
@@ -152,13 +172,6 @@ class UserSerializer(serializers.ModelSerializer):
                     'password_confirm': "Passwords don't match."
                 })
             
-            # Email is required for farmers and local_vets
-            user_type = attrs.get('user_type')
-            if user_type in ['farmer', 'local_vet']:
-                if not attrs.get('email'):
-                    raise serializers.ValidationError({
-                        'email': 'Email is required for farmers and local veterinarians.'
-                    })
         elif 'password' in attrs or 'password_confirm' in attrs:
             # Update password
             if 'password' not in attrs:
@@ -174,9 +187,15 @@ class UserSerializer(serializers.ModelSerializer):
         validated_data.pop('password_confirm', None)
         password = validated_data.pop('password')
         
+        # Handle email - convert empty string to None
+        if 'email' in validated_data:
+            email = validated_data.get('email')
+            if email == '' or (email is not None and not email.strip()):
+                validated_data['email'] = None
+        
         # Generate username if not provided
         if 'username' not in validated_data or not validated_data.get('username'):
-            email = validated_data.get('email', '')
+            email = validated_data.get('email', '') or ''
             phone_number = validated_data.get('phone_number', '')
             
             if email:
