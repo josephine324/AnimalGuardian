@@ -1,11 +1,16 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
-from django.db import models
+from rest_framework.response import Response
+from django.db import models, IntegrityError
+from django.core.exceptions import ValidationError as DjangoValidationError
 from .models import Livestock, LivestockType, Breed, HealthRecord, VaccinationRecord
 from .serializers import (
     LivestockSerializer, LivestockTypeSerializer, BreedSerializer,
     HealthRecordSerializer, VaccinationRecordSerializer
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 class LivestockViewSet(viewsets.ModelViewSet):
     """ViewSet for Livestock management."""
@@ -41,13 +46,54 @@ class LivestockViewSet(viewsets.ModelViewSet):
         # Default: Only own livestock
         return Livestock.objects.filter(owner=user)
     
-    def perform_create(self, serializer):
-        user = self.request.user
+    def create(self, request, *args, **kwargs):
+        """Handle livestock creation with better error handling."""
+        user = request.user
         # Only farmers can create livestock
         if user.user_type != 'farmer':
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("Only farmers can create livestock records.")
-        serializer.save(owner=user)
+        
+        # Log the incoming request data for debugging
+        logger.info(f"Creating livestock for user {user.id}: {request.data}")
+        
+        serializer = self.get_serializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+            logger.info(f"Serializer is valid. Saving livestock...")
+            serializer.save(owner=user)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        except IntegrityError as e:
+            logger.error(f"Integrity error creating livestock: {e}", exc_info=True)
+            error_message = "A livestock record with this information already exists."
+            if 'tag_number' in str(e):
+                error_message = "A livestock with this tag number already exists. Please use a different tag number or leave it blank."
+            return Response(
+                {'error': error_message, 'detail': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except DjangoValidationError as e:
+            logger.error(f"Validation error creating livestock: {e}", exc_info=True)
+            error_detail = str(e)
+            if hasattr(e, 'message_dict'):
+                error_detail = e.message_dict
+            return Response(
+                {'error': 'Validation error', 'detail': error_detail},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            import traceback
+            error_traceback = traceback.format_exc()
+            logger.error(f"Unexpected error creating livestock: {e}\n{error_traceback}")
+            return Response(
+                {
+                    'error': 'An error occurred while creating the livestock record. Please try again.',
+                    'detail': str(e),
+                    'type': type(e).__name__
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class LivestockTypeViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet for Livestock types."""

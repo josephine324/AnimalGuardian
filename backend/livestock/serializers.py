@@ -40,6 +40,46 @@ class LivestockSerializer(serializers.ModelSerializer):
             'expected_delivery_date', 'daily_milk_production_liters',
             'created_at', 'updated_at'
         ]
+    
+    def validate_tag_number(self, value):
+        """Convert empty string to None to avoid unique constraint violations."""
+        if value is None:
+            return None
+        if isinstance(value, str):
+            value = value.strip()
+            if not value:
+                return None
+            return value
+        return value
+    
+    def validate(self, data):
+        """Additional validation."""
+        # Ensure tag_number is None if empty (double-check)
+        if 'tag_number' in data:
+            tag_number = data['tag_number']
+            if tag_number is not None and isinstance(tag_number, str) and not tag_number.strip():
+                data['tag_number'] = None
+        
+        # Validate breed belongs to livestock_type if breed is provided
+        breed = data.get('breed')
+        livestock_type = data.get('livestock_type')
+        
+        if breed is not None and livestock_type is not None:
+            if breed.livestock_type != livestock_type:
+                raise serializers.ValidationError({
+                    'breed_id': 'The selected breed does not belong to the selected livestock type.'
+                })
+        return data
+    
+    def create(self, validated_data):
+        """Override create to ensure tag_number is None if empty."""
+        # Final check: ensure tag_number is None if empty
+        if 'tag_number' in validated_data:
+            tag_number = validated_data['tag_number']
+            if tag_number is not None and isinstance(tag_number, str) and not tag_number.strip():
+                validated_data['tag_number'] = None
+        
+        return super().create(validated_data)
 
 class HealthRecordSerializer(serializers.ModelSerializer):
     class Meta:
