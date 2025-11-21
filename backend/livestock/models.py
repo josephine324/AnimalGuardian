@@ -80,7 +80,7 @@ class Livestock(models.Model):
     
     # Basic information
     name = models.CharField(max_length=100, blank=True)
-    tag_number = models.CharField(max_length=50, unique=True, blank=True)
+    tag_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='healthy')
     
@@ -119,6 +119,12 @@ class Livestock(models.Model):
         verbose_name = 'Livestock'
         verbose_name_plural = 'Livestock'
         ordering = ['-created_at']
+    
+    def save(self, *args, **kwargs):
+        """Override save to ensure empty tag_number is converted to None."""
+        if self.tag_number is not None and isinstance(self.tag_number, str) and not self.tag_number.strip():
+            self.tag_number = None
+        super().save(*args, **kwargs)
     
     def __str__(self):
         return f"{self.name or self.tag_number} ({self.livestock_type.name})"
