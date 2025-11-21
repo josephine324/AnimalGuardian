@@ -24,16 +24,16 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # First, convert existing empty strings to NULL
-        migrations.RunPython(
-            convert_empty_tag_numbers_to_null,
-            reverse_convert_empty_tag_numbers_to_null,
-        ),
-        # Then, alter the field to allow NULL
+        # First, alter the field to allow NULL (must be done before converting empty strings)
         migrations.AlterField(
             model_name='livestock',
             name='tag_number',
             field=models.CharField(blank=True, max_length=50, null=True, unique=True),
+        ),
+        # Then, convert existing empty strings to NULL
+        migrations.RunPython(
+            convert_empty_tag_numbers_to_null,
+            reverse_convert_empty_tag_numbers_to_null,
         ),
     ]
 
