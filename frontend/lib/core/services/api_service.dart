@@ -38,28 +38,72 @@ class ApiService {
       if (response.body.isEmpty) {
         return null;
       }
-      return json.decode(response.body);
+      try {
+        return json.decode(response.body);
+      } catch (e) {
+        // If response is not JSON, return the body as string
+        return response.body;
+      }
     } else {
       // Try to parse error message from response
       String errorMessage = 'HTTP ${response.statusCode}';
       try {
-        final errorData = json.decode(response.body);
-        if (errorData is Map) {
-          // Format validation errors nicely
-          final errors = <String>[];
-          errorData.forEach((key, value) {
-            if (value is List) {
-              errors.add('$key: ${value.join(", ")}');
-            } else {
-              errors.add('$key: $value');
-            }
-          });
-          errorMessage = errors.join('; ');
+        // Check if response is HTML (server error page)
+        if (response.body.trim().startsWith('<!') || response.body.trim().startsWith('<html')) {
+          errorMessage = 'Server Error (${response.statusCode}). Please try again later.';
         } else {
-          errorMessage = errorData.toString();
+          final errorData = json.decode(response.body);
+          if (errorData is Map) {
+            // Check for common error message keys
+            if (errorData.containsKey('error')) {
+              errorMessage = errorData['error'].toString();
+              if (errorData.containsKey('detail')) {
+                errorMessage += ': ${errorData['detail']}';
+              }
+            } else if (errorData.containsKey('detail')) {
+              errorMessage = errorData['detail'].toString();
+            } else if (errorData.containsKey('message')) {
+              errorMessage = errorData['message'].toString();
+            } else {
+              // Format validation errors nicely
+              final errors = <String>[];
+              errorData.forEach((key, value) {
+                if (value is List) {
+                  errors.add('$key: ${value.join(", ")}');
+                } else if (value is Map) {
+                  // Handle nested errors
+                  value.forEach((nestedKey, nestedValue) {
+                    if (nestedValue is List) {
+                      errors.add('$key.$nestedKey: ${nestedValue.join(", ")}');
+                    } else {
+                      errors.add('$key.$nestedKey: $nestedValue');
+                    }
+                  });
+                } else {
+                  errors.add('$key: $value');
+                }
+              });
+              errorMessage = errors.isEmpty ? 'An error occurred' : errors.join('; ');
+            }
+          } else if (errorData is String) {
+            errorMessage = errorData;
+          } else {
+            errorMessage = errorData.toString();
+          }
         }
       } catch (e) {
-        errorMessage = 'HTTP ${response.statusCode}: ${response.body}';
+        // If response is HTML or not parseable, provide a user-friendly message
+        if (response.body.trim().startsWith('<!') || response.body.trim().startsWith('<html')) {
+          errorMessage = 'Server Error (${response.statusCode}). Please try again later.';
+        } else {
+          // Try to extract meaningful error from body
+          final bodyText = response.body.trim();
+          if (bodyText.length > 200) {
+            errorMessage = 'Server Error (${response.statusCode}). ${bodyText.substring(0, 200)}...';
+          } else {
+            errorMessage = 'Server Error (${response.statusCode}): $bodyText';
+          }
+        }
       }
       throw Exception(errorMessage);
     }

@@ -837,15 +837,31 @@ class _LivestockTabState extends ConsumerState<_LivestockTab> {
     if (_selectedFilter == 'All') {
       return livestock;
     }
-    // Filter by livestock type name
+    // Filter by livestock type name - improved matching
     return livestock.where((animal) {
-      final typeName = animal.livestockType?.name.toLowerCase() ?? '';
+      if (animal.livestockType == null) return false;
+      
+      final typeName = animal.livestockType!.name.toLowerCase();
       final filterLower = _selectedFilter.toLowerCase();
-      // Map filter names to type names
-      if (filterLower == 'cattle') {
-        return typeName.contains('cow') || typeName.contains('cattle');
+      
+      // Map filter names to type names with better matching
+      switch (filterLower) {
+        case 'cattle':
+          return typeName.contains('cow') || 
+                 typeName.contains('cattle') || 
+                 typeName.contains('bull') ||
+                 typeName == 'cattle';
+        case 'goats':
+          return typeName.contains('goat') || typeName == 'goats';
+        case 'sheep':
+          return typeName.contains('sheep') || typeName == 'sheep';
+        case 'pigs':
+          return typeName.contains('pig') || 
+                 typeName.contains('swine') || 
+                 typeName == 'pigs';
+        default:
+          return typeName.contains(filterLower) || typeName == filterLower;
       }
-      return typeName.contains(filterLower);
     }).toList();
   }
 

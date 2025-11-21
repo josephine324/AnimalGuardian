@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import '../../providers/livestock_provider.dart';
 import '../../../../core/models/livestock_model.dart';
+import 'edit_livestock_screen.dart';
 
 class LivestockDetailScreen extends ConsumerWidget {
   final int livestockId;
@@ -31,8 +33,17 @@ class LivestockDetailScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () {
-              // TODO: Navigate to edit screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditLivestockScreen(livestockId: livestockId),
+                ),
+              );
             },
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: () => _showDeleteDialog(context, ref, livestockId),
           ),
         ],
       ),
@@ -329,6 +340,55 @@ class LivestockDetailScreen extends ConsumerWidget {
       case LivestockStatus.sold:
         return Colors.blue;
     }
+  }
+
+  void _showDeleteDialog(BuildContext context, WidgetRef ref, int livestockId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete Livestock'),
+          content: const Text('Are you sure you want to delete this livestock? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                try {
+                  await ref.read(livestockProvider.notifier).deleteLivestock(livestockId);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Livestock deleted successfully'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                    await ref.read(livestockProvider.notifier).loadLivestock(refresh: true);
+                    if (context.mounted) {
+                      context.pop();
+                    }
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to delete livestock: ${e.toString()}'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 

@@ -58,8 +58,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         'last_name': lastName.isNotEmpty ? lastName : firstName, // Use first name as last name if not provided
       };
 
-      // Email is now required for both farmers and local vets
-        registrationData['email'] = _emailController.text.trim();
+      // Email is optional - only include if provided
+      final email = _emailController.text.trim();
+      if (email.isNotEmpty) {
+        registrationData['email'] = email;
+      }
 
       // Call registration API
       final response = await _apiService.register(registrationData);
@@ -74,7 +77,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         if (_selectedUserType == 'farmer') {
           successMessage = 'Account created successfully! You can now login.';
         } else {
-          successMessage = 'Registration successful! Your account is pending approval from a sector veterinarian. You will receive an email once approved.';
+          successMessage = 'Registration successful! Your account is pending approval from a sector veterinarian. You will receive a notification on your phone number once approved.';
         }
         
         ScaffoldMessenger.of(context).showSnackBar(
@@ -251,19 +254,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _emailController,
-                        decoration: InputDecoration(
-                          labelText: 'Email *',
-                          hintText: 'Enter your email',
-                          prefixIcon: const Icon(Icons.email),
-                          border: const OutlineInputBorder(),
+                        decoration: const InputDecoration(
+                          labelText: 'Email (Optional)',
+                          hintText: 'Enter your email (optional)',
+                          prefixIcon: Icon(Icons.email),
+                          border: OutlineInputBorder(),
+                          helperText: 'Email is optional. Phone number is required.',
                         ),
                         keyboardType: TextInputType.emailAddress,
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Email is required';
-                          }
-                          if (!value.contains('@')) {
-                            return 'Please enter a valid email address';
+                          // Email is optional, but if provided, validate format
+                          if (value != null && value.trim().isNotEmpty) {
+                            if (!value.contains('@') || !value.contains('.')) {
+                              return 'Please enter a valid email address';
+                            }
                           }
                           return null;
                         },

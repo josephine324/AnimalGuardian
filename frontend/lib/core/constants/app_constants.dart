@@ -4,7 +4,7 @@ class AppConstants {
   // API Configuration - Read from .env or use default
   static String get baseUrl {
     return dotenv.env['API_BASE_URL'] ?? 
-           'https://animalguardian-backend-production-b5a8.up.railway.app/api';
+           'http://localhost:8000/api'; // Default to localhost for development
   }
   
   // Pagination
