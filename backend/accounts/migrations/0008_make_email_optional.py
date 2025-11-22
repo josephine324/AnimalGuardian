@@ -345,38 +345,16 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Step 1: Remove unique constraint temporarily (to allow duplicates during migration)
+        # SIMPLIFIED: Just remove unique constraint and make email nullable
+        # No unique constraint will be added - this allows backend to start immediately
         migrations.RunPython(
             remove_unique_constraint_if_exists,
             reverse_remove_unique_constraint,
         ),
-        # Step 2: Handle duplicate emails FIRST (before making field nullable)
-        # This ensures we clean up duplicates while the constraint is removed
-        migrations.RunPython(
-            handle_duplicate_emails,
-            reverse_handle_duplicate_emails,
-        ),
-        # Step 3: Alter the field to allow NULL and remove unique constraint
-        # We'll add unique constraint back later if no duplicates exist
+        # Make email nullable without unique constraint
         migrations.AlterField(
             model_name='user',
             name='email',
             field=models.EmailField(blank=True, max_length=254, null=True, unique=False),
-        ),
-        # Step 4: Handle duplicate emails again (in case any were missed)
-        migrations.RunPython(
-            handle_duplicate_emails,
-            reverse_handle_duplicate_emails,
-        ),
-        # Step 5: Verify no duplicates exist before adding unique constraint
-        migrations.RunPython(
-            verify_no_duplicates,
-            reverse_verify_no_duplicates,
-        ),
-        # Step 6: Re-add unique constraint ONLY if no duplicates exist
-        # If duplicates still exist, skip adding unique constraint (we'll add it later)
-        migrations.RunPython(
-            lambda apps, schema_editor: add_unique_constraint_if_safe(apps, schema_editor),
-            lambda apps, schema_editor: None,  # Reverse: nothing to do
         ),
     ]
