@@ -1,5 +1,5 @@
 # Django Settings for Render Deployment
-# Copy these to your Render environment variables
+# Copy these environment variables to your Render Web Service
 
 SECRET_KEY==mnc)w3h7b3af@1v*ef8ih-51-1$_(w+_3q68_i9te*lj%@--c
 
@@ -13,7 +13,7 @@ DJANGO_SETTINGS_MODULE=animalguardian.settings
 
 # Database Configuration
 # Note: DATABASE_URL is automatically set by Render when you link the database
-# But you can also set it manually if needed (use Internal Database URL)
+# But you can also set it manually using the Internal Database URL
 DATABASE_URL=postgresql://animalguardian_user:fZQJJRRayexOEm9HaO6QPW4xNZ1GTcld@dpg-d4h17mvdiees73b8iumg-a/animalguardian
 
 LOCAL_DATABASE_URL=sqlite:///db.sqlite3
