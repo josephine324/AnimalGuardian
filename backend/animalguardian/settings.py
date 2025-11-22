@@ -20,7 +20,13 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS_STR = config('ALLOWED_HOSTS', default='localhost,127.0.0.1')
 ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_STR.split(',') if host.strip()]
 
-# Add Railway domain automatically (Railway sets RAILWAY_PUBLIC_DOMAIN)
+# Add Render domain automatically (Render sets RENDER_EXTERNAL_HOSTNAME)
+RENDER_EXTERNAL_HOSTNAME = config('RENDER_EXTERNAL_HOSTNAME', default=None)
+if RENDER_EXTERNAL_HOSTNAME:
+    if RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+# Add Railway domain automatically (Railway sets RAILWAY_PUBLIC_DOMAIN) - for backward compatibility
 RAILWAY_PUBLIC_DOMAIN = config('RAILWAY_PUBLIC_DOMAIN', default=None)
 if RAILWAY_PUBLIC_DOMAIN:
     domain_without_port = RAILWAY_PUBLIC_DOMAIN.split(':')[0]
@@ -31,7 +37,6 @@ if RAILWAY_PUBLIC_DOMAIN:
 # Railway sets RAILWAY_ENVIRONMENT and provides the public domain
 if config('RAILWAY_ENVIRONMENT', default=None) or config('RAILWAY_PUBLIC_DOMAIN', default=None):
     # Add common Railway subdomain pattern
-    # Check if we're on Railway by looking for Railway-specific env vars
     railway_domain = config('RAILWAY_PUBLIC_DOMAIN', default='')
     if railway_domain:
         domain_without_port = railway_domain.split(':')[0]
@@ -43,6 +48,17 @@ if config('RAILWAY_ENVIRONMENT', default=None) or config('RAILWAY_PUBLIC_DOMAIN'
         ALLOWED_HOSTS.append('animalguardian-backend-production.up.railway.app')
     if 'animalguardian-backend-production-b5a8.up.railway.app' not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append('animalguardian-backend-production-b5a8.up.railway.app')
+
+# Add Render wildcard for all Render subdomains
+if RENDER_EXTERNAL_HOSTNAME or 'RENDER' in os.environ:
+    # Add common Render patterns
+    render_patterns = [
+        '*.onrender.com',
+        'animalguardian-backend.onrender.com',
+    ]
+    for pattern in render_patterns:
+        if pattern not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(pattern)
 
 # Application definition
 DJANGO_APPS = [
@@ -123,7 +139,7 @@ else:
     # Not in environment at all - check .env file (for production/Railway)
     # But only if we're not in DEBUG mode (local dev should use SQLite)
     if not DEBUG:
-        DATABASE_URL = config('DATABASE_URL', default=None)
+DATABASE_URL = config('DATABASE_URL', default=None)
     else:
         # In DEBUG mode, default to SQLite if not in environment
         DATABASE_URL = None
