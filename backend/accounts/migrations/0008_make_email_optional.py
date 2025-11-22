@@ -204,6 +204,70 @@ def reverse_remove_unique_constraint(apps, schema_editor):
     pass
 
 
+def verify_no_duplicates(apps, schema_editor):
+    """Verify no duplicate emails exist before adding unique constraint."""
+    db_alias = schema_editor.connection.alias
+    
+    with schema_editor.connection.cursor() as cursor:
+        if schema_editor.connection.vendor == 'postgresql':
+            try:
+                # Check for any remaining duplicates
+                cursor.execute("""
+                    SELECT email, COUNT(*) as count
+                    FROM accounts_user
+                    WHERE email IS NOT NULL AND email != ''
+                    GROUP BY email
+                    HAVING COUNT(*) > 1;
+                """)
+                duplicates = cursor.fetchall()
+                
+                if duplicates:
+                    # If duplicates still exist, try to fix them one more time
+                    print(f"WARNING: Found {len(duplicates)} duplicate email(s) before adding unique constraint. Fixing now...")
+                    for email, count in duplicates:
+                        print(f"  - Fixing {email}: {count} occurrences")
+                        cursor.execute("""
+                            UPDATE accounts_user
+                            SET email = NULL
+                            WHERE id IN (
+                                SELECT id FROM accounts_user
+                                WHERE email = %s
+                                ORDER BY id
+                                OFFSET 1
+                            );
+                        """, [email])
+                    
+                    # Verify again
+                    cursor.execute("""
+                        SELECT email, COUNT(*) as count
+                        FROM accounts_user
+                        WHERE email IS NOT NULL AND email != ''
+                        GROUP BY email
+                        HAVING COUNT(*) > 1;
+                    """)
+                    remaining = cursor.fetchall()
+                    
+                    if remaining:
+                        raise Exception(
+                            f"Cannot proceed: {len(remaining)} duplicate email(s) still exist after cleanup. "
+                            f"Duplicates: {[r[0] for r in remaining]}. "
+                            f"Please run 'python fix_duplicate_emails.py' manually."
+                        )
+                    else:
+                        print("✓ All duplicates fixed. Proceeding with unique constraint.")
+            except Exception as e:
+                # If it's our custom exception, re-raise it
+                if "Cannot proceed" in str(e):
+                    raise
+                # Otherwise, log and continue (might be a fresh database)
+                print(f"Note: {e}")
+
+
+def reverse_verify_no_duplicates(apps, schema_editor):
+    """Reverse - nothing to do."""
+    pass
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -233,7 +297,12 @@ class Migration(migrations.Migration):
             handle_duplicate_emails,
             reverse_handle_duplicate_emails,
         ),
-        # Step 5: Re-add unique constraint (PostgreSQL allows multiple NULLs with unique)
+        # Step 5: Verify no duplicates exist before adding unique constraint
+        migrations.RunPython(
+            verify_no_duplicates,
+            reverse_verify_no_duplicates,
+        ),
+        # Step 6: Re-add unique constraint (PostgreSQL allows multiple NULLs with unique)
         migrations.AlterField(
             model_name='user',
             name='email',

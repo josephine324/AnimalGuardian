@@ -16,11 +16,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'animalguardian.settings')
 django.setup()
 
-from django.db import connection
+from django.db import connection, transaction
 
 def fix_duplicate_emails():
     """Fix duplicate emails by setting all but the first occurrence to NULL."""
-    with connection.cursor() as cursor:
+    with transaction.atomic():
+        with connection.cursor() as cursor:
         if connection.vendor == 'postgresql':
             print("Checking for duplicate emails...")
             
@@ -97,6 +98,8 @@ def fix_duplicate_emails():
                     print(f"  - {email}: {count} occurrences")
             else:
                 print("\n✓ All duplicates fixed! Database is now clean.")
+                # Commit the transaction explicitly
+                connection.commit()
         else:
             print("This script only works with PostgreSQL. For SQLite, duplicates are handled differently.")
             sys.exit(1)
