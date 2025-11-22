@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// Use Railway backend URL by default, or allow override via environment variable
+// Use Render backend URL by default, or allow override via environment variable
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://animalguardian.onrender.com/api';
 
 const api = axios.create({
