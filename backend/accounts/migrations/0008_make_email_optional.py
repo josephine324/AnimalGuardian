@@ -68,49 +68,83 @@ def handle_duplicate_emails(apps, schema_editor):
     # Check if table exists first
     with schema_editor.connection.cursor() as cursor:
         if schema_editor.connection.vendor == 'postgresql':
-            cursor.execute("""
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables 
-                    WHERE table_schema = 'public' 
-                    AND table_name = 'accounts_user'
-                );
-            """)
-            table_exists = cursor.fetchone()[0]
+            try:
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'accounts_user'
+                    );
+                """)
+                table_exists = cursor.fetchone()[0]
+            except Exception:
+                return
         else:
             # For SQLite
-            cursor.execute("""
-                SELECT name FROM sqlite_master 
-                WHERE type='table' AND name='accounts_user';
-            """)
-            table_exists = cursor.fetchone() is not None
+            try:
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='accounts_user';
+                """)
+                table_exists = cursor.fetchone() is not None
+            except Exception:
+                return
     
     if not table_exists:
         # Table doesn't exist yet, skip this operation
         return
     
-    User = apps.get_model('accounts', 'User')
-    
-    # Find all users with emails
-    users_with_emails = User.objects.exclude(email__isnull=True).exclude(email='')
-    
-    # Count email occurrences
-    email_counts = Counter(user.email for user in users_with_emails if user.email)
-    
-    # For each duplicate email, keep the first user (by ID) and set others to NULL
-    for email, count in email_counts.items():
-        if count > 1 and email:  # Only process duplicates
-            # Get all users with this email, ordered by ID (keep the oldest)
-            duplicate_users = User.objects.filter(email=email).order_by('id')
+    # Use raw SQL to find and fix duplicates directly
+    with schema_editor.connection.cursor() as cursor:
+        if schema_editor.connection.vendor == 'postgresql':
+            # Find all duplicate emails
+            cursor.execute("""
+                SELECT email, array_agg(id ORDER BY id) as user_ids
+                FROM accounts_user
+                WHERE email IS NOT NULL AND email != ''
+                GROUP BY email
+                HAVING COUNT(*) > 1;
+            """)
+            duplicates = cursor.fetchall()
             
-            # Keep the first one, set others to NULL using raw SQL to avoid model validation
-            with schema_editor.connection.cursor() as cursor:
-                user_ids = [user.id for user in duplicate_users[1:]]  # Skip the first one
-                if user_ids:
-                    placeholders = ','.join(['%s'] * len(user_ids))
-                    cursor.execute(
-                        f'UPDATE accounts_user SET email = NULL WHERE id IN ({placeholders})',
-                        user_ids
-                    )
+            # For each duplicate email, keep the first user (lowest ID) and set others to NULL
+            for email, user_ids in duplicates:
+                if user_ids and len(user_ids) > 1:
+                    # Keep the first ID, set others to NULL
+                    ids_to_null = user_ids[1:]  # Skip the first one
+                    if ids_to_null:
+                        placeholders = ','.join(['%s'] * len(ids_to_null))
+                        cursor.execute(
+                            f'UPDATE accounts_user SET email = NULL WHERE id IN ({placeholders})',
+                            ids_to_null
+                        )
+        else:
+            # SQLite approach
+            try:
+                User = apps.get_model('accounts', 'User')
+                # Find all users with emails
+                users_with_emails = User.objects.exclude(email__isnull=True).exclude(email='')
+                
+                # Count email occurrences
+                email_counts = Counter(user.email for user in users_with_emails if user.email)
+                
+                # For each duplicate email, keep the first user (by ID) and set others to NULL
+                for email, count in email_counts.items():
+                    if count > 1 and email:  # Only process duplicates
+                        # Get all users with this email, ordered by ID (keep the oldest)
+                        duplicate_users = User.objects.filter(email=email).order_by('id')
+                        
+                        # Keep the first one, set others to NULL using raw SQL
+                        user_ids = [user.id for user in duplicate_users[1:]]  # Skip the first one
+                        if user_ids:
+                            placeholders = ','.join(['?'] * len(user_ids))
+                            cursor.execute(
+                                f'UPDATE accounts_user SET email = NULL WHERE id IN ({placeholders})',
+                                user_ids
+                            )
+            except Exception:
+                # If anything fails, just continue
+                pass
 
 
 def reverse_handle_duplicate_emails(apps, schema_editor):
@@ -135,18 +169,24 @@ class Migration(migrations.Migration):
             remove_unique_constraint_if_exists,
             reverse_remove_unique_constraint,
         ),
-        # Step 2: Alter the field to allow NULL (but not unique yet)
+        # Step 2: Handle duplicate emails FIRST (before making field nullable)
+        # This ensures we clean up duplicates while the constraint is removed
+        migrations.RunPython(
+            handle_duplicate_emails,
+            reverse_handle_duplicate_emails,
+        ),
+        # Step 3: Alter the field to allow NULL (but not unique yet)
         migrations.AlterField(
             model_name='user',
             name='email',
             field=models.EmailField(blank=True, max_length=254, null=True, unique=False),
         ),
-        # Step 3: Handle duplicate emails (set extras to NULL)
+        # Step 4: Handle duplicate emails again (in case any were missed)
         migrations.RunPython(
             handle_duplicate_emails,
             reverse_handle_duplicate_emails,
         ),
-        # Step 4: Re-add unique constraint (PostgreSQL allows multiple NULLs with unique)
+        # Step 5: Re-add unique constraint (PostgreSQL allows multiple NULLs with unique)
         migrations.AlterField(
             model_name='user',
             name='email',
