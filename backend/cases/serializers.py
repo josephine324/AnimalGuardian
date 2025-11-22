@@ -19,7 +19,8 @@ class CaseReportSerializer(serializers.ModelSerializer):
     
     # Include nested livestock data so web dashboard can display it
     # Use lazy import to avoid circular dependencies
-    livestock = serializers.SerializerMethodField()
+    # Make livestock field optional - if it fails, it won't crash the serializer
+    livestock = serializers.SerializerMethodField(required=False, allow_null=True)
     livestock_id = serializers.IntegerField(
         write_only=True,
         required=False,
