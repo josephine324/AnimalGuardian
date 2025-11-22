@@ -36,16 +36,16 @@ python manage.py migrate --noinput --verbosity=1 || {
 PORT=${PORT:-8000}
 
 # Calculate optimal worker count based on available CPU cores
-# Railway free tier typically has 1-2 cores, so use 2 workers (reduced for better performance)
+# Render free tier typically has 1-2 cores, so use 2 workers (reduced for better performance)
 # Too many workers can cause resource contention and slow down responses
 WORKERS=${WEB_CONCURRENCY:-2}
 THREADS=${GUNICORN_THREADS:-2}
 TIMEOUT=${GUNICORN_TIMEOUT:-120}
 
-# Start gunicorn with optimized settings for Railway
-# Workers: 2 (optimal for Railway free tier - reduces resource contention)
+# Start gunicorn with optimized settings for Render
+# Workers: 2 (optimal for Render free tier - reduces resource contention)
 # Threads: 2 per worker (allows handling multiple requests concurrently)
-# Timeout: 120 seconds (Railway needs longer timeout for cold starts)
+# Timeout: 120 seconds (Render needs longer timeout for cold starts)
 # Keep-alive: 5 seconds (reuse connections)
 # Max requests: 1000 (restart workers periodically to prevent memory leaks)
 # Preload: Load app before forking (faster startup, less memory per worker)

@@ -280,6 +280,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           prefixIcon: Icon(Icons.account_circle),
                           border: OutlineInputBorder(),
                         ),
+                        isExpanded: true, // Prevent overflow by expanding dropdown
                         items: const [
                           DropdownMenuItem(value: 'farmer', child: Text('Farmer')),
                           DropdownMenuItem(value: 'local_vet', child: Text('Local Veterinarian')),
@@ -292,27 +293,27 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                         const SizedBox(height: 8),
                         if (_selectedUserType == 'local_vet')
-                          Container(
-                            padding: const EdgeInsets.all(12.0),
-                            decoration: BoxDecoration(
-                              color: Colors.blue[50],
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.blue[200]!),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
+                        Container(
+                          padding: const EdgeInsets.all(12.0),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue[200]!),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
                                     'Your registration will require approval from a Sector Veterinarian via the web dashboard. You will receive an email once approved.',
-                                    style: TextStyle(
-                                      color: Colors.blue[900],
-                                      fontSize: 12,
-                                    ),
+                                  style: TextStyle(
+                                    color: Colors.blue[900],
+                                    fontSize: 12,
                                   ),
                                 ),
-                              ],
+                              ),
+                            ],
                             ),
                           ),
                         if (_selectedUserType == 'farmer')
@@ -334,9 +335,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                       color: Colors.green[900],
                                       fontSize: 12,
                                     ),
-                                  ),
-                                ),
-                              ],
+                          ),
+                        ),
+                      ],
                             ),
                           ),
                       const SizedBox(height: 16),
@@ -420,12 +421,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       const SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min, // Prevent overflow
                         children: [
-                          Text(
+                          Flexible(
+                            child: Text(
                             'Already have an account? ',
                             style: TextStyle(
                               color: Colors.grey[600],
                               fontSize: 14,
+                              ),
                             ),
                           ),
                           TextButton(

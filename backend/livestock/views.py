@@ -22,9 +22,16 @@ class LivestockViewSet(viewsets.ModelViewSet):
         user = self.request.user
         user_type = user.user_type
         
+        # Optimize queries with select_related to prevent N+1 queries
+        base_queryset = Livestock.objects.select_related(
+            'owner',           # User who owns the livestock
+            'livestock_type',  # Livestock type
+            'breed'            # Breed (if exists)
+        )
+        
         # Farmers: Only see their own livestock
         if user_type == 'farmer':
-            return Livestock.objects.filter(owner=user)
+            return base_queryset.filter(owner=user)
         
         # Local Vets: See livestock of farmers whose cases are assigned to them
         elif user_type == 'local_vet':
@@ -35,16 +42,16 @@ class LivestockViewSet(viewsets.ModelViewSet):
             livestock_ids = assigned_cases.values_list('livestock_id', flat=True).distinct()
             # Also get livestock owned by farmers who have cases assigned to this vet
             farmer_ids = assigned_cases.values_list('reporter_id', flat=True).distinct()
-            return Livestock.objects.filter(
+            return base_queryset.filter(
                 models.Q(id__in=livestock_ids) | models.Q(owner_id__in=farmer_ids)
             ).distinct()
         
         # Sector Vets and Admins: See all livestock
         elif user_type in ['sector_vet', 'admin'] or user.is_staff or user.is_superuser:
-            return Livestock.objects.all()
+            return base_queryset.all()
         
         # Default: Only own livestock
-        return Livestock.objects.filter(owner=user)
+        return base_queryset.filter(owner=user)
     
     def create(self, request, *args, **kwargs):
         """Handle livestock creation with better error handling."""

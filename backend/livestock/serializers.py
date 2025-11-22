@@ -29,17 +29,36 @@ class LivestockSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True
     )
+    # Add owner information for dashboard display
+    owner_name = serializers.SerializerMethodField()
+    owner_phone = serializers.SerializerMethodField()
+    owner_sector = serializers.SerializerMethodField()
+    owner_district = serializers.SerializerMethodField()
     
     class Meta:
         model = Livestock
         fields = [
-            'id', 'livestock_type', 'livestock_type_id', 'breed', 'breed_id', 'name', 'tag_number',
+            'id', 'owner', 'owner_name', 'owner_phone', 'owner_sector', 'owner_district',
+            'livestock_type', 'livestock_type_id', 'breed', 'breed_id', 'name', 'tag_number',
             'gender', 'status', 'birth_date', 'weight_kg', 'color',
             'description', 'last_vaccination_date', 'last_deworming_date',
             'last_health_check', 'is_pregnant', 'pregnancy_start_date',
             'expected_delivery_date', 'daily_milk_production_liters',
             'created_at', 'updated_at'
         ]
+        read_only_fields = ('owner_name', 'owner_phone', 'owner_sector', 'owner_district')
+    
+    def get_owner_name(self, obj):
+        return obj.owner.get_full_name() or obj.owner.username if obj.owner else None
+    
+    def get_owner_phone(self, obj):
+        return obj.owner.phone_number if obj.owner else None
+    
+    def get_owner_sector(self, obj):
+        return obj.owner.sector if obj.owner else None
+    
+    def get_owner_district(self, obj):
+        return obj.owner.district if obj.owner else None
     
     def validate_tag_number(self, value):
         """Convert empty string to None to avoid unique constraint violations."""
