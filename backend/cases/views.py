@@ -24,24 +24,36 @@ class CaseReportViewSet(viewsets.ModelViewSet):
         user = self.request.user
         user_type = user.user_type
         
+        # Optimize queries with select_related to prevent N+1 queries
+        # This fetches related ForeignKey objects in a single query
+        base_queryset = CaseReport.objects.select_related(
+            'reporter',           # User who reported the case
+            'assigned_veterinarian',  # User assigned to handle case
+            'assigned_by',        # User who assigned the case
+            'livestock',          # Livestock affected
+            'suspected_disease'   # Disease suspected
+        ).prefetch_related(
+            # For any ManyToMany or reverse ForeignKey relationships if needed
+        )
+        
         # Farmers: Only see their own cases
         if user_type == 'farmer':
-            return CaseReport.objects.filter(reporter=user)
+            return base_queryset.filter(reporter=user)
         
         # Local Vets: See cases assigned to them
         elif user_type == 'local_vet':
-            return CaseReport.objects.filter(assigned_veterinarian=user)
+            return base_queryset.filter(assigned_veterinarian=user)
         
         # Sector Vets and Admins: See all cases
         elif user_type in ['sector_vet', 'admin'] or user.is_staff or user.is_superuser:
-            return CaseReport.objects.all()
+            return base_queryset.all()
         
         # Field Officers: See cases assigned to them (if any)
         elif user_type == 'field_officer':
-            return CaseReport.objects.filter(assigned_veterinarian=user)
+            return base_queryset.filter(assigned_veterinarian=user)
         
         # Default: Only own cases
-        return CaseReport.objects.filter(reporter=user)
+        return base_queryset.filter(reporter=user)
     
     def perform_create(self, serializer):
         """Automatically set the reporter to the current user when creating a case."""

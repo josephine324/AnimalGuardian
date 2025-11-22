@@ -3,7 +3,9 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.db import connection
+from django.db.models import Count, Q, F, ExpressionWrapper, FloatField, Avg
 from django.utils import timezone
+from datetime import timedelta
 from accounts.models import User
 from cases.models import CaseReport
 from livestock.models import Livestock
@@ -86,26 +88,44 @@ def stats(request):
             'error': 'You do not have permission to view dashboard statistics.'
         }, status=status.HTTP_403_FORBIDDEN)
     
-    # Get statistics
-    total_cases = CaseReport.objects.count()
-    pending_cases = CaseReport.objects.filter(status='pending').count()
-    resolved_cases = CaseReport.objects.filter(status='resolved').count()
-    active_cases = CaseReport.objects.filter(
-        status__in=['pending', 'under_review', 'diagnosed', 'treated']
-    ).count()
+    # Optimize statistics queries using aggregation to reduce database hits
     
-    total_farmers = User.objects.filter(user_type='farmer').count()
-    total_sector_vets = User.objects.filter(user_type='sector_vet').count()
-    total_local_vets = User.objects.filter(user_type='local_vet').count()
+    # Get case statistics in fewer queries using aggregation
+    case_stats = CaseReport.objects.aggregate(
+        total=Count('id'),
+        pending=Count('id', filter=Q(status='pending')),
+        resolved=Count('id', filter=Q(status='resolved')),
+        active=Count('id', filter=Q(status__in=['pending', 'under_review', 'diagnosed', 'treated']))
+    )
+    total_cases = case_stats['total']
+    pending_cases = case_stats['pending']
+    resolved_cases = case_stats['resolved']
+    active_cases = case_stats['active']
+    
+    # Get user statistics using aggregation
+    user_stats = User.objects.aggregate(
+        farmers=Count('id', filter=Q(user_type='farmer')),
+        sector_vets=Count('id', filter=Q(user_type='sector_vet')),
+        local_vets=Count('id', filter=Q(user_type='local_vet'))
+    )
+    total_farmers = user_stats['farmers']
+    total_sector_vets = user_stats['sector_vets']
+    total_local_vets = user_stats['local_vets']
     total_veterinarians = total_sector_vets + total_local_vets
     
     # Active veterinarians (online/available)
     from accounts.models import VeterinarianProfile
     active_veterinarians = VeterinarianProfile.objects.filter(is_available=True).count()
     
-    total_livestock = Livestock.objects.count()
-    healthy_livestock = Livestock.objects.filter(status='healthy').count()
-    sick_livestock = Livestock.objects.filter(status='sick').count()
+    # Get livestock statistics using aggregation
+    livestock_stats = Livestock.objects.aggregate(
+        total=Count('id'),
+        healthy=Count('id', filter=Q(status='healthy')),
+        sick=Count('id', filter=Q(status='sick'))
+    )
+    total_livestock = livestock_stats['total']
+    healthy_livestock = livestock_stats['healthy']
+    sick_livestock = livestock_stats['sick']
     
     # Get recent notifications count
     from datetime import timedelta
@@ -121,34 +141,26 @@ def stats(request):
         next_due_date__gte=today  # Not past due yet
     ).count()
     
-    # Calculate average response time from case reports
-    # Response time = time from case reported_at to assigned_at
+    # Calculate average response time using database aggregation (much faster)
+    
     assigned_cases = CaseReport.objects.filter(
         assigned_at__isnull=False,
         reported_at__isnull=False
-    )
+    ).annotate(
+        response_hours=ExpressionWrapper(
+            (F('assigned_at') - F('reported_at')) / timedelta(hours=1),
+            output_field=FloatField()
+        )
+    ).filter(response_hours__gt=0)
     
     if assigned_cases.exists():
-        response_times = []
-        for case in assigned_cases:
-            try:
-                if case.reported_at and case.assigned_at:
-                    time_diff = (case.assigned_at - case.reported_at).total_seconds() / 3600  # Hours
-                    if time_diff > 0:  # Only count positive differences
-                        response_times.append(time_diff)
-            except (AttributeError, TypeError):
-                continue
-        
-        if response_times:
-            avg_hours = sum(response_times) / len(response_times)
-            if avg_hours < 1:
-                average_response_time = f"{int(avg_hours * 60)} minutes"
-            elif avg_hours < 24:
-                average_response_time = f"{avg_hours:.1f} hours"
-            else:
-                average_response_time = f"{avg_hours / 24:.1f} days"
+        avg_hours = assigned_cases.aggregate(avg=Avg('response_hours'))['avg'] or 0
+        if avg_hours < 1:
+            average_response_time = f"{int(avg_hours * 60)} minutes"
+        elif avg_hours < 24:
+            average_response_time = f"{avg_hours:.1f} hours"
         else:
-            average_response_time = '0 hours'
+            average_response_time = f"{avg_hours / 24:.1f} days"
     else:
         average_response_time = '0 hours'
     
