@@ -1,10 +1,10 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConstants {
-  // API Configuration - Read from .env or use default
+  // API Configuration - Read from .env or use Railway backend as default
   static String get baseUrl {
     return dotenv.env['API_BASE_URL'] ?? 
-           'http://localhost:8000/api'; // Default to localhost for development
+           'https://animalguardian-backend-production-b5a8.up.railway.app/api'; // Default to Railway backend
   }
   
   // Pagination
