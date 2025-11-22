@@ -143,11 +143,11 @@ class LoginView(generics.GenericAPIView):
                     logger.error(f'Error during email authentication: {str(e)}', exc_info=True)
             
             if user:
-                # Only local vets need approval from sector vet/admin
-                # Farmers can login immediately after registration
-                if user.user_type == 'local_vet' and not user.is_approved_by_admin:
+                # Farmers and local vets need approval from sector vet/admin (they register via mobile app)
+                # Sector vets and admins can login immediately after registration (they register via web dashboard)
+                if user.user_type in ['farmer', 'local_vet'] and not user.is_approved_by_admin:
                     return Response({
-                        'error': 'Your account is pending approval from a sector veterinarian. Please wait for approval before logging in. You will receive an email once approved.',
+                        'error': 'Your account is pending approval from a sector veterinarian. Please wait for approval before logging in. You will receive a notification once approved.',
                         'pending_approval': True
                     }, status=status.HTTP_403_FORBIDDEN)
                 
