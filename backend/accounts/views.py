@@ -660,7 +660,9 @@ class FarmerViewSet(viewsets.ReadOnlyModelViewSet):
     
     def get_queryset(self):
         """Return users who are farmers, optionally filtered by approval status."""
-        queryset = User.objects.filter(user_type='farmer')
+        # Use select_related for any ForeignKey relationships if needed
+        # For now, User model doesn't have ForeignKeys in this context, but keep optimized
+        queryset = User.objects.filter(user_type='farmer').select_related('approved_by')
         
         # Filter by approval status if provided in query params
         is_approved = self.request.query_params.get('is_approved_by_admin')
@@ -702,7 +704,10 @@ class VeterinarianViewSet(viewsets.ReadOnlyModelViewSet):
     
     def get_queryset(self):
         """Return users who are veterinarians (local_vet or sector_vet)."""
-        return User.objects.filter(user_type__in=['local_vet', 'sector_vet']).order_by('-created_at')
+        # Use select_related for approved_by relationship
+        return User.objects.filter(
+            user_type__in=['local_vet', 'sector_vet']
+        ).select_related('approved_by').order_by('-created_at')
     
     def list(self, request, *args, **kwargs):
         """List all veterinarians with their profiles."""
