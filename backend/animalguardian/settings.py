@@ -339,7 +339,7 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='mutesijosephine324@gmail.com')
 
-# Caching Configuration (in-memory cache for Railway free tier)
+# Caching Configuration (in-memory cache for Render free tier)
 # Using local memory cache - fast and no external dependencies
 # For production with Redis, change to: 'django.core.cache.backends.redis.RedisCache'
 CACHES = {
@@ -362,7 +362,7 @@ CACHE_TTL = {
 }
 
 # Logging Configuration
-# Use console logging for Railway (stdout/stderr are captured automatically)
+# Use console logging for Render (stdout/stderr are captured automatically)
 # File logging is not used in production to avoid FileNotFoundError
 LOGGING = {
     'version': 1,

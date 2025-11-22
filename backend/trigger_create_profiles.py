@@ -5,7 +5,7 @@ Trigger profile creation via API endpoint.
 import requests
 import json
 
-BACKEND_URL = "https://animalguardian-backend-production-b5a8.up.railway.app"
+BACKEND_URL = "https://animalguardian.onrender.com"
 
 def trigger_create_profiles():
     # Login as admin

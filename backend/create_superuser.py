@@ -36,8 +36,8 @@ def create_superuser():
                 print('ERROR: Database tables do not exist!')
                 print('Please run migrations first:')
                 print('  python manage.py migrate')
-                print('Or on Railway:')
-                print('  railway run python manage.py migrate')
+                print('Or on Render:')
+                print('  Use Render dashboard shell or CLI to run migrations')
                 return
     except Exception as e:
         print(f'ERROR: Could not check database: {e}')

@@ -5,7 +5,7 @@ Test the farmers endpoint to see what error is occurring.
 import requests
 import json
 
-BACKEND_URL = "https://animalguardian-backend-production-b5a8.up.railway.app"
+BACKEND_URL = "https://animalguardian.onrender.com"
 
 def test_farmers_endpoint():
     # Login as admin

@@ -5,7 +5,7 @@ Test Analytics and User Approval pages functionality.
 import requests
 import json
 
-BACKEND_URL = "https://animalguardian-backend-production-b5a8.up.railway.app/api"
+BACKEND_URL = "https://animalguardian.onrender.com/api"
 ADMIN_EMAIL = "mutesijosephine324@gmail.com"
 ADMIN_PASSWORD = "Admin@123456"
 

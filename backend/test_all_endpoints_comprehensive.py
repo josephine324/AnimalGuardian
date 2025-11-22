@@ -11,7 +11,7 @@ from datetime import datetime
 # Railway backend URL
 BACKEND_URL = os.environ.get(
     'BACKEND_URL',
-    'https://animalguardian-backend-production-b5a8.up.railway.app'
+    'https://animalguardian.onrender.com'
 )
 
 # Test credentials
