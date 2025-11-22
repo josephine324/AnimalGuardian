@@ -23,7 +23,8 @@ class CaseReportSerializer(serializers.ModelSerializer):
     livestock_id = serializers.IntegerField(
         write_only=True,
         required=False,
-        allow_null=True
+        allow_null=True,
+        source='livestock_id'  # Explicitly set source to avoid confusion
     )
     
     # Make case_id and reporter read-only (auto-generated/set by backend)
