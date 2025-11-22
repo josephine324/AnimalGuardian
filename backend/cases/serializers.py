@@ -23,8 +23,7 @@ class CaseReportSerializer(serializers.ModelSerializer):
     livestock_id = serializers.IntegerField(
         write_only=True,
         required=False,
-        allow_null=True,
-        source='livestock_id'  # Explicitly set source to avoid confusion
+        allow_null=True
     )
     
     # Make case_id and reporter read-only (auto-generated/set by backend)
@@ -33,10 +32,23 @@ class CaseReportSerializer(serializers.ModelSerializer):
     
     def get_livestock(self, obj):
         """Return nested livestock data using LivestockSerializer."""
-        if obj.livestock:
-            # Lazy import to avoid circular dependencies
-            from livestock.serializers import LivestockSerializer
-            return LivestockSerializer(obj.livestock).data
+        try:
+            if obj.livestock:
+                # Lazy import to avoid circular dependencies
+                from livestock.serializers import LivestockSerializer
+                return LivestockSerializer(obj.livestock).data
+        except Exception as e:
+            # Log error but don't crash - return basic livestock info instead
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Error serializing livestock for case {obj.id}: {e}")
+            # Return basic info if full serialization fails
+            if obj.livestock:
+                return {
+                    'id': obj.livestock.id,
+                    'name': getattr(obj.livestock, 'name', None),
+                    'tag_number': getattr(obj.livestock, 'tag_number', None),
+                }
         return None
     
     def create(self, validated_data):
