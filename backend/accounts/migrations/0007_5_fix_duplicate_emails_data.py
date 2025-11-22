@@ -26,7 +26,7 @@ def fix_duplicate_emails_data(apps, schema_editor):
         # Check if table exists
         with connection.cursor() as cursor:
             if connection.vendor == 'postgresql':
-            try:
+                try:
                 # Check if table exists
                 cursor.execute("""
                     SELECT EXISTS (
