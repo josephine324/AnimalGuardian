@@ -68,9 +68,9 @@ class RegisterView(generics.CreateAPIView):
         # Auto-verify users (no email verification needed)
         user.is_verified = True
         
-        # Auto-approve farmers - they can login immediately
+        # Auto-approve farmers and sector vets - they can login immediately
         # Local vets still need approval from sector vet
-        if user.user_type == 'farmer':
+        if user.user_type in ['farmer', 'sector_vet', 'admin']:
             user.is_approved_by_admin = True
             user.save()
             return Response({
