@@ -42,7 +42,8 @@ class User(AbstractUser):
     )
     
     # Override email field from AbstractUser to make it optional
-    email = models.EmailField(blank=True, null=True, unique=True)
+    # Note: unique=True will be added back via migration once duplicates are fixed
+    email = models.EmailField(blank=True, null=True, unique=False)
     
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
