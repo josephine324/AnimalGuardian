@@ -208,9 +208,24 @@ def verify_no_duplicates(apps, schema_editor):
     """Verify no duplicate emails exist before adding unique constraint."""
     db_alias = schema_editor.connection.alias
     
+    # First check if table exists
     with schema_editor.connection.cursor() as cursor:
         if schema_editor.connection.vendor == 'postgresql':
             try:
+                # Check if table exists
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'accounts_user'
+                    );
+                """)
+                table_exists = cursor.fetchone()[0]
+                
+                if not table_exists:
+                    # Table doesn't exist yet, nothing to verify
+                    return
+                
                 # Check for any remaining duplicates
                 cursor.execute("""
                     SELECT email, COUNT(*) as count
@@ -226,6 +241,7 @@ def verify_no_duplicates(apps, schema_editor):
                     print(f"WARNING: Found {len(duplicates)} duplicate email(s) before adding unique constraint. Fixing now...")
                     for email, count in duplicates:
                         print(f"  - Fixing {email}: {count} occurrences")
+                        # Use a subquery that's more reliable
                         cursor.execute("""
                             UPDATE accounts_user
                             SET email = NULL
@@ -248,10 +264,11 @@ def verify_no_duplicates(apps, schema_editor):
                     remaining = cursor.fetchall()
                     
                     if remaining:
+                        # Raise exception - Django will handle transaction rollback
                         raise Exception(
                             f"Cannot proceed: {len(remaining)} duplicate email(s) still exist after cleanup. "
                             f"Duplicates: {[r[0] for r in remaining]}. "
-                            f"Please run 'python fix_duplicate_emails.py' manually."
+                            f"Please run 'python fix_duplicate_emails.py' manually before running migrations."
                         )
                     else:
                         print("✓ All duplicates fixed. Proceeding with unique constraint.")
@@ -259,8 +276,16 @@ def verify_no_duplicates(apps, schema_editor):
                 # If it's our custom exception, re-raise it
                 if "Cannot proceed" in str(e):
                     raise
-                # Otherwise, log and continue (might be a fresh database)
-                print(f"Note: {e}")
+                # If it's a transaction error, the migration will fail and Django will rollback
+                if "transaction" in str(e).lower() or "aborted" in str(e).lower():
+                    raise Exception(
+                        f"Transaction error during duplicate verification. "
+                        f"This usually means duplicates still exist. "
+                        f"Please run 'python fix_duplicate_emails.py' manually and try again. "
+                        f"Original error: {e}"
+                    )
+                # Otherwise, log and continue (might be a fresh database or other issue)
+                print(f"Note during verification: {e}")
 
 
 def reverse_verify_no_duplicates(apps, schema_editor):

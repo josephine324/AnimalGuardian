@@ -22,7 +22,7 @@ def fix_duplicate_emails():
     """Fix duplicate emails by setting all but the first occurrence to NULL."""
     with transaction.atomic():
         with connection.cursor() as cursor:
-        if connection.vendor == 'postgresql':
+            if connection.vendor == 'postgresql':
             print("Checking for duplicate emails...")
             
             # First, check for duplicates
@@ -98,8 +98,7 @@ def fix_duplicate_emails():
                     print(f"  - {email}: {count} occurrences")
             else:
                 print("\n✓ All duplicates fixed! Database is now clean.")
-                # Commit the transaction explicitly
-                connection.commit()
+            # Transaction will auto-commit on successful exit of atomic block
         else:
             print("This script only works with PostgreSQL. For SQLite, duplicates are handled differently.")
             sys.exit(1)
