@@ -181,6 +181,29 @@ class CasesNotifier extends StateNotifier<CasesState> {
     }
   }
 
+  Future<bool> deleteCase(int id) async {
+    try {
+      state = state.copyWith(isLoading: true, clearError: true);
+      await _apiService.deleteCase(id);
+
+      // Remove case from state
+      final updatedCases = state.cases.where((c) => c.id != id).toList();
+      state = state.copyWith(
+        cases: updatedCases,
+        filteredCases: _filterCases(updatedCases, state.searchQuery),
+        isLoading: false,
+      );
+
+      return true;
+    } catch (error) {
+      state = state.copyWith(
+        isLoading: false,
+        error: error.toString(),
+      );
+      return false;
+    }
+  }
+
   List<CaseReport> _filterCases(List<CaseReport> cases, String query) {
     if (query.trim().isEmpty) {
       return cases;

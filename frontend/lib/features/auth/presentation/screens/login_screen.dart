@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../shared/presentation/widgets/placeholder_image.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/constants/app_constants.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -49,6 +51,18 @@ class _LoginScreenState extends State<LoginScreen> {
         // Check user type and navigate accordingly
         final user = response['user'] as Map<String, dynamic>?;
         final userType = user?['user_type'] as String?;
+
+        // Ensure user_type and user_id are stored (API service should have done this, but double-check)
+        if (user != null) {
+          final storage = const FlutterSecureStorage();
+          if (userType != null) {
+            await storage.write(key: AppConstants.userTypeKey, value: userType);
+          }
+          if (user['id'] != null) {
+            await storage.write(key: AppConstants.userIdKey, value: user['id'].toString());
+          }
+          print('DEBUG Login: Stored userType=$userType, userId=${user['id']}');
+        }
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

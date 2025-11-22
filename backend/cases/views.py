@@ -48,17 +48,37 @@ class CaseReportViewSet(viewsets.ModelViewSet):
         serializer.save(reporter=self.request.user)
     
     def perform_update(self, serializer):
-        """Handle case updates and send notifications on status change."""
+        """Handle case updates and send notifications."""
         old_instance = self.get_object()
+        user = self.request.user
+        user_type = user.user_type
+        
+        # Check permissions: Farmers can only update their own cases
+        if user_type == 'farmer':
+            if old_instance.reporter != user:
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied('You can only edit your own cases.')
+        
         old_status = old_instance.status
+        old_symptoms = old_instance.symptoms_observed
+        old_location = old_instance.location_notes
         
         # Save the updated instance
         instance = serializer.save()
         new_status = instance.status
+        new_symptoms = instance.symptoms_observed
+        new_location = instance.location_notes
+        
+        # Check if farmer updated the case (not just status change by vet)
+        is_farmer_update = user_type == 'farmer' and user == instance.reporter
         
         # If status changed, send notifications
         if old_status != new_status:
             self._send_status_change_notifications(instance, old_status, new_status)
+        
+        # If farmer updated symptoms or location, notify assigned vet
+        if is_farmer_update and (old_symptoms != new_symptoms or old_location != new_location):
+            self._send_farmer_update_notification(instance, old_symptoms, new_symptoms, old_location, new_location)
     
     def _send_status_change_notifications(self, case, old_status, new_status):
         """Send notifications to farmer and vet when case status changes."""
@@ -164,6 +184,119 @@ AnimalGuardian Team
                 email_thread = threading.Thread(target=send_vet_status_email)
                 email_thread.daemon = True
                 email_thread.start()
+    
+    def _send_farmer_update_notification(self, case, old_symptoms, new_symptoms, old_location, new_location):
+        """Send notification to assigned vet when farmer updates case details."""
+        from notifications.models import Notification
+        
+        # Only notify if there's an assigned vet
+        if not case.assigned_veterinarian:
+            return
+        
+        # Determine what changed
+        changes = []
+        if old_symptoms != new_symptoms:
+            changes.append('symptoms')
+        if old_location != new_location:
+            changes.append('location')
+        
+        if not changes:
+            return
+        
+        changes_text = ' and '.join(changes)
+        
+        # In-app notification for vet
+        Notification.objects.create(
+            recipient=case.assigned_veterinarian,
+            channel='in_app',
+            title='Case Updated by Farmer',
+            message=f'Case {case.case_id} has been updated by the farmer. Changes: {changes_text}.',
+            related_case=case,
+            status='sent',
+            sent_at=timezone.now()
+        )
+        
+        # Email notification to vet
+        def send_farmer_update_email():
+            try:
+                if case.assigned_veterinarian.email:
+                    subject = f'AnimalGuardian - Case {case.case_id} Updated by Farmer'
+                    message = f'''
+Hello {case.assigned_veterinarian.get_full_name() or case.assigned_veterinarian.username},
+
+The farmer has updated case {case.case_id} with additional information.
+
+Case ID: {case.case_id}
+Reporter: {case.reporter.get_full_name() or case.reporter.username}
+Status: {case.get_status_display()}
+Urgency: {case.get_urgency_display()}
+
+Updated fields: {changes_text}
+
+Please review the updated case details in the AnimalGuardian mobile app.
+
+Best regards,
+AnimalGuardian Team
+'''
+                    send_mail(
+                        subject=subject,
+                        message=message,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[case.assigned_veterinarian.email],
+                        fail_silently=True,
+                    )
+                    logger.info(f'Farmer update email sent to vet {case.assigned_veterinarian.email} for case {case.case_id}')
+            except Exception as e:
+                logger.error(f'Error sending farmer update email to vet: {str(e)}', exc_info=True)
+        
+        if case.assigned_veterinarian.email:
+            email_thread = threading.Thread(target=send_farmer_update_email)
+            email_thread.daemon = True
+            email_thread.start()
+    
+    def perform_destroy(self, instance):
+        """Handle case deletion - only allow farmers to delete their own cases."""
+        user = self.request.user
+        user_type = user.user_type
+        
+        # Only farmers can delete their own cases, and only if status is 'pending' or 'rejected'
+        if user_type == 'farmer':
+            if instance.reporter != user:
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied('You can only delete your own cases.')
+            
+            # Only allow deletion if case is pending or rejected
+            if instance.status not in ['pending', 'rejected']:
+                from rest_framework.exceptions import ValidationError
+                raise ValidationError('You can only delete cases that are pending or rejected.')
+        
+        # Vets and admins can delete any case
+        elif user_type in ['sector_vet', 'admin'] or user.is_staff or user.is_superuser:
+            pass  # Allow deletion
+        
+        # Local vets can delete cases assigned to them (if pending/rejected)
+        elif user_type == 'local_vet':
+            if instance.assigned_veterinarian != user:
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied('You can only delete cases assigned to you.')
+            
+            if instance.status not in ['pending', 'rejected', 'under_review']:
+                from rest_framework.exceptions import ValidationError
+                raise ValidationError('You can only delete cases that are pending, rejected, or under review.')
+        
+        # Send notification to assigned vet if case is deleted
+        if instance.assigned_veterinarian and user_type == 'farmer':
+            from notifications.models import Notification
+            Notification.objects.create(
+                recipient=instance.assigned_veterinarian,
+                channel='in_app',
+                title='Case Deleted',
+                message=f'Case {instance.case_id} has been deleted by the farmer.',
+                status='sent',
+                sent_at=timezone.now()
+            )
+        
+        instance.delete()
     
     @action(detail=True, methods=['post'])
     def assign(self, request, pk=None):

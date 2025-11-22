@@ -106,16 +106,40 @@ TEMPLATES = [
 WSGI_APPLICATION = 'animalguardian.wsgi.application'
 
 # Database
-DATABASE_URL = config('DATABASE_URL', default=None)
+# For local development, explicitly check environment variable first
+# This allows us to override .env file settings
+import os
+# Check environment variable first - prioritize it over .env file
+# If DATABASE_URL is explicitly set to empty string in environment, force SQLite
+DATABASE_URL_ENV = os.environ.get('DATABASE_URL')
 
-if DATABASE_URL:
+# Only use .env file if DATABASE_URL is NOT in environment at all
+# If it's set to empty string, that means we explicitly want SQLite
+if 'DATABASE_URL' in os.environ:
+    # Environment variable exists (even if empty) - use it and ignore .env
+    DATABASE_URL = DATABASE_URL_ENV.strip() if DATABASE_URL_ENV and DATABASE_URL_ENV.strip() else None
+else:
+    # Not in environment at all - check .env file (for production/Railway)
+    # But only if we're not in DEBUG mode (local dev should use SQLite)
+    if not DEBUG:
+        DATABASE_URL = config('DATABASE_URL', default=None)
+    else:
+        # In DEBUG mode, default to SQLite if not in environment
+        DATABASE_URL = None
+
+# Debug: Print database configuration (only in DEBUG mode)
+if DEBUG:
+    print(f"[DEBUG] DATABASE_URL from env: {repr(DATABASE_URL_ENV)}")
+    print(f"[DEBUG] Final DATABASE_URL: {repr(DATABASE_URL)}")
+    print(f"[DEBUG] Using database engine: {'PostgreSQL' if DATABASE_URL and DATABASE_URL.startswith(('postgres://', 'postgresql://', 'postgresql+psycopg2://')) else 'SQLite'}")
+
+# Only use PostgreSQL if DATABASE_URL is set and looks like a valid database URL
+# For local development, set DATABASE_URL='' in environment to use SQLite
+if DATABASE_URL and DATABASE_URL.startswith(('postgres://', 'postgresql://', 'postgresql+psycopg2://')):
     # Use PostgreSQL from DATABASE_URL (Railway provides this)
+    # Use parse() instead of config() to avoid reading from .env file
     DATABASES = {
-        'default': dj_database_url.config(
-            default=DATABASE_URL,
-            conn_max_age=600,  # Keep connections alive for 10 minutes
-            conn_health_checks=True,  # Enable connection health checks
-        )
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
     
     # Database connection pooling settings for PostgreSQL
@@ -200,6 +224,7 @@ SIMPLE_JWT = {
 
 # CORS Configuration
 # Allow localhost on any port for development
+# Note: Origins must not have trailing slashes or paths
 CORS_ALLOWED_ORIGINS = [
     "https://animalguards.netlify.app",  # Production frontend (Netlify)
 ]
@@ -207,7 +232,9 @@ CORS_ALLOWED_ORIGINS = [
 # Allow CORS from environment variable (for Railway/production)
 CORS_ALLOWED_ORIGINS_ENV = config('CORS_ALLOWED_ORIGINS', default='')
 if CORS_ALLOWED_ORIGINS_ENV:
-    CORS_ALLOWED_ORIGINS.extend([origin.strip() for origin in CORS_ALLOWED_ORIGINS_ENV.split(',')])
+    # Strip trailing slashes from origins (CORS doesn't allow paths in origins)
+    origins = [origin.strip().rstrip('/') for origin in CORS_ALLOWED_ORIGINS_ENV.split(',')]
+    CORS_ALLOWED_ORIGINS.extend(origins)
 
 # For development, allow localhost on any port using regex patterns
 # django-cors-headers supports CORS_ALLOWED_ORIGIN_REGEXES
@@ -220,9 +247,50 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 ]
 
 # Allow all origins in development (set via environment variable)
-CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
+# For local development, allow all origins to prevent CORS issues
+if DEBUG:
+    # In debug mode, allow all origins for easier local development
+    # Force to True in debug mode regardless of environment variable
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    # In production, check environment variable first
+    allow_all_env = config('CORS_ALLOW_ALL_ORIGINS', default='false')
+    if allow_all_env and allow_all_env.lower() in ('true', '1', 'yes'):
+        CORS_ALLOW_ALL_ORIGINS = True
+    else:
+        CORS_ALLOW_ALL_ORIGINS = False
+        # Ensure production frontend is always in allowed origins
+        if 'https://animalguards.netlify.app' not in CORS_ALLOWED_ORIGINS:
+            CORS_ALLOWED_ORIGINS.append('https://animalguards.netlify.app')
 
 CORS_ALLOW_CREDENTIALS = True
+
+# Additional CORS settings for preflight requests
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+# Add Netlify domain to regex patterns as well (if not already present)
+netlify_pattern = re.compile(r'^https://.*\.netlify\.app$')
+if netlify_pattern not in CORS_ALLOWED_ORIGIN_REGEXES:
+    CORS_ALLOWED_ORIGIN_REGEXES.append(netlify_pattern)
 
 # API Documentation
 SPECTACULAR_SETTINGS = {
