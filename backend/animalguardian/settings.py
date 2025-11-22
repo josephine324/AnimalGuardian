@@ -26,35 +26,12 @@ if RENDER_EXTERNAL_HOSTNAME:
     if RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
-# Add Railway domain automatically (Railway sets RAILWAY_PUBLIC_DOMAIN) - for backward compatibility
-RAILWAY_PUBLIC_DOMAIN = config('RAILWAY_PUBLIC_DOMAIN', default=None)
-if RAILWAY_PUBLIC_DOMAIN:
-    domain_without_port = RAILWAY_PUBLIC_DOMAIN.split(':')[0]
-    if domain_without_port not in ALLOWED_HOSTS:
-        ALLOWED_HOSTS.append(domain_without_port)
-
-# If running on Railway, also add the service URL pattern
-# Railway sets RAILWAY_ENVIRONMENT and provides the public domain
-if config('RAILWAY_ENVIRONMENT', default=None) or config('RAILWAY_PUBLIC_DOMAIN', default=None):
-    # Add common Railway subdomain pattern
-    railway_domain = config('RAILWAY_PUBLIC_DOMAIN', default='')
-    if railway_domain:
-        domain_without_port = railway_domain.split(':')[0]
-        if domain_without_port not in ALLOWED_HOSTS:
-            ALLOWED_HOSTS.append(domain_without_port)
-    
-    # Add the specific Railway production domain (both old and new URLs for compatibility)
-    if 'animalguardian-backend-production.up.railway.app' not in ALLOWED_HOSTS:
-        ALLOWED_HOSTS.append('animalguardian-backend-production.up.railway.app')
-    if 'animalguardian-backend-production-b5a8.up.railway.app' not in ALLOWED_HOSTS:
-        ALLOWED_HOSTS.append('animalguardian-backend-production-b5a8.up.railway.app')
-
 # Add Render wildcard for all Render subdomains
 if RENDER_EXTERNAL_HOSTNAME or 'RENDER' in os.environ:
     # Add common Render patterns
     render_patterns = [
         '*.onrender.com',
-        'animalguardian-backend.onrender.com',
+        'animalguardian.onrender.com',
     ]
     for pattern in render_patterns:
         if pattern not in ALLOWED_HOSTS:
@@ -136,7 +113,7 @@ if 'DATABASE_URL' in os.environ:
     # Environment variable exists (even if empty) - use it and ignore .env
     DATABASE_URL = DATABASE_URL_ENV.strip() if DATABASE_URL_ENV and DATABASE_URL_ENV.strip() else None
 else:
-    # Not in environment at all - check .env file (for production/Railway)
+    # Not in environment at all - check .env file (for production/Render)
     # But only if we're not in DEBUG mode (local dev should use SQLite)
     if not DEBUG:
 DATABASE_URL = config('DATABASE_URL', default=None)
@@ -153,13 +130,13 @@ if DEBUG:
 # Only use PostgreSQL if DATABASE_URL is set and looks like a valid database URL
 # For local development, set DATABASE_URL='' in environment to use SQLite
 if DATABASE_URL and DATABASE_URL.startswith(('postgres://', 'postgresql://', 'postgresql+psycopg2://')):
-    # Use PostgreSQL from DATABASE_URL (Railway provides this)
+    # Use PostgreSQL from DATABASE_URL (Render provides this)
     # Use parse() instead of config() to avoid reading from .env file
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
     
-    # Database connection pooling settings for PostgreSQL (optimized for Railway)
+    # Database connection pooling settings for PostgreSQL (optimized for Render)
     if DATABASES['default'].get('ENGINE') == 'django.db.backends.postgresql':
         DATABASES['default']['OPTIONS'] = {
             'connect_timeout': 10,
@@ -173,7 +150,7 @@ if DATABASE_URL and DATABASE_URL.startswith(('postgres://', 'postgresql://', 'po
         }
         # Keep connections alive longer (reduces connection overhead)
         DATABASES['default']['CONN_MAX_AGE'] = 600  # 10 minutes
-        # Connection pool size (Railway free tier can handle this)
+        # Connection pool size (Render free tier can handle this)
         DATABASES['default']['ATOMIC_REQUESTS'] = False  # Disable for better performance
 else:
     # Fallback to SQLite for local development
@@ -263,7 +240,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://animalguards.netlify.app",  # Production frontend (Netlify)
 ]
 
-# Allow CORS from environment variable (for Railway/production)
+# Allow CORS from environment variable (for Render/production)
 CORS_ALLOWED_ORIGINS_ENV = config('CORS_ALLOWED_ORIGINS', default='')
 if CORS_ALLOWED_ORIGINS_ENV:
     # Strip trailing slashes from origins (CORS doesn't allow paths in origins)

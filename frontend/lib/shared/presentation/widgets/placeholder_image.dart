@@ -96,15 +96,22 @@ class PlaceholderImage extends StatelessWidget {
   }
 
   Widget _buildPlaceholder(Color bgColor, Color iconClr) {
+    // Calculate icon size safely, ensuring it's finite and positive
+    double iconSize = 60.0; // Default size
+    if (width != null && height != null && width! > 0 && height! > 0) {
+      final calculatedSize = (width! < height! ? width! * 0.4 : height! * 0.4);
+      if (calculatedSize.isFinite && calculatedSize > 0) {
+        iconSize = calculatedSize;
+      }
+    }
+    
     return Container(
       width: width,
       height: height,
       color: bgColor,
       child: Icon(
         placeholderIcon,
-        size: (width != null && height != null) 
-            ? (width! < height! ? width! * 0.4 : height! * 0.4)
-            : 60,
+        size: iconSize,
         color: iconClr,
       ),
     );

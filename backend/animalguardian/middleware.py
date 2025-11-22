@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class DatabaseKeepAliveMiddleware(MiddlewareMixin):
     """
     Middleware to keep database connections alive by pinging on each request.
-    This prevents the database from going to sleep on platforms like Railway.
+    This prevents the database from going to sleep on platforms like Render.
     """
     
     def process_request(self, request):
