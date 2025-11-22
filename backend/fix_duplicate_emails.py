@@ -20,8 +20,9 @@ from django.db import connection, transaction
 
 def fix_duplicate_emails():
     """Fix duplicate emails by setting all but the first occurrence to NULL."""
-    with transaction.atomic():
-        with connection.cursor() as cursor:
+    # Don't use transaction.atomic() - we want to commit immediately
+    # so migrations can see the changes
+    with connection.cursor() as cursor:
             if connection.vendor == 'postgresql':
             print("Checking for duplicate emails...")
             
@@ -45,42 +46,56 @@ def fix_duplicate_emails():
             
             print("\nFixing duplicates (keeping first user, setting others to NULL)...")
             
-            # Use window function to fix all duplicates at once
-            try:
-                cursor.execute("""
-                    WITH ranked_users AS (
-                        SELECT 
-                            id,
-                            email,
-                            ROW_NUMBER() OVER (PARTITION BY email ORDER BY id) as rn
-                        FROM accounts_user
-                        WHERE email IS NOT NULL AND email != ''
-                    )
-                    UPDATE accounts_user
-                    SET email = NULL
-                    FROM ranked_users
-                    WHERE accounts_user.id = ranked_users.id
-                    AND ranked_users.rn > 1;
-                """)
-                rows_updated = cursor.rowcount
-                print(f"✓ Updated {rows_updated} user(s) - set duplicate emails to NULL")
-            except Exception as e:
-                print(f"Window function approach failed: {e}")
-                print("Trying alternative approach...")
-                
-                # Fallback: fix each duplicate email individually
-                for email, count in duplicates:
+            # Use a more direct approach: fix each duplicate email individually
+            # This is more reliable than window functions
+            rows_updated_total = 0
+            for email, count in duplicates:
+                try:
+                    # First, get all user IDs with this email, ordered by ID
                     cursor.execute("""
-                        UPDATE accounts_user
-                        SET email = NULL
-                        WHERE id IN (
-                            SELECT id FROM accounts_user
-                            WHERE email = %s
-                            ORDER BY id
-                            OFFSET 1
-                        );
+                        SELECT id FROM accounts_user
+                        WHERE email = %s
+                        ORDER BY id;
                     """, [email])
-                    print(f"  ✓ Fixed {email}: kept first user, set {count - 1} duplicate(s) to NULL")
+                    user_ids = [row[0] for row in cursor.fetchall()]
+                    
+                    if len(user_ids) > 1:
+                        # Keep the first one (lowest ID), set others to NULL
+                        ids_to_null = user_ids[1:]
+                        if ids_to_null:
+                            placeholders = ','.join(['%s'] * len(ids_to_null))
+                            cursor.execute(
+                                f'UPDATE accounts_user SET email = NULL WHERE id IN ({placeholders})',
+                                ids_to_null
+                            )
+                            rows_updated = cursor.rowcount
+                            rows_updated_total += rows_updated
+                            print(f"  ✓ Fixed {email}: kept user ID {user_ids[0]}, set {rows_updated} duplicate(s) to NULL")
+                except Exception as e:
+                    print(f"  ⚠ Error fixing {email}: {e}")
+                    # Try alternative approach for this email
+                    try:
+                        cursor.execute("""
+                            UPDATE accounts_user
+                            SET email = NULL
+                            WHERE id IN (
+                                SELECT id FROM accounts_user
+                                WHERE email = %s
+                                ORDER BY id
+                                OFFSET 1
+                            );
+                        """, [email])
+                        rows_updated = cursor.rowcount
+                        rows_updated_total += rows_updated
+                        print(f"  ✓ Fixed {email} (alternative method): set {rows_updated} duplicate(s) to NULL")
+                    except Exception as e2:
+                        print(f"  ❌ Failed to fix {email} with both methods: {e2}")
+            
+            if rows_updated_total > 0:
+                print(f"\n✓ Total: Updated {rows_updated_total} user(s) - set duplicate emails to NULL")
+                # Explicitly commit the transaction
+                connection.commit()
+                print("✓ Changes committed to database")
             
             # Verify no duplicates remain
             cursor.execute("""
@@ -98,7 +113,9 @@ def fix_duplicate_emails():
                     print(f"  - {email}: {count} occurrences")
             else:
                 print("\n✓ All duplicates fixed! Database is now clean.")
-            # Transaction will auto-commit on successful exit of atomic block
+                # Explicitly commit
+                connection.commit()
+                print("✓ Changes committed to database")
         else:
             print("This script only works with PostgreSQL. For SQLite, duplicates are handled differently.")
             sys.exit(1)

@@ -5,9 +5,13 @@
 echo "========================================="
 echo "STEP 1: Checking for duplicate emails..."
 echo "========================================="
-python fix_duplicate_emails.py || {
-    echo "⚠ Duplicate email fix script had issues, but continuing..."
-}
+python fix_duplicate_emails.py
+fix_exit_code=$?
+if [ $fix_exit_code -eq 0 ]; then
+    echo "✓ Duplicate email check completed successfully"
+else
+    echo "⚠ Duplicate email fix script had issues (exit code: $fix_exit_code), but continuing..."
+fi
 echo ""
 
 # Run migrations (with verbosity for debugging)
