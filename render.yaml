@@ -21,7 +21,7 @@ services:
       - key: CORS_ALLOW_ALL_ORIGINS
         value: true
       - key: ALLOWED_HOSTS
-        value: animalguardian-backend.onrender.com,*.onrender.com,localhost,127.0.0.1
+        value: animalguardian.onrender.com,*.onrender.com,localhost,127.0.0.1
     healthCheckPath: /health/
 
 databases:
