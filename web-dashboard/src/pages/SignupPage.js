@@ -171,10 +171,10 @@ const SignupPage = ({ onLogin }) => {
                   id="user_type"
                   name="user_type"
                   required
-                  className="appearance-none relative block w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  disabled
+                  className="appearance-none relative block w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-gray-100"
                   value={formData.user_type}
                   onChange={handleChange}
-                  disabled
                 >
                   <option value="sector_vet">Sector Veterinarian</option>
                 </select>
