@@ -8,9 +8,9 @@ from django.utils import timezone
 from django.conf import settings
 from django.core.cache import cache
 from datetime import timedelta
-from accounts.models import User
+from accounts.models import User, VeterinarianProfile
 from cases.models import CaseReport
-from livestock.models import Livestock
+from livestock.models import Livestock, VaccinationRecord
 from notifications.models import Notification
 import logging
 
@@ -128,7 +128,6 @@ def stats(request):
         total_veterinarians = total_sector_vets + total_local_vets
         
         # Active veterinarians (online/available)
-        from accounts.models import VeterinarianProfile
         active_veterinarians = VeterinarianProfile.objects.filter(is_available=True).count()
         
         # Get livestock statistics using aggregation
@@ -147,7 +146,6 @@ def stats(request):
         ).count()
         
         # Calculate vaccinations due (from VaccinationRecord model)
-        from livestock.models import VaccinationRecord
         today = timezone.now().date()
         vaccinations_due = VaccinationRecord.objects.filter(
             next_due_date__lte=today + timedelta(days=30),  # Due in next 30 days
