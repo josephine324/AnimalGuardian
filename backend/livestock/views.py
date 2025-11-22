@@ -114,9 +114,23 @@ class BreedViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet for Breeds.
     Public read access - breeds are reference data needed by all users.
     """
-    queryset = Breed.objects.all()
     serializer_class = BreedSerializer
     permission_classes = [AllowAny]  # Public read access for reference data
+    
+    def get_queryset(self):
+        """Filter breeds by livestock_type if provided in query parameters."""
+        queryset = Breed.objects.select_related('livestock_type').all()
+        
+        # Filter by livestock_type if provided
+        livestock_type_id = self.request.query_params.get('livestock_type', None)
+        if livestock_type_id:
+            try:
+                queryset = queryset.filter(livestock_type_id=int(livestock_type_id))
+            except (ValueError, TypeError):
+                # Invalid livestock_type_id, return all breeds
+                pass
+        
+        return queryset.order_by('livestock_type__name', 'name')
 
 class HealthRecordViewSet(viewsets.ModelViewSet):
     """ViewSet for Health records."""
