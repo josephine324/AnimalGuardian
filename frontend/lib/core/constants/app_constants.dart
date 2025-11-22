@@ -1,7 +1,7 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConstants {
-  // API Configuration - Read from .env or use Railway backend as default
+  // API Configuration - Read from .env or use Render backend as default
   static String get baseUrl {
     return dotenv.env['API_BASE_URL'] ?? 
            'https://animalguardian.onrender.com/api'; // Default to Render backend
