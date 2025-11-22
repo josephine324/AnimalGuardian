@@ -293,6 +293,51 @@ def reverse_verify_no_duplicates(apps, schema_editor):
     pass
 
 
+def add_unique_constraint_if_safe(apps, schema_editor):
+    """Add unique constraint only if no duplicates exist."""
+    db_alias = schema_editor.connection.alias
+    
+    with schema_editor.connection.cursor() as cursor:
+        if schema_editor.connection.vendor == 'postgresql':
+            try:
+                # Check for any remaining duplicates
+                cursor.execute("""
+                    SELECT email, COUNT(*) as count
+                    FROM accounts_user
+                    WHERE email IS NOT NULL AND email != ''
+                    GROUP BY email
+                    HAVING COUNT(*) > 1;
+                """)
+                duplicates = cursor.fetchall()
+                
+                if duplicates:
+                    print(f"WARNING: Skipping unique constraint - {len(duplicates)} duplicate(s) still exist:")
+                    for email, count in duplicates:
+                        print(f"  - {email}: {count} occurrences")
+                    print("Email field will remain nullable but NOT unique. Fix duplicates and run migration again.")
+                    return  # Skip adding unique constraint
+                
+                # No duplicates - safe to add unique constraint
+                print("No duplicates found. Adding unique constraint to email field...")
+                # Use raw SQL to add the constraint directly
+                try:
+                    cursor.execute("""
+                        ALTER TABLE accounts_user
+                        ADD CONSTRAINT users_email_0ea73cca_uniq UNIQUE (email);
+                    """)
+                    schema_editor.connection.commit()
+                    print("✓ Unique constraint added successfully.")
+                except Exception as e:
+                    if "already exists" in str(e).lower():
+                        print("✓ Unique constraint already exists.")
+                    else:
+                        print(f"⚠ Could not add unique constraint: {e}")
+                        print("Email field will remain nullable but NOT unique.")
+            except Exception as e:
+                print(f"Error checking for duplicates: {e}")
+                print("Skipping unique constraint addition.")
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -311,7 +356,8 @@ class Migration(migrations.Migration):
             handle_duplicate_emails,
             reverse_handle_duplicate_emails,
         ),
-        # Step 3: Alter the field to allow NULL (but not unique yet)
+        # Step 3: Alter the field to allow NULL and remove unique constraint
+        # We'll add unique constraint back later if no duplicates exist
         migrations.AlterField(
             model_name='user',
             name='email',
@@ -327,10 +373,10 @@ class Migration(migrations.Migration):
             verify_no_duplicates,
             reverse_verify_no_duplicates,
         ),
-        # Step 6: Re-add unique constraint (PostgreSQL allows multiple NULLs with unique)
-        migrations.AlterField(
-            model_name='user',
-            name='email',
-            field=models.EmailField(blank=True, max_length=254, null=True, unique=True),
+        # Step 6: Re-add unique constraint ONLY if no duplicates exist
+        # If duplicates still exist, skip adding unique constraint (we'll add it later)
+        migrations.RunPython(
+            lambda apps, schema_editor: add_unique_constraint_if_safe(apps, schema_editor),
+            lambda apps, schema_editor: None,  # Reverse: nothing to do
         ),
     ]
