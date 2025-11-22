@@ -23,7 +23,7 @@ def fix_duplicate_emails():
     # Don't use transaction.atomic() - we want to commit immediately
     # so migrations can see the changes
     with connection.cursor() as cursor:
-            if connection.vendor == 'postgresql':
+        if connection.vendor == 'postgresql':
             print("Checking for duplicate emails...")
             
             # First, check for duplicates
