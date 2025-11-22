@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+# Fix duplicate emails before migrations (if they exist)
+echo "Checking for duplicate emails..."
+python fix_duplicate_emails.py || {
+    echo "Duplicate email fix script failed or no duplicates found, continuing..."
+}
+
 # Run migrations (with verbosity for debugging)
 echo "Running database migrations..."
 python manage.py migrate --noinput --verbosity=2 || {
