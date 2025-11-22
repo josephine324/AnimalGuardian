@@ -260,11 +260,15 @@ else:
         CORS_ALLOW_ALL_ORIGINS = True
         print("CORS: Allowing all origins (CORS_ALLOW_ALL_ORIGINS=true)")
     else:
-        CORS_ALLOW_ALL_ORIGINS = False
-        # Ensure production frontend is always in allowed origins
+        # Default to allowing all origins in production to prevent CORS issues
+        # This can be restricted later by setting CORS_ALLOW_ALL_ORIGINS=false
+        # and using specific origins
+        CORS_ALLOW_ALL_ORIGINS = True  # Changed: Default to True for easier deployment
+        print("CORS: Allowing all origins by default (set CORS_ALLOW_ALL_ORIGINS=false to restrict)")
+        # Still ensure production frontend is in allowed origins as backup
         if 'https://animalguards.netlify.app' not in CORS_ALLOWED_ORIGINS:
             CORS_ALLOWED_ORIGINS.append('https://animalguards.netlify.app')
-        print(f"CORS: Allowed origins: {CORS_ALLOWED_ORIGINS}")
+        print(f"CORS: Allowed origins (backup): {CORS_ALLOWED_ORIGINS}")
         print(f"CORS: Allowed origin regexes: {[str(r.pattern) for r in CORS_ALLOWED_ORIGIN_REGEXES]}")
 
 CORS_ALLOW_CREDENTIALS = True

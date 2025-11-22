@@ -5,9 +5,19 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import JsonResponse
 from .views import api_root
 
+def health_check(request):
+    """Simple health check endpoint that doesn't require database."""
+    return JsonResponse({
+        'status': 'healthy',
+        'service': 'animalguardian-backend',
+        'cors_enabled': True,
+    })
+
 urlpatterns = [
+    path('health/', health_check, name='health-check'),
     path('', api_root, name='api-root'),
     path('admin/', admin.site.urls),
     path('api/', include('accounts.urls')),
