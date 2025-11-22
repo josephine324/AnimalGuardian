@@ -336,8 +336,11 @@ const DashboardPage = () => {
                           {case_.status.replace('_', ' ')}
                         </span>
                       </div>
-                      <h3 className="font-semibold text-gray-800">{case_.reporter?.first_name} {case_.reporter?.last_name || case_.reporter?.username || 'Unknown Farmer'}</h3>
-                      <p className="text-sm text-gray-600">{case_.livestock?.name || case_.livestock?.type || 'Unknown Animal'}</p>
+                      <h3 className="font-semibold text-gray-800">{case_.reporter_name || case_.reporter?.first_name || case_.reporter?.username || 'Unknown Farmer'}</h3>
+                      <p className="text-sm text-gray-600">
+                        {case_.livestock?.livestock_type?.name || case_.livestock?.name || 'Unknown Animal'}
+                        {case_.livestock?.breed?.name && ` (${case_.livestock.breed.name})`}
+                      </p>
                     </div>
                     <span className="text-xs text-gray-500">{new Date(case_.reported_at).toLocaleString()}</span>
                   </div>
