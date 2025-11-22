@@ -401,20 +401,13 @@ const VeterinariansPage = () => {
                   </div>
                 </div>
               <div className="pt-3 border-t border-gray-200 flex justify-between items-center mb-3">
-                {/* Sector vets should always be approved, so only show status for local vets */}
-                {vet.user_type === 'sector_vet' ? (
-                  <span className="px-2 py-1 text-xs rounded-full font-medium bg-green-100 text-green-800">
-                    Approved
-                  </span>
-                ) : (
-                  <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                    vet.is_approved_by_admin 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {vet.is_approved_by_admin ? 'Approved' : 'Pending Approval'}
-                  </span>
-                )}
+                <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                  vet.is_approved_by_admin 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {vet.is_approved_by_admin ? 'Approved' : 'Pending Approval'}
+                </span>
               </div>
               <div className="pt-3 flex space-x-2">
                 {vet.user_type === 'local_vet' && !vet.is_approved_by_admin && (

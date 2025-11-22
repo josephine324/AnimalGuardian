@@ -703,21 +703,15 @@ class VeterinarianViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        """Return users who are veterinarians (local_vet or sector_vet).
-        Sector vets should always be approved, so only show approved sector vets.
+        """Return users who are local veterinarians only.
+        Sector vets should NOT appear in this list - they only access the dashboard.
         Local vets can be shown regardless of approval status so sector vets can approve them.
         """
         # Use select_related for approved_by relationship
+        # Only return local_vet users - sector vets are not shown here
         queryset = User.objects.filter(
-            user_type__in=['local_vet', 'sector_vet']
+            user_type='local_vet'
         ).select_related('approved_by')
-        
-        # Sector vets should always be approved - filter out any unapproved ones
-        # (This shouldn't happen, but just in case)
-        queryset = queryset.exclude(
-            user_type='sector_vet',
-            is_approved_by_admin=False
-        )
         
         return queryset.order_by('-created_at')
     
