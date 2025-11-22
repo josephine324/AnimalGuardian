@@ -405,7 +405,14 @@ class VerifyPasswordResetOTPView(generics.GenericAPIView):
         
         try:
             if phone_number:
-                user = User.objects.get(phone_number=phone_number)
+                # Clean phone number (remove +, spaces, etc.) for lookup
+                import re
+                cleaned_phone = re.sub(r'[^\d]', '', str(phone_number))
+                # Remove country code if present (250 for Rwanda)
+                if cleaned_phone.startswith('250'):
+                    cleaned_phone = cleaned_phone[3:]
+                # Try to find user with cleaned phone number
+                user = User.objects.get(phone_number=cleaned_phone)
             elif email:
                 user = User.objects.get(email=email)
             else:
@@ -462,7 +469,14 @@ class ResetPasswordView(generics.GenericAPIView):
         
         try:
             if phone_number:
-                user = User.objects.get(phone_number=phone_number)
+                # Clean phone number (remove +, spaces, etc.) for lookup
+                import re
+                cleaned_phone = re.sub(r'[^\d]', '', str(phone_number))
+                # Remove country code if present (250 for Rwanda)
+                if cleaned_phone.startswith('250'):
+                    cleaned_phone = cleaned_phone[3:]
+                # Try to find user with cleaned phone number
+                user = User.objects.get(phone_number=cleaned_phone)
             elif email:
                 user = User.objects.get(email=email)
             else:
