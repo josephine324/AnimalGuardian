@@ -6,6 +6,7 @@ from django.db import connection
 from django.db.models import Count, Q
 from django.utils import timezone
 from django.conf import settings
+from django.core.cache import cache
 from datetime import timedelta
 from accounts.models import User
 from cases.models import CaseReport
@@ -82,7 +83,7 @@ def health_check(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def stats(request):
-    """Dashboard statistics endpoint"""
+    """Dashboard statistics endpoint with caching"""
     try:
         user = request.user
         user_type = user.user_type
@@ -92,6 +93,14 @@ def stats(request):
             return Response({
                 'error': 'You do not have permission to view dashboard statistics.'
             }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Try to get cached stats first (cache for 60 seconds)
+        from django.core.cache import cache
+        cache_key = 'dashboard_stats'
+        cached_stats = cache.get(cache_key)
+        if cached_stats:
+            logger.info('Returning cached dashboard stats')
+            return Response(cached_stats, status=status.HTTP_200_OK)
         
         # Optimize statistics queries using aggregation to reduce database hits
         
@@ -178,8 +187,8 @@ def stats(request):
         # Calculate resolution rate
         resolution_rate = f"{(resolved_cases / total_cases * 100):.1f}%" if total_cases > 0 else "0%"
         
-        # Return in format expected by frontend
-        return Response({
+        # Prepare response data
+        response_data = {
             'total_cases': total_cases,
             'pending_cases': pending_cases,
             'resolved_cases': resolved_cases,
@@ -197,7 +206,13 @@ def stats(request):
             'vaccinations_due': vaccinations_due,
             'average_response_time': average_response_time,
             'resolution_rate': resolution_rate,
-        }, status=status.HTTP_200_OK)
+        }
+        
+        # Cache the response for 60 seconds (dashboard auto-refreshes every 30s)
+        cache.set(cache_key, response_data, 60)
+        logger.info('Dashboard stats calculated and cached')
+        
+        return Response(response_data, status=status.HTTP_200_OK)
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)

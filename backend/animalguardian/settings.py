@@ -74,8 +74,9 @@ LOCAL_APPS = [
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # First - handle CORS early
+    'django.middleware.security.SecurityMiddleware',  # Security headers
+    'django.middleware.gzip.GZipMiddleware',  # Compress responses (add before CommonMiddleware)
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -142,14 +143,22 @@ if DATABASE_URL and DATABASE_URL.startswith(('postgres://', 'postgresql://', 'po
         'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
     
-    # Database connection pooling settings for PostgreSQL
+    # Database connection pooling settings for PostgreSQL (optimized for Railway)
     if DATABASES['default'].get('ENGINE') == 'django.db.backends.postgresql':
         DATABASES['default']['OPTIONS'] = {
             'connect_timeout': 10,
             'options': '-c statement_timeout=30000',  # 30 second statement timeout
+            # Connection pool settings
+            'connect_timeout': 10,
+            'keepalives': 1,
+            'keepalives_idle': 30,
+            'keepalives_interval': 10,
+            'keepalives_count': 5,
         }
-        # Keep connections alive
+        # Keep connections alive longer (reduces connection overhead)
         DATABASES['default']['CONN_MAX_AGE'] = 600  # 10 minutes
+        # Connection pool size (Railway free tier can handle this)
+        DATABASES['default']['ATOMIC_REQUESTS'] = False  # Disable for better performance
 else:
     # Fallback to SQLite for local development
     DATABASES = {
@@ -212,6 +221,15 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    # Performance optimizations
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',  # Only JSON (faster than BrowsableAPIRenderer)
+    ],
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.FormParser',
+        'rest_framework.parsers.MultiPartParser',
+    ],
 }
 
 # JWT Configuration
@@ -328,6 +346,28 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='mutesijosephine324@gmail.com')
 
+# Caching Configuration (in-memory cache for Railway free tier)
+# Using local memory cache - fast and no external dependencies
+# For production with Redis, change to: 'django.core.cache.backends.redis.RedisCache'
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,  # Maximum number of entries in cache
+            'CULL_FREQUENCY': 3,  # Fraction of entries culled when MAX_ENTRIES is reached
+        },
+        'TIMEOUT': 300,  # 5 minutes default timeout
+    }
+}
+
+# Cache settings for frequently accessed data
+CACHE_TTL = {
+    'dashboard_stats': 60,  # Cache dashboard stats for 1 minute
+    'user_profile': 300,  # Cache user profiles for 5 minutes
+    'livestock_types': 3600,  # Cache livestock types for 1 hour (rarely changes)
+}
+
 # Logging Configuration
 # Use console logging for Railway (stdout/stderr are captured automatically)
 # File logging is not used in production to avoid FileNotFoundError
@@ -348,6 +388,11 @@ LOGGING = {
         'django': {
             'handlers': ['console'],
             'level': 'INFO',
+            'propagate': False,
+        },
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'WARNING',  # Reduce database query logging (too verbose)
             'propagate': False,
         },
     },
