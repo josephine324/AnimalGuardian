@@ -98,7 +98,7 @@ const SignupPage = ({ onLogin }) => {
           </div>
           <h2 className="text-2xl font-extrabold text-gray-900">Account Created!</h2>
           <p className="mt-2 text-sm text-gray-600">
-            Your account has been created successfully. Please verify your phone number with the OTP code sent to you.
+            Your account has been created successfully and approved. You can now login and access the dashboard immediately.
           </p>
           <p className="mt-4 text-sm text-gray-500">
             Redirecting to login page...
