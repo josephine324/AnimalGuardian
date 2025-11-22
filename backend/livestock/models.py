@@ -119,6 +119,11 @@ class Livestock(models.Model):
         verbose_name = 'Livestock'
         verbose_name_plural = 'Livestock'
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status'], name='livestock_status_idx'),
+            models.Index(fields=['owner'], name='livestock_owner_idx'),
+            models.Index(fields=['-created_at'], name='livestock_created_at_idx'),
+        ]
     
     def save(self, *args, **kwargs):
         """Override save to ensure empty tag_number is converted to None."""

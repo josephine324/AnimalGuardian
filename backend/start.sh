@@ -9,10 +9,15 @@ echo "========================================="
 echo ""
 
 # Run migrations (with verbosity for debugging)
+# Only run migrations if needed (check if migrations are pending)
 echo "========================================="
-echo "STEP 2: Running database migrations..."
+echo "STEP 2: Checking for pending migrations..."
 echo "========================================="
-python manage.py migrate --noinput --verbosity=2 || {
+python manage.py showmigrations --plan | grep -q "\[ \]" && HAS_PENDING=true || HAS_PENDING=false
+
+if [ "$HAS_PENDING" = true ]; then
+    echo "Pending migrations found. Running migrations..."
+    python manage.py migrate --noinput --verbosity=1 || {
     echo "⚠ Standard migration failed, attempting recovery..."
     # If migration fails, try to fix duplicates again and retry
     echo "Re-running duplicate email fix..."
@@ -20,16 +25,18 @@ python manage.py migrate --noinput --verbosity=2 || {
     echo "Retrying migrations..."
     python manage.py migrate --noinput --verbosity=2 || {
         echo "⚠ Migration still failing, trying schema fix..."
-        python fix_database_schema.py || {
+    python fix_database_schema.py || {
             echo "⚠ Schema fix script failed, trying specific migration..."
-            python manage.py migrate accounts 0006_rename_password_reset_code_to_token --noinput --verbosity=2 || true
-            # Try all migrations again
+        python manage.py migrate accounts 0006_rename_password_reset_code_to_token --noinput --verbosity=2 || true
+        # Try all migrations again
             python manage.py migrate --noinput --verbosity=2 || {
                 echo "❌ All migration attempts failed. Please check logs above."
                 exit 1
             }
         }
     }
+} else {
+    echo "No pending migrations. Skipping migration step."
 }
 
 # Get port from environment variable, default to 8000

@@ -154,18 +154,19 @@ def stats(request):
             next_due_date__gte=today  # Not past due yet
         ).count()
         
-        # Calculate average response time (simplified to avoid database-specific issues)
+        # Calculate average response time (optimized - only check recent 50 cases)
         average_response_time = '0 hours'
         try:
+            # Only check most recent 50 cases for performance
             assigned_cases = CaseReport.objects.filter(
                 assigned_at__isnull=False,
                 reported_at__isnull=False
-            )
+            ).order_by('-reported_at')[:50]  # Limit to 50 most recent cases
             
             if assigned_cases.exists():
                 response_times = []
-                # Use values() to avoid loading full objects and potential serializer issues
-                for case_data in assigned_cases.values('reported_at', 'assigned_at')[:100]:
+                # Use values() to avoid loading full objects
+                for case_data in assigned_cases.values('reported_at', 'assigned_at'):
                     try:
                         reported_at = case_data.get('reported_at')
                         assigned_at = case_data.get('assigned_at')
