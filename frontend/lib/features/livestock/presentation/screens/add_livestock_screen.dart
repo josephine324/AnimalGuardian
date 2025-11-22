@@ -164,7 +164,7 @@ class _AddLivestockScreenState extends ConsumerState<AddLivestockScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final livestockState = ref.watch(livestockProvider);
+    // Using manual text input - no need to watch provider
 
     return Scaffold(
       appBar: AppBar(
@@ -362,7 +362,7 @@ class _AddLivestockScreenState extends ConsumerState<AddLivestockScreen> {
 
               // Submit Button
               ElevatedButton(
-                onPressed: livestockState.isLoading ? null : _submitLivestock,
+                onPressed: _isLoading ? null : _submitLivestock,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
