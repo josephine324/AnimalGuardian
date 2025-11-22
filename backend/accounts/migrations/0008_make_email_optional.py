@@ -296,7 +296,7 @@ def reverse_verify_no_duplicates(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0007_change_vet_availability_default'),
+        ('accounts', '0007_5_fix_duplicate_emails_data'),  # Run data migration first
     ]
 
     operations = [
