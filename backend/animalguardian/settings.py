@@ -116,7 +116,7 @@ else:
     # Not in environment at all - check .env file (for production/Render)
     # But only if we're not in DEBUG mode (local dev should use SQLite)
     if not DEBUG:
-DATABASE_URL = config('DATABASE_URL', default=None)
+        DATABASE_URL = config('DATABASE_URL', default=None)
     else:
         # In DEBUG mode, default to SQLite if not in environment
         DATABASE_URL = None
