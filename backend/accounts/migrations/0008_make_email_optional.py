@@ -347,11 +347,13 @@ class Migration(migrations.Migration):
     operations = [
         # SIMPLIFIED: Just remove unique constraint and make email nullable
         # No unique constraint will be added - this allows backend to start immediately
+        # Try to remove constraint, but don't fail if it doesn't exist or can't be removed
         migrations.RunPython(
-            remove_unique_constraint_if_exists,
+            lambda apps, schema_editor: remove_unique_constraint_if_exists(apps, schema_editor) or None,
             reverse_remove_unique_constraint,
         ),
         # Make email nullable without unique constraint
+        # This will work even if duplicates exist
         migrations.AlterField(
             model_name='user',
             name='email',
