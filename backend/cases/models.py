@@ -125,10 +125,10 @@ class CaseReport(models.Model):
         ordering = ['-reported_at']
         indexes = [
             models.Index(fields=['status'], name='case_reports_status_idx'),
-            models.Index(fields=['-reported_at'], name='case_reports_reported_at_idx'),
-            models.Index(fields=['assigned_veterinarian'], name='case_reports_assigned_vet_idx'),
+            models.Index(fields=['-reported_at'], name='case_reports_reported_idx'),
+            models.Index(fields=['assigned_veterinarian'], name='case_reports_vet_idx'),
             models.Index(fields=['reporter'], name='case_reports_reporter_idx'),
-            models.Index(fields=['status', 'reported_at'], name='case_reports_status_reported_idx'),
+            models.Index(fields=['status', 'reported_at'], name='case_reports_stat_rep_idx'),
         ]
     
     def __str__(self):

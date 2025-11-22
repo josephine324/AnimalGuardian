@@ -8,48 +8,42 @@ echo "STEP 1: Running migrations (duplicate fix skipped)"
 echo "========================================="
 echo ""
 
-# Run migrations (with verbosity for debugging)
-# Only run migrations if needed (check if migrations are pending)
+# Run migrations (with reduced verbosity for faster startup)
 echo "========================================="
-echo "STEP 2: Checking for pending migrations..."
+echo "STEP 2: Running database migrations..."
 echo "========================================="
-python manage.py showmigrations --plan | grep -q "\[ \]" && HAS_PENDING=true || HAS_PENDING=false
-
-if [ "$HAS_PENDING" = true ]; then
-    echo "Pending migrations found. Running migrations..."
-    python manage.py migrate --noinput --verbosity=1 || {
+python manage.py migrate --noinput --verbosity=1 || {
     echo "⚠ Standard migration failed, attempting recovery..."
     # If migration fails, try to fix duplicates again and retry
     echo "Re-running duplicate email fix..."
     python fix_duplicate_emails.py || true
     echo "Retrying migrations..."
-    python manage.py migrate --noinput --verbosity=2 || {
+    python manage.py migrate --noinput --verbosity=1 || {
         echo "⚠ Migration still failing, trying schema fix..."
-    python fix_database_schema.py || {
+        python fix_database_schema.py || {
             echo "⚠ Schema fix script failed, trying specific migration..."
-        python manage.py migrate accounts 0006_rename_password_reset_code_to_token --noinput --verbosity=2 || true
-        # Try all migrations again
-            python manage.py migrate --noinput --verbosity=2 || {
+            python manage.py migrate accounts 0006_rename_password_reset_code_to_token --noinput --verbosity=1 || true
+            # Try all migrations again
+            python manage.py migrate --noinput --verbosity=1 || {
                 echo "❌ All migration attempts failed. Please check logs above."
                 exit 1
             }
         }
     }
-} else {
-    echo "No pending migrations. Skipping migration step."
 }
 
 # Get port from environment variable, default to 8000
 PORT=${PORT:-8000}
 
 # Calculate optimal worker count based on available CPU cores
-# Railway free tier typically has 1-2 cores, so use 2-4 workers
-WORKERS=${WEB_CONCURRENCY:-4}
+# Railway free tier typically has 1-2 cores, so use 2 workers (reduced for better performance)
+# Too many workers can cause resource contention and slow down responses
+WORKERS=${WEB_CONCURRENCY:-2}
 THREADS=${GUNICORN_THREADS:-2}
 TIMEOUT=${GUNICORN_TIMEOUT:-120}
 
 # Start gunicorn with optimized settings for Railway
-# Workers: 4 (good for Railway free tier with 1-2 CPU cores)
+# Workers: 2 (optimal for Railway free tier - reduces resource contention)
 # Threads: 2 per worker (allows handling multiple requests concurrently)
 # Timeout: 120 seconds (Railway needs longer timeout for cold starts)
 # Keep-alive: 5 seconds (reuse connections)
@@ -68,4 +62,3 @@ exec gunicorn animalguardian.wsgi:application \
     --access-logfile - \
     --error-logfile - \
     --log-level info
-
