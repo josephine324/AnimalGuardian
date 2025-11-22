@@ -229,7 +229,8 @@ def stats(request):
     except Exception as e:
         import traceback
         error_traceback = traceback.format_exc()
-        logger.error(f"Error in dashboard stats: {str(e)}\n{error_traceback}", exc_info=True)
+        # Use the module-level logger (already imported at top)
+        logging.getLogger(__name__).error(f"Error in dashboard stats: {str(e)}\n{error_traceback}", exc_info=True)
         
         # Return a more detailed error in debug mode
         error_detail = str(e) if settings.DEBUG else 'Please try again later.'
