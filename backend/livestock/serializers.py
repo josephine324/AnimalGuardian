@@ -61,7 +61,7 @@ class LivestockSerializer(serializers.ModelSerializer):
             'expected_delivery_date', 'daily_milk_production_liters',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ('owner_name', 'owner_phone', 'owner_sector', 'owner_district')
+        read_only_fields = ('owner', 'owner_name', 'owner_phone', 'owner_sector', 'owner_district')
     
     def get_owner_name(self, obj):
         return obj.owner.get_full_name() or obj.owner.username if obj.owner else None
