@@ -12,6 +12,14 @@ from livestock.models import LivestockType, Breed
 class Command(BaseCommand):
     help = 'Seed livestock types and breeds into the database'
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--verbosity',
+            type=int,
+            default=1,
+            help='Verbosity level (0=minimal, 1=normal, 2=verbose)',
+        )
+
     def handle(self, *args, **options):
         """Seed livestock types and breeds."""
         livestock_types_data = [
@@ -90,14 +98,16 @@ class Command(BaseCommand):
             
             if created:
                 created_types += 1
-                self.stdout.write(
-                    self.style.SUCCESS(f'Created livestock type: {type_name}')
-                )
+                if options.get('verbosity', 1) >= 1:
+                    self.stdout.write(
+                        self.style.SUCCESS(f'Created livestock type: {type_name}')
+                    )
             else:
                 skipped_types += 1
-                self.stdout.write(
-                    self.style.WARNING(f'Livestock type already exists: {type_name}')
-                )
+                if options.get('verbosity', 1) >= 1:
+                    self.stdout.write(
+                        self.style.WARNING(f'Livestock type already exists: {type_name}')
+                    )
             
             # Create breeds for this type
             for breed_data in breeds_data:
@@ -113,13 +123,14 @@ class Command(BaseCommand):
                 else:
                     skipped_breeds += 1
         
-        self.stdout.write(
-            self.style.SUCCESS(
-                f'\nSummary:\n'
-                f'  Livestock Types: Created {created_types}, Skipped {skipped_types}\n'
-                f'  Breeds: Created {created_breeds}, Skipped {skipped_breeds}\n'
-                f'  Total Types: {LivestockType.objects.count()}\n'
-                f'  Total Breeds: {Breed.objects.count()}'
+        if options.get('verbosity', 1) >= 1:
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f'\nSummary:\n'
+                    f'  Livestock Types: Created {created_types}, Skipped {skipped_types}\n'
+                    f'  Breeds: Created {created_breeds}, Skipped {skipped_breeds}\n'
+                    f'  Total Types: {LivestockType.objects.count()}\n'
+                    f'  Total Breeds: {Breed.objects.count()}'
+                )
             )
-        )
 
