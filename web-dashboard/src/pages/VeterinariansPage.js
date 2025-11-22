@@ -279,8 +279,8 @@ const VeterinariansPage = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Veterinarians</h1>
-          <p className="text-gray-600 mt-1">Manage veterinary professionals and their assignments</p>
+          <h1 className="text-3xl font-bold text-gray-900">Local Veterinarians</h1>
+          <p className="text-gray-600 mt-1">Manage local veterinarians and their assignments. Sector veterinarians access the dashboard directly and do not appear in this list.</p>
         </div>
         <button 
           onClick={() => setShowAddModal(true)}
