@@ -8,11 +8,23 @@ def fix_duplicate_emails_data(apps, schema_editor):
     
     This runs BEFORE the schema migration to ensure no duplicates exist
     when the unique constraint is added.
+    
+    IMPORTANT: This uses autocommit mode to ensure changes persist even
+    if subsequent migrations fail and roll back.
     """
     db_alias = schema_editor.connection.alias
     
-    # Check if table exists
-    with schema_editor.connection.cursor() as cursor:
+    # Use autocommit to ensure changes persist even if migration transaction rolls back
+    # Get the connection and set autocommit
+    connection = schema_editor.connection
+    old_autocommit = connection.get_autocommit()
+    
+    try:
+        # Enable autocommit so changes are committed immediately
+        connection.set_autocommit(True)
+        
+        # Check if table exists
+        with connection.cursor() as cursor:
         if schema_editor.connection.vendor == 'postgresql':
             try:
                 # Check if table exists
@@ -122,9 +134,8 @@ def fix_duplicate_emails_data(apps, schema_editor):
                 
                 if total_fixed > 0:
                     print(f"Data migration: Fixed {total_fixed} duplicate email(s) total.")
-                    # Commit explicitly - this is critical
-                    schema_editor.connection.commit()
-                    print("Data migration: Changes committed to database.")
+                    # With autocommit=True, changes are already committed
+                    print("Data migration: Changes committed to database (autocommit mode).")
                     
                     # Final verification
                     cursor.execute("""
@@ -154,6 +165,9 @@ def fix_duplicate_emails_data(apps, schema_editor):
                 traceback.print_exc()
                 # Re-raise to prevent migration from continuing with duplicates
                 raise
+            finally:
+                # Restore original autocommit setting
+                connection.set_autocommit(old_autocommit)
 
 
 def reverse_fix_duplicate_emails_data(apps, schema_editor):
