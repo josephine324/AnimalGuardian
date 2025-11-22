@@ -68,9 +68,9 @@ class RegisterView(generics.CreateAPIView):
         # Auto-verify users (no email verification needed)
         user.is_verified = True
         
-        # Auto-approve sector vets and admins - they can login immediately (web dashboard registration)
-        # Farmers and local vets register via mobile app and need approval from sector vet
-        if user.user_type in ['sector_vet', 'admin']:
+        # Auto-approve farmers and sector vets - they can login immediately
+        # Local vets still need approval from sector vet
+        if user.user_type in ['farmer', 'sector_vet', 'admin']:
             user.is_approved_by_admin = True
             user.save()
             return Response({
@@ -78,7 +78,7 @@ class RegisterView(generics.CreateAPIView):
                 'user_id': user.id
             }, status=status.HTTP_201_CREATED)
         else:
-            # Farmers and local vets need approval (they register via mobile app)
+            # Local vets need approval
             user.save()
             return Response({
                 'message': 'User created successfully. Your account is pending approval from a sector veterinarian. You will receive a notification on your phone number once approved.',
@@ -143,11 +143,11 @@ class LoginView(generics.GenericAPIView):
                     logger.error(f'Error during email authentication: {str(e)}', exc_info=True)
             
             if user:
-                # Farmers and local vets need approval from sector vet/admin (they register via mobile app)
-                # Sector vets and admins can login immediately after registration (they register via web dashboard)
-                if user.user_type in ['farmer', 'local_vet'] and not user.is_approved_by_admin:
+                # Only local vets need approval from sector vet/admin
+                # Farmers can login immediately after registration
+                if user.user_type == 'local_vet' and not user.is_approved_by_admin:
                     return Response({
-                        'error': 'Your account is pending approval from a sector veterinarian. Please wait for approval before logging in. You will receive a notification once approved.',
+                        'error': 'Your account is pending approval from a sector veterinarian. Please wait for approval before logging in. You will receive an email once approved.',
                         'pending_approval': True
                     }, status=status.HTTP_403_FORBIDDEN)
                 
@@ -703,11 +703,23 @@ class VeterinarianViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        """Return users who are veterinarians (local_vet or sector_vet)."""
+        """Return users who are veterinarians (local_vet or sector_vet).
+        Sector vets should always be approved, so only show approved sector vets.
+        Local vets can be shown regardless of approval status so sector vets can approve them.
+        """
         # Use select_related for approved_by relationship
-        return User.objects.filter(
+        queryset = User.objects.filter(
             user_type__in=['local_vet', 'sector_vet']
-        ).select_related('approved_by').order_by('-created_at')
+        ).select_related('approved_by')
+        
+        # Sector vets should always be approved - filter out any unapproved ones
+        # (This shouldn't happen, but just in case)
+        queryset = queryset.exclude(
+            user_type='sector_vet',
+            is_approved_by_admin=False
+        )
+        
+        return queryset.order_by('-created_at')
     
     def list(self, request, *args, **kwargs):
         """List all veterinarians with their profiles."""
