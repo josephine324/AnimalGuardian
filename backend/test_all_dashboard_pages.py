@@ -6,7 +6,7 @@ import requests
 import json
 import sys
 
-BACKEND_URL = "https://animalguardian-backend-production-b5a8.up.railway.app"
+BACKEND_URL = "https://animalguardian.onrender.com"
 
 def test_endpoint(name, method, url, headers=None, data=None, expected_status=200):
     """Test an API endpoint."""

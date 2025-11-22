@@ -5,7 +5,7 @@ Check all veterinarians and their profiles.
 import requests
 import json
 
-BACKEND_URL = "https://animalguardian-backend-production-b5a8.up.railway.app"
+BACKEND_URL = "https://animalguardian.onrender.com"
 
 def check_veterinarians():
     # Login as admin

@@ -61,9 +61,9 @@ The server will start at: **http://localhost:8000**
 
 ---
 
-## Option 2: Production (Railway/PostgreSQL)
+## Option 2: Production (Render/PostgreSQL)
 
-If you're running on Railway or have PostgreSQL configured:
+If you're running on Render or have PostgreSQL configured:
 
 ### Step 1: Navigate to Backend Directory
 ```powershell
@@ -76,7 +76,7 @@ cd C:\Users\Administrator\Downloads\AnimalGuardian\backend
 ```
 
 ### Step 3: Ensure DATABASE_URL is Set
-Make sure your `DATABASE_URL` environment variable is set (Railway sets this automatically).
+Make sure your `DATABASE_URL` environment variable is set (Render sets this automatically).
 
 ### Step 4: Run Migrations
 ```powershell

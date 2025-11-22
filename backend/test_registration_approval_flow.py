@@ -11,7 +11,7 @@ import requests
 import json
 import time
 
-BACKEND_URL = "https://animalguardian-backend-production-b5a8.up.railway.app"
+BACKEND_URL = "https://animalguardian.onrender.com"
 
 def test_registration_approval_flow():
     print("=" * 70)
