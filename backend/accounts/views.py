@@ -353,9 +353,8 @@ AnimalGuardian Team
                     fail_silently=False,
                 )
             elif phone_number:
-                # Send SMS via Africa's Talking (if configured)
-                # TODO: Implement SMS sending using Africa's Talking API
-                # For now, email will be used if available
+                # Always send password reset code to email if user has email
+                # This ensures notifications are sent via email
                 if user.email:
                     subject = 'AnimalGuardian - Password Reset Code'
                     message = f'''
@@ -379,6 +378,10 @@ AnimalGuardian Team
                         recipient_list=[user.email],
                         fail_silently=False,
                     )
+                else:
+                    # If user has no email, log a warning
+                    logger.warning(f'User {user.id} ({phone_number}) has no email address. Cannot send password reset code.')
+                    # Still return success for security (don't reveal if user exists)
         except Exception as e:
             # Log the error but don't expose it to user for security
             logger.error(f'Error sending password reset email/SMS: {str(e)}')
@@ -504,6 +507,32 @@ class ResetPasswordView(generics.GenericAPIView):
         user.password_reset_token = ''
         user.password_reset_expires_at = None
         user.save()
+        
+        # Send confirmation email after successful password reset
+        from django.core.mail import send_mail
+        try:
+            if user.email:
+                subject = 'AnimalGuardian - Password Reset Successful'
+                message = f'''
+Hello {user.get_full_name() or user.username},
+
+Your password has been successfully reset for your AnimalGuardian account.
+
+If you did not make this change, please contact support immediately.
+
+Best regards,
+AnimalGuardian Team
+'''
+                send_mail(
+                    subject=subject,
+                    message=message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=False,
+                )
+        except Exception as e:
+            # Log the error but don't fail the password reset
+            logger.error(f'Error sending password reset confirmation email: {str(e)}')
         
         return Response({
             'message': 'Password reset successfully. You can now login with your new password.'
