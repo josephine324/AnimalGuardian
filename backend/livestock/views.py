@@ -102,17 +102,77 @@ class LivestockViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-class LivestockTypeViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet for Livestock types."""
+class LivestockTypeViewSet(viewsets.ModelViewSet):
+    """ViewSet for Livestock types. Allows CRUD operations for sector vets and admins."""
     queryset = LivestockType.objects.all()
     serializer_class = LivestockTypeSerializer
     permission_classes = [IsAuthenticated]  # Require authentication
+    
+    def get_queryset(self):
+        """Return all livestock types."""
+        return LivestockType.objects.all().order_by('name')
+    
+    def create(self, request, *args, **kwargs):
+        """Only sector vets and admins can create livestock types."""
+        user = request.user
+        if user.user_type not in ['sector_vet', 'admin'] and not (user.is_staff or user.is_superuser):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Only sector veterinarians and admins can create livestock types.")
+        return super().create(request, *args, **kwargs)
+    
+    def update(self, request, *args, **kwargs):
+        """Only sector vets and admins can update livestock types."""
+        user = request.user
+        if user.user_type not in ['sector_vet', 'admin'] and not (user.is_staff or user.is_superuser):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Only sector veterinarians and admins can update livestock types.")
+        return super().update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        """Only sector vets and admins can delete livestock types."""
+        user = request.user
+        if user.user_type not in ['sector_vet', 'admin'] and not (user.is_staff or user.is_superuser):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Only sector veterinarians and admins can delete livestock types.")
+        return super().destroy(request, *args, **kwargs)
 
-class BreedViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet for Breeds."""
+class BreedViewSet(viewsets.ModelViewSet):
+    """ViewSet for Breeds. Allows CRUD operations for sector vets and admins."""
     queryset = Breed.objects.all()
     serializer_class = BreedSerializer
     permission_classes = [IsAuthenticated]  # Require authentication
+    
+    def get_queryset(self):
+        """Filter breeds by livestock_type if provided."""
+        queryset = Breed.objects.select_related('livestock_type').all()
+        livestock_type_id = self.request.query_params.get('livestock_type_id', None)
+        if livestock_type_id:
+            queryset = queryset.filter(livestock_type_id=livestock_type_id)
+        return queryset.order_by('livestock_type__name', 'name')
+    
+    def create(self, request, *args, **kwargs):
+        """Only sector vets and admins can create breeds."""
+        user = request.user
+        if user.user_type not in ['sector_vet', 'admin'] and not (user.is_staff or user.is_superuser):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Only sector veterinarians and admins can create breeds.")
+        return super().create(request, *args, **kwargs)
+    
+    def update(self, request, *args, **kwargs):
+        """Only sector vets and admins can update breeds."""
+        user = request.user
+        if user.user_type not in ['sector_vet', 'admin'] and not (user.is_staff or user.is_superuser):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Only sector veterinarians and admins can update breeds.")
+        return super().update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        """Only sector vets and admins can delete breeds."""
+        user = request.user
+        if user.user_type not in ['sector_vet', 'admin'] and not (user.is_staff or user.is_superuser):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Only sector veterinarians and admins can delete breeds.")
+        return super().destroy(request, *args, **kwargs)
 
 class HealthRecordViewSet(viewsets.ModelViewSet):
     """ViewSet for Health records."""
