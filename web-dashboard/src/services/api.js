@@ -1,7 +1,10 @@
 import axios from 'axios';
 
+// Use Railway backend URL by default, or allow override via environment variable
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://animalguardian-backend-production-b5a8.up.railway.app/api';
+
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || '/api',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
