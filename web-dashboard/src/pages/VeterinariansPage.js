@@ -30,6 +30,15 @@ const VeterinariansPage = () => {
   useEffect(() => {
     fetchVeterinarians();
     fetchCases();
+    
+    // Auto-refresh every 30 seconds for real-time updates
+    // All sector vets will see the same updated data
+    const refreshInterval = setInterval(() => {
+      fetchVeterinarians();
+      fetchCases();
+    }, 30000); // 30 seconds
+    
+    return () => clearInterval(refreshInterval);
   }, []);
 
   const fetchCases = async () => {

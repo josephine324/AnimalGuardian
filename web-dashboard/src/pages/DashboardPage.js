@@ -22,21 +22,35 @@ const DashboardPage = () => {
   const [recentCases, setRecentCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     // Only fetch if user is authenticated
     const token = localStorage.getItem('authToken');
     if (token) {
       fetchDashboardData();
+      
+      // Auto-refresh every 30 seconds for real-time updates
+      // All sector vets will see the same updated data
+      const refreshInterval = setInterval(() => {
+        fetchDashboardData(true); // Pass true to indicate auto-refresh
+      }, 30000); // 30 seconds
+      
+      return () => clearInterval(refreshInterval);
     } else {
       setError('Not authenticated. Please login.');
       setLoading(false);
     }
   }, []);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (isAutoRefresh = false) => {
     try {
-      setLoading(true);
+      if (!isAutoRefresh) {
+        setLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
       setError(null);
 
       // Check if token exists
@@ -71,6 +85,9 @@ const DashboardPage = () => {
       const casesData = await casesAPI.getAll({ page_size: 5 });
       const cases = casesData.results || (Array.isArray(casesData) ? casesData : []);
       setRecentCases(Array.isArray(cases) ? cases.slice(0, 5) : []);
+      
+      // Update last refreshed time
+      setLastUpdated(new Date());
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
       
@@ -89,6 +106,7 @@ const DashboardPage = () => {
       }
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -164,8 +182,19 @@ const DashboardPage = () => {
           <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
           <p className="text-gray-600 mt-1">Monitor and manage livestock health across Nyagatare District</p>
         </div>
-        <div className="text-sm text-gray-500">
-          <span className="font-medium">Last updated:</span> {new Date().toLocaleString()}
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          {isRefreshing && (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+          )}
+          <span className="font-medium">Last updated:</span> 
+          {lastUpdated ? lastUpdated.toLocaleTimeString() : 'Never'}
+          <button
+            onClick={() => fetchDashboardData(false)}
+            className="ml-2 text-green-600 hover:text-green-700 font-medium"
+            title="Refresh data"
+          >
+            ↻ Refresh
+          </button>
         </div>
       </div>
 
