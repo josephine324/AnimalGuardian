@@ -15,6 +15,8 @@ const CasesPage = () => {
   const [assigning, setAssigning] = useState(false);
   const [showCaseDetailModal, setShowCaseDetailModal] = useState(false);
   const [selectedCaseDetail, setSelectedCaseDetail] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     // Only fetch if user is authenticated
@@ -40,6 +42,24 @@ const CasesPage = () => {
           console.error('Error parsing user data:', e);
         }
       }
+      
+      // Auto-refresh every 30 seconds for real-time updates
+      // All sector vets will see the same updated data
+      const refreshInterval = setInterval(() => {
+        fetchCases(true); // Pass true to indicate auto-refresh
+        if (storedUserData) {
+          try {
+            const user = JSON.parse(storedUserData);
+            if (user.user_type === 'sector_vet' || user.user_type === 'admin' || user.is_staff || user.is_superuser) {
+              fetchLocalVets();
+            }
+          } catch (e) {
+            console.error('Error parsing user data:', e);
+          }
+        }
+      }, 30000); // 30 seconds
+      
+      return () => clearInterval(refreshInterval);
     } else {
       setError('Not authenticated. Please login.');
       setLoading(false);
@@ -58,9 +78,13 @@ const CasesPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
 
-  const fetchCases = async () => {
+  const fetchCases = async (isAutoRefresh = false) => {
     try {
-      setLoading(true);
+      if (!isAutoRefresh) {
+        setLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
       setError(null);
       
       // Check if token exists
@@ -82,6 +106,9 @@ const CasesPage = () => {
       const data = await casesAPI.getAll(params);
       const casesList = data.results || (Array.isArray(data) ? data : []);
       setCases(Array.isArray(casesList) ? casesList : []);
+      
+      // Update last refreshed time
+      setLastUpdated(new Date());
     } catch (err) {
       console.error('Error fetching cases:', err);
       
@@ -99,6 +126,7 @@ const CasesPage = () => {
       }
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -286,6 +314,20 @@ const CasesPage = () => {
           <p className="text-gray-600 mt-1">Monitor and manage all livestock health cases</p>
           <p className="text-sm text-gray-500 mt-1">Note: Only farmers can add cases via mobile app or USSD</p>
         </div>
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          {isRefreshing && (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+          )}
+          <span className="font-medium">Last updated:</span> 
+          {lastUpdated ? lastUpdated.toLocaleTimeString() : 'Never'}
+          <button
+            onClick={() => fetchCases(false)}
+            className="ml-2 text-green-600 hover:text-green-700 font-medium"
+            title="Refresh data"
+          >
+            ↻ Refresh
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -358,6 +400,7 @@ const CasesPage = () => {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Case ID</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Farmer</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Animal</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symptoms</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Urgency</th>
@@ -378,7 +421,17 @@ const CasesPage = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{case_.reporter_name || 'Unknown'}</div>
                     <div className="text-xs text-gray-500">{case_.reporter?.phone_number || ''}</div>
-                    <div className="text-xs text-gray-400">{case_.location_notes || ''}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">
+                      {case_.reporter_sector ? `Sector: ${case_.reporter_sector}` : 'N/A'}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {case_.reporter_district ? `District: ${case_.reporter_district}` : ''}
+                    </div>
+                    {case_.location_notes && (
+                      <div className="text-xs text-gray-400 mt-1">{case_.location_notes}</div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
@@ -503,20 +556,29 @@ const CasesPage = () => {
               </button>
             </div>
             <div className="p-6 space-y-4">
-              <div>
+              <div className="bg-gray-50 p-4 rounded-lg">
                 <p className="text-sm text-gray-600 mb-2">
                   <strong>Case ID:</strong> {selectedCase.case_id || selectedCase.id}
                 </p>
                 <p className="text-sm text-gray-600 mb-2">
                   <strong>Reporter:</strong> {selectedCase.reporter_name || 'Unknown'}
                 </p>
+                <p className="text-sm text-gray-600 mb-2">
+                  <strong>Location:</strong> {selectedCase.reporter_sector ? `Sector: ${selectedCase.reporter_sector}` : 'N/A'}
+                  {selectedCase.reporter_district && `, District: ${selectedCase.reporter_district}`}
+                </p>
                 <p className="text-sm text-gray-600">
                   <strong>Symptoms:</strong> {selectedCase.symptoms_observed || 'N/A'}
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Select Local Veterinarian *
+                  {selectedCase.reporter_sector && (
+                    <span className="text-xs text-gray-500 ml-2">
+                      (Vets in {selectedCase.reporter_sector} shown first)
+                    </span>
+                  )}
                 </label>
                 <select
                   required
@@ -525,14 +587,42 @@ const CasesPage = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   <option value="">Select veterinarian...</option>
-                  {localVets.map((vet) => (
-                    <option key={vet.id} value={vet.id}>
-                      {vet.first_name} {vet.last_name} ({vet.phone_number || vet.email || 'N/A'})
-                    </option>
-                  ))}
+                  {localVets
+                    .sort((a, b) => {
+                      // Sort vets by location match (same sector/district first)
+                      if (selectedCase.reporter_sector) {
+                        const aMatch = a.sector === selectedCase.reporter_sector;
+                        const bMatch = b.sector === selectedCase.reporter_sector;
+                        if (aMatch && !bMatch) return -1;
+                        if (!aMatch && bMatch) return 1;
+                      }
+                      if (selectedCase.reporter_district) {
+                        const aMatch = a.district === selectedCase.reporter_district;
+                        const bMatch = b.district === selectedCase.reporter_district;
+                        if (aMatch && !bMatch) return -1;
+                        if (!aMatch && bMatch) return 1;
+                      }
+                      return 0;
+                    })
+                    .map((vet) => (
+                      <option key={vet.id} value={vet.id}>
+                        {vet.first_name} {vet.last_name} 
+                        {vet.sector && ` - ${vet.sector}`}
+                        {vet.district && `, ${vet.district}`}
+                        {vet.sector === selectedCase.reporter_sector && ' ⭐'}
+                        {` (${vet.phone_number || vet.email || 'N/A'})`}
+                      </option>
+                    ))}
                 </select>
                 {localVets.length === 0 && (
                   <p className="text-xs text-gray-500 mt-1">No local veterinarians available</p>
+                )}
+                {localVets.length > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {localVets.filter(v => v.sector === selectedCase.reporter_sector).length > 0 
+                      ? `${localVets.filter(v => v.sector === selectedCase.reporter_sector).length} vet(s) in same sector`
+                      : 'No vets in same sector - consider nearest location'}
+                  </p>
                 )}
               </div>
               <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">

@@ -12,6 +12,14 @@ const FarmersPage = () => {
 
   useEffect(() => {
     fetchFarmers();
+    
+    // Auto-refresh every 30 seconds for real-time updates
+    // All sector vets will see the same updated data
+    const refreshInterval = setInterval(() => {
+      fetchFarmers();
+    }, 30000); // 30 seconds
+    
+    return () => clearInterval(refreshInterval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

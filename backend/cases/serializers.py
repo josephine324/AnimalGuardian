@@ -10,6 +10,8 @@ class CaseReportSerializer(serializers.ModelSerializer):
     reporter_name = serializers.SerializerMethodField()
     reporter_phone = serializers.SerializerMethodField()
     reporter_email = serializers.SerializerMethodField()
+    reporter_sector = serializers.SerializerMethodField()
+    reporter_district = serializers.SerializerMethodField()
     assigned_veterinarian_name = serializers.SerializerMethodField()
     assigned_veterinarian_phone = serializers.SerializerMethodField()
     assigned_veterinarian_email = serializers.SerializerMethodField()
@@ -35,6 +37,12 @@ class CaseReportSerializer(serializers.ModelSerializer):
     
     def get_reporter_email(self, obj):
         return obj.reporter.email if obj.reporter else None
+    
+    def get_reporter_sector(self, obj):
+        return obj.reporter.sector if obj.reporter else None
+    
+    def get_reporter_district(self, obj):
+        return obj.reporter.district if obj.reporter else None
     
     def get_assigned_veterinarian_name(self, obj):
         return obj.assigned_veterinarian.get_full_name() or obj.assigned_veterinarian.username if obj.assigned_veterinarian else None
