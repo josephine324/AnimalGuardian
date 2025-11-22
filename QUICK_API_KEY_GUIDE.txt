@@ -1,0 +1,29 @@
+QUICK GUIDE: Get Render API Key
+================================
+
+To run the seed command via CLI, I need your Render API key:
+
+STEP 1: Get API Key (30 seconds)
+----------------------------------
+1. Open: https://dashboard.render.com
+2. Click your profile icon (top right corner)
+3. Click: "Account Settings"
+4. Click: "API Keys" tab
+5. Click: "Generate API Key" button
+6. Copy the key (it looks like: rnd_xxxxxxxxxxxxx)
+
+STEP 2: Share the Key
+----------------------
+Once you have the key, just tell me: "My API key is: rnd_xxxxx"
+Then I'll run the seed command immediately!
+
+ALTERNATIVE: Use Web Shell (No API Key Needed)
+-----------------------------------------------
+1. Go to: https://dashboard.render.com
+2. Click: "animalguardian-backend" service
+3. Click: "Shell" tab
+4. Type: cd backend && python manage.py seed_livestock_types
+5. Press Enter
+
+This is actually faster than using CLI! 😊
+

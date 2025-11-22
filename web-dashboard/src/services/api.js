@@ -244,8 +244,38 @@ export const livestockAPI = {
     return response.data;
   },
 
+  createType: async (typeData) => {
+    const response = await api.post('/livestock/types/', typeData);
+    return response.data;
+  },
+
+  updateType: async (id, typeData) => {
+    const response = await api.patch(`/livestock/types/${id}/`, typeData);
+    return response.data;
+  },
+
+  deleteType: async (id) => {
+    const response = await api.delete(`/livestock/types/${id}/`);
+    return response.data;
+  },
+
   getBreeds: async (params = {}) => {
     const response = await api.get('/livestock/breeds/', { params });
+    return response.data;
+  },
+
+  createBreed: async (breedData) => {
+    const response = await api.post('/livestock/breeds/', breedData);
+    return response.data;
+  },
+
+  updateBreed: async (id, breedData) => {
+    const response = await api.patch(`/livestock/breeds/${id}/`, breedData);
+    return response.data;
+  },
+
+  deleteBreed: async (id) => {
+    const response = await api.delete(`/livestock/breeds/${id}/`);
     return response.data;
   },
 };
