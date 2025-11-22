@@ -167,6 +167,18 @@ class ApiService {
     return CaseReport.fromMap(data as Map<String, dynamic>);
   }
 
+  Future<void> deleteCase(int id) async {
+    final headers = await _getHeaders();
+    final response = await http.delete(
+      Uri.parse('$baseUrl/cases/reports/$id/'),
+      headers: headers,
+    ).timeout(AppConstants.connectionTimeout);
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('HTTP ${response.statusCode}: ${response.body}');
+    }
+  }
+
   // Livestock API
   Future<List<Livestock>> getLivestock({int page = 1}) async {
     try {
@@ -446,7 +458,7 @@ class ApiService {
 
     final data = _handleResponse(response) as Map<String, dynamic>;
     
-    // Store tokens
+    // Store tokens and user info
     if (data.containsKey('access')) {
       await _storage.write(key: AppConstants.authTokenKey, value: data['access']);
     }
@@ -457,6 +469,9 @@ class ApiService {
       final user = data['user'] as Map<String, dynamic>;
       if (user.containsKey('id')) {
         await _storage.write(key: AppConstants.userIdKey, value: user['id'].toString());
+      }
+      if (user.containsKey('user_type')) {
+        await _storage.write(key: AppConstants.userTypeKey, value: user['user_type'].toString());
       }
     }
     

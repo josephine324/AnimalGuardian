@@ -17,6 +17,7 @@ import 'features/home/presentation/screens/vet_dashboard_screen.dart';
 import 'features/cases/presentation/screens/report_case_screen.dart';
 import 'features/livestock/presentation/screens/add_livestock_screen.dart';
 import 'features/community/presentation/screens/create_post_screen.dart';
+import 'core/models/case_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,8 +31,12 @@ void main() async {
   }
   
   runApp(
-    const ProviderScope(
-      child: AnimalGuardianApp(),
+    // Wrap in MediaQuery with safe text scaler to prevent assertion errors
+    MediaQuery(
+      data: const MediaQueryData(textScaler: TextScaler.linear(1.0)),
+      child: const ProviderScope(
+        child: AnimalGuardianApp(),
+      ),
     ),
   );
 }
@@ -54,7 +59,22 @@ class AnimalGuardianApp extends StatelessWidget {
           centerTitle: true,
           elevation: 0,
         ),
+        // Ensure text theme uses valid font sizes
+        // Text theme will use default, but textScaler in MediaQuery ensures valid scaling
       ),
+      builder: (BuildContext context, Widget? child) {
+        // Force valid text scaler to prevent assertion errors
+        // This fixes text_scaler.dart:87:12 assertion failures
+        final mediaQuery = MediaQuery.maybeOf(context);
+        final safeMediaQuery = mediaQuery?.copyWith(
+          textScaler: const TextScaler.linear(1.0),
+        ) ?? const MediaQueryData(textScaler: TextScaler.linear(1.0));
+        
+        return MediaQuery(
+          data: safeMediaQuery,
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       routerConfig: _router,
     );
   }
@@ -145,6 +165,13 @@ final _router = GoRouter(
     GoRoute(
       path: '/cases/report',
       builder: (context, state) => const ReportCaseScreen(),
+    ),
+    GoRoute(
+      path: '/cases/edit',
+      builder: (context, state) {
+        final caseReport = state.extra as CaseReport?;
+        return ReportCaseScreen(editCase: caseReport);
+      },
     ),
     GoRoute(
       path: '/livestock/add',

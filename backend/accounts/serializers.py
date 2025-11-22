@@ -187,15 +187,23 @@ class UserSerializer(serializers.ModelSerializer):
         validated_data.pop('password_confirm', None)
         password = validated_data.pop('password')
         
-        # Handle email - convert empty string to None
+        # Handle email - convert empty string to None (CRITICAL: prevents unique constraint violation)
+        # SQLite treats empty string as a value, so multiple empty strings violate unique constraint
         if 'email' in validated_data:
             email = validated_data.get('email')
-            if email == '' or (email is not None and not email.strip()):
+            if email is None or email == '' or (isinstance(email, str) and not email.strip()):
+                # Explicitly set to None - don't pass empty string
                 validated_data['email'] = None
+            else:
+                # Ensure email is properly trimmed
+                validated_data['email'] = email.strip() if isinstance(email, str) else email
+        else:
+            # If email is not in validated_data, explicitly set to None
+            validated_data['email'] = None
         
         # Generate username if not provided
         if 'username' not in validated_data or not validated_data.get('username'):
-            email = validated_data.get('email', '') or ''
+            email = validated_data.get('email') or ''
             phone_number = validated_data.get('phone_number', '')
             
             if email:
@@ -215,7 +223,13 @@ class UserSerializer(serializers.ModelSerializer):
         # Set default values for optional fields
         validated_data.setdefault('preferred_language', 'en')
         
+        # Create user - email will be None if not provided
         user = User.objects.create_user(password=password, **validated_data)
+        
+        # Double-check: ensure email is None if it was empty (safety check)
+        if user.email == '':
+            user.email = None
+            user.save(update_fields=['email'])
         
         # Automatically create VeterinarianProfile if user is a veterinarian
         user_type = validated_data.get('user_type')

@@ -9,7 +9,9 @@ import '../../../livestock/providers/livestock_provider.dart';
 import '../../../../core/models/case_model.dart';
 
 class ReportCaseScreen extends ConsumerStatefulWidget {
-  const ReportCaseScreen({super.key});
+  final CaseReport? editCase;
+  
+  const ReportCaseScreen({super.key, this.editCase});
 
   @override
   ConsumerState<ReportCaseScreen> createState() => _ReportCaseScreenState();
@@ -25,6 +27,23 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
   int? _selectedLivestockId;
   CaseUrgency _selectedUrgency = CaseUrgency.medium;
   List<XFile> _selectedImages = [];
+  bool _isEditing = false;
+  int? _caseId;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.editCase != null) {
+      _isEditing = true;
+      _caseId = widget.editCase!.id;
+      _symptomsController.text = widget.editCase!.symptomsObserved;
+      _durationController.text = widget.editCase!.durationOfSymptoms ?? '';
+      _locationNotesController.text = widget.editCase!.locationNotes ?? '';
+      _numberOfAnimalsController.text = widget.editCase!.numberOfAffectedAnimals.toString();
+      _selectedLivestockId = widget.editCase!.livestockId;
+      _selectedUrgency = widget.editCase!.urgency;
+    }
+  }
 
   @override
   void dispose() {
@@ -129,32 +148,65 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
       };
 
       final casesNotifier = ref.read(casesProvider.notifier);
-      final newCase = await casesNotifier.createCase(caseData);
+      
+      if (_isEditing && _caseId != null) {
+        // Update existing case
+        final success = await casesNotifier.updateCase(_caseId!, caseData);
+        
+        // Close loading indicator
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+        
+        if (mounted) {
+          if (success) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Case updated successfully!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            context.pop(true); // Return true to indicate success
+          } else {
+            final errorMessage = casesNotifier.state.error ?? 'Failed to update case. Please try again.';
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMessage),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 5),
+              ),
+            );
+          }
+        }
+      } else {
+        // Create new case
+        final newCase = await casesNotifier.createCase(caseData);
 
-      // Close loading indicator
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
+        // Close loading indicator
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
 
-      if (mounted) {
-        if (newCase != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Case reported successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          context.pop();
-        } else {
-          // Show the actual error message from the provider
-          final errorMessage = casesNotifier.state.error ?? 'Failed to report case. Please try again.';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errorMessage),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 5),
-            ),
-          );
+        if (mounted) {
+          if (newCase != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Case reported successfully!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            context.pop();
+          } else {
+            // Show the actual error message from the provider
+            final errorMessage = casesNotifier.state.error ?? 'Failed to report case. Please try again.';
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMessage),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 5),
+              ),
+            );
+          }
         }
       }
     } catch (e) {
@@ -183,7 +235,7 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Report Case'),
+        title: Text(_isEditing ? 'Edit Case' : 'Report Case'),
       ),
       body: Form(
         key: _formKey,

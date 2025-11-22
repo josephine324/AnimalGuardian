@@ -22,6 +22,9 @@ class CaseReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = CaseReport
         fields = '__all__'
+        # Farmers can update: symptoms, duration, number of animals, location, urgency, photos, videos, audio
+        # But cannot change: case_id, reporter, assigned_veterinarian, assigned_at, assigned_by, reported_at
+        # updated_at is auto-updated by Django
         read_only_fields = ('case_id', 'reporter', 'assigned_veterinarian', 'assigned_at', 'assigned_by', 'reported_at', 'updated_at')
     
     def get_reporter_name(self, obj):

@@ -54,8 +54,12 @@ class RegisterView(generics.CreateAPIView):
                             'email': ['An account with this email address already exists.']
                         }, status=status.HTTP_400_BAD_REQUEST)
                 else:
-                    # Remove empty email from request data
-                    request_data.pop('email', None)
+                    # Remove empty email from request data - set to None explicitly
+                    # This prevents empty string from being passed to serializer
+                    request_data['email'] = None
+        else:
+            # If email is not in request, explicitly set to None
+            request_data['email'] = None
         
         serializer = self.get_serializer(data=request_data)
         serializer.is_valid(raise_exception=True)
@@ -100,7 +104,17 @@ class LoginView(generics.GenericAPIView):
             user = None
             if phone_number:
                 try:
-                    user = authenticate(username=phone_number, password=password)
+                    # Clean phone number (remove spaces, dashes, etc.) for authentication
+                    import re
+                    cleaned_phone = re.sub(r'[^\d]', '', str(phone_number))
+                    logger.info(f'Login attempt with phone: {phone_number} (cleaned: {cleaned_phone})')
+                    user = authenticate(username=cleaned_phone, password=password)
+                    if not user:
+                        # If authenticate fails, try to find user and check password directly
+                        user_obj = User.objects.filter(phone_number=cleaned_phone).first()
+                        if user_obj and user_obj.check_password(password):
+                            logger.info(f'Password check passed for phone: {cleaned_phone}, using user object directly')
+                            user = user_obj
                 except Exception as e:
                     logger.error(f'Error authenticating with phone number: {str(e)}', exc_info=True)
             elif email:

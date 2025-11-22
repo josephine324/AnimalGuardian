@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../providers/cases_provider.dart';
 import '../../../../core/models/case_model.dart';
@@ -24,19 +25,130 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   bool _isUpdating = false;
   String? _userType;
+  String? _userId;
 
   @override
   void initState() {
     super.initState();
-    _loadUserType();
+    _loadUserInfo();
   }
 
-  Future<void> _loadUserType() async {
-    final userType = await _storage.read(key: AppConstants.userTypeKey);
+  Future<void> _loadUserInfo() async {
+    // Try to get from storage first
+    String? userType = await _storage.read(key: AppConstants.userTypeKey);
+    String? userId = await _storage.read(key: AppConstants.userIdKey);
+    
+    // If not in storage, try to get from API
+    if (userType == null || userId == null) {
+      try {
+        final userData = await _apiService.getCurrentUser();
+        userType = userData['user_type']?.toString();
+        userId = userData['id']?.toString();
+        
+        // Store for future use
+        if (userType != null) {
+          await _storage.write(key: AppConstants.userTypeKey, value: userType);
+        }
+        if (userId != null) {
+          await _storage.write(key: AppConstants.userIdKey, value: userId);
+        }
+      } catch (e) {
+        print('Error loading user info from API: $e');
+      }
+    }
+    
+    // Debug: Print values to console
+    print('DEBUG: Loaded userType: $userType, userId: $userId');
     if (mounted) {
       setState(() {
         _userType = userType;
+        _userId = userId;
+        print('DEBUG: Set state - userType: $_userType, userId: $_userId');
       });
+    }
+  }
+
+  Future<void> _navigateToEditCase(BuildContext context, CaseReport caseReport) async {
+    // Navigate to edit screen using go_router
+    final result = await context.push<bool>(
+      '/cases/edit',
+      extra: caseReport,
+    );
+    
+    if (result == true) {
+      // Case was updated, refresh
+      ref.read(casesProvider.notifier).loadCases(refresh: true);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Case updated successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmDeleteCase(BuildContext context, CaseReport caseReport) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Case'),
+        content: Text('Are you sure you want to delete case ${caseReport.caseId}? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      setState(() {
+        _isUpdating = true;
+      });
+
+      try {
+        final success = await ref.read(casesProvider.notifier).deleteCase(caseReport.id);
+        
+        if (success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Case deleted successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.of(context).pop(); // Go back to cases list
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to delete case: ${ref.read(casesProvider).error ?? "Unknown error"}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting case: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isUpdating = false;
+          });
+        }
+      }
     }
   }
 
@@ -84,12 +196,146 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final casesState = ref.watch(casesProvider);
-    final caseReport = casesState.cases.firstWhere(
-      (c) => c.id == widget.caseId,
-      orElse: () => throw Exception('Case not found'),
-    );
     
-    final canUpdateStatus = _userType == 'local_vet' || _userType == 'sector_vet';
+    // Try to find the case in the list
+    CaseReport? caseReport;
+    try {
+      caseReport = casesState.cases.firstWhere(
+        (c) => c.id == widget.caseId,
+      );
+    } catch (e) {
+      // Case not in list - show loading and fetch it
+      return FutureBuilder<CaseReport?>(
+        future: ref.read(casesProvider.notifier).getCaseById(widget.caseId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Loading Case...')),
+              body: const Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Case Not Found')),
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                    const SizedBox(height: 16),
+                    const Text('Case not found'),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Go Back'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+          // Case found, build the detail view
+          return _CaseDetailContent(
+            caseReport: snapshot.data!,
+            userType: _userType,
+            userId: _userId,
+            onLoadUserInfo: _loadUserInfo,
+            onNavigateToEdit: _navigateToEditCase,
+            onConfirmDelete: _confirmDeleteCase,
+            onUpdateStatus: _updateCaseStatus,
+            isUpdating: _isUpdating,
+          );
+        },
+      );
+    }
+    
+    // Case found in list, build the detail view
+    return _CaseDetailContent(
+      caseReport: caseReport!,
+      userType: _userType,
+      userId: _userId,
+      onLoadUserInfo: _loadUserInfo,
+      onNavigateToEdit: _navigateToEditCase,
+      onConfirmDelete: _confirmDeleteCase,
+      onUpdateStatus: _updateCaseStatus,
+      isUpdating: _isUpdating,
+    );
+  }
+  
+  Widget _buildCaseDetail(CaseReport caseReport) {
+    // This method is deprecated - use _CaseDetailContent widget instead
+    return _CaseDetailContent(
+      caseReport: caseReport,
+      userType: _userType,
+      userId: _userId,
+      onLoadUserInfo: _loadUserInfo,
+      onNavigateToEdit: _navigateToEditCase,
+      onConfirmDelete: _confirmDeleteCase,
+      onUpdateStatus: _updateCaseStatus,
+      isUpdating: _isUpdating,
+    );
+  }
+}
+
+// Separate widget to avoid rebuild issues and fix overflow
+class _CaseDetailContent extends ConsumerWidget {
+  final CaseReport caseReport;
+  final String? userType;
+  final String? userId;
+  final VoidCallback onLoadUserInfo;
+  final Function(BuildContext, CaseReport) onNavigateToEdit;
+  final Function(BuildContext, CaseReport) onConfirmDelete;
+  final Function(CaseStatus) onUpdateStatus;
+  final bool isUpdating;
+
+  const _CaseDetailContent({
+    required this.caseReport,
+    required this.userType,
+    required this.userId,
+    required this.onLoadUserInfo,
+    required this.onNavigateToEdit,
+    required this.onConfirmDelete,
+    required this.onUpdateStatus,
+    required this.isUpdating,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final canUpdateStatus = userType == 'local_vet' || userType == 'sector_vet';
+    final isFarmer = userType == 'farmer';
+    // Check if user is the reporter (owner) of the case - compare as strings to avoid type issues
+    final userIdStr = userId?.toString().trim();
+    final reporterIdStr = caseReport.reporterId.toString().trim();
+    final isCaseOwner = userIdStr != null && userIdStr.isNotEmpty && userIdStr == reporterIdStr;
+    
+    // Check status - use string comparison to be safe
+    final statusStr = caseReport.status.toString().toLowerCase();
+    final isEditableStatus = statusStr.contains('pending') || 
+                             statusStr.contains('rejected') || 
+                             statusStr.contains('underreview') ||
+                             caseReport.status == CaseStatus.pending ||
+                             caseReport.status == CaseStatus.rejected ||
+                             caseReport.status == CaseStatus.underReview;
+    final isDeletableStatus = statusStr.contains('pending') || 
+                              statusStr.contains('rejected') ||
+                              caseReport.status == CaseStatus.pending ||
+                              caseReport.status == CaseStatus.rejected;
+    
+    final canEdit = isFarmer && isCaseOwner && isEditableStatus;
+    final canDelete = isFarmer && isCaseOwner && isDeletableStatus;
+    
+    // Debug output
+    print('DEBUG Case Detail:');
+    print('  userType: $userType');
+    print('  userId: $userId (string: $userIdStr)');
+    print('  caseReport.reporterId: ${caseReport.reporterId} (string: $reporterIdStr)');
+    print('  isFarmer: $isFarmer');
+    print('  isCaseOwner: $isCaseOwner (userIdStr == reporterIdStr: ${userIdStr == reporterIdStr})');
+    print('  caseStatus: ${caseReport.status} (string: $statusStr)');
+    print('  isEditableStatus: $isEditableStatus');
+    print('  isDeletableStatus: $isDeletableStatus');
+    print('  canEdit: $canEdit');
+    print('  canDelete: $canDelete');
 
     return Scaffold(
       appBar: AppBar(
@@ -99,12 +345,122 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
         ),
         title: Text('Case ${caseReport.caseId}'),
         actions: [
+          // Refresh button
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
               ref.read(casesProvider.notifier).loadCases(refresh: true);
+              onLoadUserInfo(); // Reload user info on refresh
             },
+            tooltip: 'Refresh',
           ),
+          // Show edit/delete buttons if conditions are met
+          if (canEdit)
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () => onNavigateToEdit(context, caseReport),
+              tooltip: 'Edit Case',
+            ),
+          if (canDelete)
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () => onConfirmDelete(context, caseReport),
+              tooltip: 'Delete Case',
+            ),
+          // Debug menu - consolidate debug options into one popup menu
+          if (isFarmer)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              tooltip: 'More Options',
+              onSelected: (value) {
+                if (value == 'debug_info') {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Debug Information'),
+                      content: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('User Type: ${userType ?? "NULL"}'),
+                            Text('User ID: ${userId ?? "NULL"}'),
+                            Text('Case Reporter ID: ${caseReport.reporterId}'),
+                            Text('Is Farmer: $isFarmer'),
+                            Text('Is Case Owner: $isCaseOwner'),
+                            Text('Case Status: ${caseReport.status}'),
+                            Text('Can Edit: $canEdit'),
+                            Text('Can Delete: $canDelete'),
+                            if (userType == null || userId == null)
+                              const Padding(
+                                padding: EdgeInsets.only(top: 16),
+                                child: Text(
+                                  '⚠️ SOLUTION: Log out and log back in!',
+                                  style: TextStyle(
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            onLoadUserInfo();
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text('Reload User Info'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Close'),
+                        ),
+                      ],
+                    ),
+                  );
+                } else if (value == 'force_edit' && isFarmer) {
+                  // Force edit for testing
+                  onNavigateToEdit(context, caseReport);
+                }
+              },
+              itemBuilder: (context) => [
+                if (!canEdit && !canDelete && isFarmer)
+                  const PopupMenuItem(
+                    value: 'debug_info',
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, size: 20),
+                        SizedBox(width: 8),
+                        Text('Why no buttons?'),
+                      ],
+                    ),
+                  ),
+                if (isFarmer && !canEdit)
+                  const PopupMenuItem(
+                    value: 'force_edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit, size: 20),
+                        SizedBox(width: 8),
+                        Text('Edit (Force)'),
+                      ],
+                    ),
+                  ),
+                if (isFarmer)
+                  const PopupMenuItem(
+                    value: 'debug_info',
+                    child: Row(
+                      children: [
+                        Icon(Icons.bug_report, size: 20),
+                        SizedBox(width: 8),
+                        Text('Debug Info'),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
         ],
       ),
       body: SingleChildScrollView(
@@ -257,7 +613,7 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
                             ),
                         ],
                       ),
-                      if (_isUpdating)
+                      if (isUpdating)
                         const Padding(
                           padding: EdgeInsets.only(top: 16.0),
                           child: Center(child: CircularProgressIndicator()),
@@ -494,6 +850,8 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
             child: Text(
               value,
               style: const TextStyle(fontSize: 16),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 3,
             ),
           ),
         ],
@@ -544,9 +902,9 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
   ) {
     final isCurrentStatus = status == currentStatus;
     return ElevatedButton(
-      onPressed: _isUpdating || isCurrentStatus
+      onPressed: isUpdating || isCurrentStatus
           ? null
-          : () => _updateCaseStatus(status),
+          : () => onUpdateStatus(status),
       style: ElevatedButton.styleFrom(
         backgroundColor: isCurrentStatus ? Colors.grey : color,
         foregroundColor: Colors.white,
