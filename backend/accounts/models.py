@@ -29,16 +29,12 @@ class User(AbstractUser):
         default='farmer'
     )
     
-    phone_regex = RegexValidator(
-        regex=r'^(078|079|073|072)\d{7}$',
-        message="Phone number must start with 078, 079, 073, or 072 and be exactly 10 digits (e.g., 0781234567)"
-    )
-    
+    # Phone number validation is done in serializer for flexibility
+    # Model allows up to 15 digits to support international formats for sector vets
     phone_number = models.CharField(
-        validators=[phone_regex], 
-        max_length=10, 
+        max_length=15,  # Increased to support international formats
         unique=True,
-        help_text="Rwanda phone number starting with 078, 079, 073, or 072 (10 digits total, e.g., 0781234567)"
+        help_text="Phone number. For Rwanda: 078, 079, 073, or 072 followed by 7 digits (e.g., 0781234567). Sector vets can use international formats."
     )
     
     # Override email field from AbstractUser to make it optional

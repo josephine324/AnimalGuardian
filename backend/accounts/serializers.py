@@ -89,16 +89,31 @@ class UserSerializer(serializers.ModelSerializer):
         if self.instance is None:
             # Clean and validate phone number
             phone_number = attrs.get('phone_number')
+            user_type = attrs.get('user_type', 'farmer')
+            
             if phone_number:
                 # Remove spaces, dashes, and other non-digit characters
                 import re
                 cleaned_phone = re.sub(r'[^\d]', '', str(phone_number))
                 
-                # Validate phone number format
-                if not re.match(r'^(078|079|073|072)\d{7}$', cleaned_phone):
-                    raise serializers.ValidationError({
-                        'phone_number': 'Phone number must start with 078, 079, 073, or 072 and be exactly 10 digits (e.g., 0781234567)'
-                    })
+                # Remove country code if present (+250 or 250)
+                if cleaned_phone.startswith('250') and len(cleaned_phone) > 10:
+                    cleaned_phone = cleaned_phone[3:]  # Remove '250' prefix
+                
+                # More flexible validation for sector vets and admins
+                if user_type in ['sector_vet', 'admin']:
+                    # Sector vets can have more flexible phone numbers
+                    # Just ensure it's between 8-15 digits (international format)
+                    if not (8 <= len(cleaned_phone) <= 15):
+                        raise serializers.ValidationError({
+                            'phone_number': 'Phone number must be between 8 and 15 digits. For Rwanda, use format: 0781234567'
+                        })
+                else:
+                    # For farmers and local vets, validate Rwanda format strictly
+                    if not re.match(r'^(078|079|073|072)\d{7}$', cleaned_phone):
+                        raise serializers.ValidationError({
+                            'phone_number': 'Phone number must start with 078, 079, 073, or 072 and be exactly 10 digits (e.g., 0781234567)'
+                        })
                 
                 attrs['phone_number'] = cleaned_phone
                 
@@ -261,13 +276,29 @@ class UserSerializer(serializers.ModelSerializer):
         if 'phone_number' in validated_data:
             import re
             phone_number = validated_data['phone_number']
+            user_type = instance.user_type if hasattr(instance, 'user_type') else 'farmer'
+            
             if phone_number:
                 cleaned_phone = re.sub(r'[^\d]', '', str(phone_number))
-                # Validate phone number format
-                if not re.match(r'^(078|079|073|072)\d{7}$', cleaned_phone):
-                    raise serializers.ValidationError({
-                        'phone_number': 'Phone number must start with 078, 079, 073, or 072 and be exactly 10 digits (e.g., 0781234567)'
-                    })
+                
+                # Remove country code if present (+250 or 250)
+                if cleaned_phone.startswith('250') and len(cleaned_phone) > 10:
+                    cleaned_phone = cleaned_phone[3:]  # Remove '250' prefix
+                
+                # More flexible validation for sector vets and admins
+                if user_type in ['sector_vet', 'admin']:
+                    # Sector vets can have more flexible phone numbers
+                    if not (8 <= len(cleaned_phone) <= 15):
+                        raise serializers.ValidationError({
+                            'phone_number': 'Phone number must be between 8 and 15 digits. For Rwanda, use format: 0781234567'
+                        })
+                else:
+                    # For farmers and local vets, validate Rwanda format strictly
+                    if not re.match(r'^(078|079|073|072)\d{7}$', cleaned_phone):
+                        raise serializers.ValidationError({
+                            'phone_number': 'Phone number must start with 078, 079, 073, or 072 and be exactly 10 digits (e.g., 0781234567)'
+                        })
+                
                 validated_data['phone_number'] = cleaned_phone
         
         if password:
