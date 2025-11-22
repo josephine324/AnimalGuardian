@@ -64,7 +64,12 @@ const VeterinariansPage = () => {
       }
       const data = await usersAPI.getVeterinarians();
       const vetsList = data.results || (Array.isArray(data) ? data : []);
-      setVeterinarians(Array.isArray(vetsList) ? vetsList : []);
+      // Filter out sector vets - they should NOT appear in this list
+      // Only local vets should be shown here
+      const localVetsOnly = Array.isArray(vetsList) 
+        ? vetsList.filter(vet => vet.user_type === 'local_vet')
+        : [];
+      setVeterinarians(localVetsOnly);
     } catch (err) {
       console.error('Error fetching veterinarians:', err);
       setError(err.response?.data?.error || err.response?.data?.detail || 'Failed to load veterinarians');
