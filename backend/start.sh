@@ -2,10 +2,15 @@
 set -e
 
 # Fix duplicate emails before migrations (if they exist)
-echo "Checking for duplicate emails..."
-python fix_duplicate_emails.py || {
-    echo "Duplicate email fix script failed or no duplicates found, continuing..."
-}
+echo "========================================="
+echo "STEP 1: Checking for duplicate emails..."
+echo "========================================="
+if python fix_duplicate_emails.py; then
+    echo "✓ Duplicate email check completed"
+else
+    echo "⚠ Duplicate email fix script had issues, but continuing..."
+fi
+echo ""
 
 # Run migrations (with verbosity for debugging)
 echo "Running database migrations..."
