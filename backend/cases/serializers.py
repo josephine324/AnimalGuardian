@@ -20,9 +20,7 @@ class CaseReportSerializer(serializers.ModelSerializer):
     # Include nested livestock data so web dashboard can display it
     # Use lazy import to avoid circular dependencies
     livestock = serializers.SerializerMethodField()
-    livestock_id = serializers.PrimaryKeyRelatedField(
-        queryset=None,  # Will be set in __init__
-        source='livestock',
+    livestock_id = serializers.IntegerField(
         write_only=True,
         required=False,
         allow_null=True
@@ -32,12 +30,6 @@ class CaseReportSerializer(serializers.ModelSerializer):
     case_id = serializers.CharField(read_only=True)
     reporter = serializers.PrimaryKeyRelatedField(read_only=True)
     
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Set the queryset for livestock_id after models are loaded
-        from livestock.models import Livestock
-        self.fields['livestock_id'].queryset = Livestock.objects.all()
-    
     def get_livestock(self, obj):
         """Return nested livestock data using LivestockSerializer."""
         if obj.livestock:
@@ -45,6 +37,33 @@ class CaseReportSerializer(serializers.ModelSerializer):
             from livestock.serializers import LivestockSerializer
             return LivestockSerializer(obj.livestock).data
         return None
+    
+    def create(self, validated_data):
+        """Override create to handle livestock_id assignment."""
+        livestock_id = validated_data.pop('livestock_id', None)
+        case = super().create(validated_data)
+        if livestock_id:
+            from livestock.models import Livestock
+            try:
+                case.livestock = Livestock.objects.get(id=livestock_id)
+                case.save()
+            except Livestock.DoesNotExist:
+                pass  # Invalid livestock_id, leave as None
+        return case
+    
+    def update(self, instance, validated_data):
+        """Override update to handle livestock_id assignment."""
+        livestock_id = validated_data.pop('livestock_id', None)
+        case = super().update(instance, validated_data)
+        if livestock_id is not None:
+            from livestock.models import Livestock
+            try:
+                case.livestock = Livestock.objects.get(id=livestock_id) if livestock_id else None
+                case.save()
+            except Livestock.DoesNotExist:
+                case.livestock = None
+                case.save()
+        return case
     
     class Meta:
         model = CaseReport
