@@ -123,7 +123,7 @@ def reverse_fix_duplicate_emails_data(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0007_change_vet_availability_default'),
+        ('accounts', '0007_change_vet_availability_default'),  # Must run after 0007
     ]
 
     operations = [
