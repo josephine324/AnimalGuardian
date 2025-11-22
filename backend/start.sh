@@ -1,17 +1,11 @@
 #!/bin/bash
 # Don't use set -e here, we want to handle errors manually
 
-# Fix duplicate emails before migrations (if they exist)
+# Skip duplicate email fix - migrations will handle it
+# The fix script requires the table to exist, which may not be the case
 echo "========================================="
-echo "STEP 1: Checking for duplicate emails..."
+echo "STEP 1: Running migrations (duplicate fix skipped)"
 echo "========================================="
-python fix_duplicate_emails.py
-fix_exit_code=$?
-if [ $fix_exit_code -eq 0 ]; then
-    echo "✓ Duplicate email check completed successfully"
-else
-    echo "⚠ Duplicate email fix script had issues (exit code: $fix_exit_code), but continuing..."
-fi
 echo ""
 
 # Run migrations (with verbosity for debugging)
