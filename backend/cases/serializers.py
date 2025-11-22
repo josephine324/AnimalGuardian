@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from .models import CaseReport, Disease
-from livestock.serializers import LivestockSerializer
 
 class DiseaseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -19,7 +18,8 @@ class CaseReportSerializer(serializers.ModelSerializer):
     assigned_by_name = serializers.SerializerMethodField()
     
     # Include nested livestock data so web dashboard can display it
-    livestock = LivestockSerializer(read_only=True)
+    # Use lazy import to avoid circular dependencies
+    livestock = serializers.SerializerMethodField()
     livestock_id = serializers.PrimaryKeyRelatedField(
         queryset=None,  # Will be set in __init__
         source='livestock',
@@ -37,6 +37,14 @@ class CaseReportSerializer(serializers.ModelSerializer):
         # Set the queryset for livestock_id after models are loaded
         from livestock.models import Livestock
         self.fields['livestock_id'].queryset = Livestock.objects.all()
+    
+    def get_livestock(self, obj):
+        """Return nested livestock data using LivestockSerializer."""
+        if obj.livestock:
+            # Lazy import to avoid circular dependencies
+            from livestock.serializers import LivestockSerializer
+            return LivestockSerializer(obj.livestock).data
+        return None
     
     class Meta:
         model = CaseReport
