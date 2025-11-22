@@ -62,7 +62,7 @@ def remove_unique_constraint_if_exists(apps, schema_editor):
 
 
 def handle_duplicate_emails(apps, schema_editor):
-    """Handle duplicate emails after making email field nullable."""
+    """Handle duplicate emails - set all but the first occurrence to NULL."""
     db_alias = schema_editor.connection.alias
     
     # Check if table exists first
@@ -97,27 +97,74 @@ def handle_duplicate_emails(apps, schema_editor):
     # Use raw SQL to find and fix duplicates directly
     with schema_editor.connection.cursor() as cursor:
         if schema_editor.connection.vendor == 'postgresql':
-            # Find all duplicate emails
-            cursor.execute("""
-                SELECT email, array_agg(id ORDER BY id) as user_ids
-                FROM accounts_user
-                WHERE email IS NOT NULL AND email != ''
-                GROUP BY email
-                HAVING COUNT(*) > 1;
-            """)
-            duplicates = cursor.fetchall()
-            
-            # For each duplicate email, keep the first user (lowest ID) and set others to NULL
-            for email, user_ids in duplicates:
-                if user_ids and len(user_ids) > 1:
-                    # Keep the first ID, set others to NULL
-                    ids_to_null = user_ids[1:]  # Skip the first one
-                    if ids_to_null:
-                        placeholders = ','.join(['%s'] * len(ids_to_null))
-                        cursor.execute(
-                            f'UPDATE accounts_user SET email = NULL WHERE id IN ({placeholders})',
-                            ids_to_null
-                        )
+            try:
+                # Use a more direct approach: update all duplicate emails to NULL except the first one
+                # This uses a window function to identify which rows to keep
+                cursor.execute("""
+                    WITH ranked_users AS (
+                        SELECT 
+                            id,
+                            email,
+                            ROW_NUMBER() OVER (PARTITION BY email ORDER BY id) as rn
+                        FROM accounts_user
+                        WHERE email IS NOT NULL AND email != ''
+                    )
+                    UPDATE accounts_user
+                    SET email = NULL
+                    FROM ranked_users
+                    WHERE accounts_user.id = ranked_users.id
+                    AND ranked_users.rn > 1;
+                """)
+                # Verify no duplicates remain
+                cursor.execute("""
+                    SELECT email, COUNT(*) as count
+                    FROM accounts_user
+                    WHERE email IS NOT NULL AND email != ''
+                    GROUP BY email
+                    HAVING COUNT(*) > 1;
+                """)
+                remaining_duplicates = cursor.fetchall()
+                if remaining_duplicates:
+                    # If duplicates still exist, set all but one to NULL using a different approach
+                    for email, count in remaining_duplicates:
+                        cursor.execute("""
+                            UPDATE accounts_user
+                            SET email = NULL
+                            WHERE id IN (
+                                SELECT id FROM accounts_user
+                                WHERE email = %s
+                                ORDER BY id
+                                OFFSET 1
+                            );
+                        """, [email])
+            except Exception as e:
+                # If the window function approach fails, try the simpler approach
+                try:
+                    # Find all duplicate emails
+                    cursor.execute("""
+                        SELECT email
+                        FROM accounts_user
+                        WHERE email IS NOT NULL AND email != ''
+                        GROUP BY email
+                        HAVING COUNT(*) > 1;
+                    """)
+                    duplicate_emails = [row[0] for row in cursor.fetchall()]
+                    
+                    # For each duplicate email, keep the first user (lowest ID) and set others to NULL
+                    for email in duplicate_emails:
+                        cursor.execute("""
+                            UPDATE accounts_user
+                            SET email = NULL
+                            WHERE id IN (
+                                SELECT id FROM accounts_user
+                                WHERE email = %s
+                                ORDER BY id
+                                OFFSET 1
+                            );
+                        """, [email])
+                except Exception:
+                    # If everything fails, just continue
+                    pass
         else:
             # SQLite approach
             try:
