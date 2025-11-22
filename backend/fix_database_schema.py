@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Script to fix the database schema issue by renaming password_reset_code to password_reset_token.
-This can be run manually on Railway if the migration doesn't run automatically.
+This can be run manually on Render if the migration doesn't run automatically.
 """
 import os
 import sys
