@@ -155,34 +155,48 @@ def stats(request):
         ).count()
         
         # Calculate average response time (simplified to avoid database-specific issues)
-        assigned_cases = CaseReport.objects.filter(
-            assigned_at__isnull=False,
-            reported_at__isnull=False
-        )
-        
-        if assigned_cases.exists():
-            response_times = []
-            for case in assigned_cases.only('reported_at', 'assigned_at')[:100]:  # Limit to first 100 for performance
-                try:
-                    if case.reported_at and case.assigned_at:
-                        time_diff = (case.assigned_at - case.reported_at).total_seconds() / 3600  # Hours
-                        if time_diff > 0:  # Only count positive differences
-                            response_times.append(time_diff)
-                except (AttributeError, TypeError):
-                    continue
+        average_response_time = '0 hours'
+        try:
+            assigned_cases = CaseReport.objects.filter(
+                assigned_at__isnull=False,
+                reported_at__isnull=False
+            )
             
-            if response_times:
-                avg_hours = sum(response_times) / len(response_times)
-                if avg_hours < 1:
-                    average_response_time = f"{int(avg_hours * 60)} minutes"
-                elif avg_hours < 24:
-                    average_response_time = f"{avg_hours:.1f} hours"
-                else:
-                    average_response_time = f"{avg_hours / 24:.1f} days"
-            else:
-                average_response_time = '0 hours'
-        else:
-            average_response_time = '0 hours'
+            if assigned_cases.exists():
+                response_times = []
+                # Use values() to avoid loading full objects and potential serializer issues
+                for case_data in assigned_cases.values('reported_at', 'assigned_at')[:100]:
+                    try:
+                        reported_at = case_data.get('reported_at')
+                        assigned_at = case_data.get('assigned_at')
+                        if reported_at and assigned_at:
+                            # Handle both datetime objects and strings
+                            if isinstance(reported_at, str):
+                                from django.utils.dateparse import parse_datetime
+                                reported_at = parse_datetime(reported_at)
+                            if isinstance(assigned_at, str):
+                                from django.utils.dateparse import parse_datetime
+                                assigned_at = parse_datetime(assigned_at)
+                            
+                            if reported_at and assigned_at:
+                                time_diff = (assigned_at - reported_at).total_seconds() / 3600  # Hours
+                                if time_diff > 0:  # Only count positive differences
+                                    response_times.append(time_diff)
+                    except (AttributeError, TypeError, ValueError) as e:
+                        logger.warning(f"Error calculating response time for case: {e}")
+                        continue
+                
+                if response_times:
+                    avg_hours = sum(response_times) / len(response_times)
+                    if avg_hours < 1:
+                        average_response_time = f"{int(avg_hours * 60)} minutes"
+                    elif avg_hours < 24:
+                        average_response_time = f"{avg_hours:.1f} hours"
+                    else:
+                        average_response_time = f"{avg_hours / 24:.1f} days"
+        except Exception as e:
+            logger.error(f"Error calculating average response time: {e}", exc_info=True)
+            average_response_time = 'N/A'  # Set to N/A if calculation fails
         
         # Calculate resolution rate
         resolution_rate = f"{(resolved_cases / total_cases * 100):.1f}%" if total_cases > 0 else "0%"
