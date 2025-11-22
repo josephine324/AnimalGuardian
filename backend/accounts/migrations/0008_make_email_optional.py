@@ -341,7 +341,7 @@ def add_unique_constraint_if_safe(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0007_5_fix_duplicate_emails_data'),  # Run data migration first
+        ('accounts', '0007_change_vet_availability_default'),  # Skip data migration - just go straight to schema change
     ]
 
     operations = [
