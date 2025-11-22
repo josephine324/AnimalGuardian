@@ -229,9 +229,17 @@ def stats(request):
         return Response(response_data, status=status.HTTP_200_OK)
     except Exception as e:
         import logging
+        import traceback
         logger = logging.getLogger(__name__)
-        logger.error(f"Error in dashboard stats: {str(e)}", exc_info=True)
+        error_traceback = traceback.format_exc()
+        logger.error(f"Error in dashboard stats: {str(e)}\n{error_traceback}", exc_info=True)
+        
+        # Return a more detailed error in debug mode
+        error_detail = str(e) if settings.DEBUG else 'Please try again later.'
+        if settings.DEBUG:
+            error_detail = f"{str(e)}\n\nTraceback:\n{error_traceback}"
+        
         return Response({
             'error': 'An error occurred while fetching dashboard statistics.',
-            'detail': str(e) if settings.DEBUG else 'Please try again later.'
+            'detail': error_detail
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

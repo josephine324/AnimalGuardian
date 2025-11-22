@@ -32,24 +32,52 @@ class CaseReportSerializer(serializers.ModelSerializer):
     
     def get_livestock(self, obj):
         """Return nested livestock data using LivestockSerializer."""
+        # Always return None if there's any error - don't crash the serializer
         try:
-            if obj.livestock:
-                # Lazy import to avoid circular dependencies
+            # Check if livestock exists and is accessible
+            if not hasattr(obj, 'livestock'):
+                return None
+            
+            livestock = obj.livestock
+            if livestock is None:
+                return None
+            
+            # Try to get basic info first to ensure livestock is accessible
+            try:
+                livestock_id = livestock.id
+            except (AttributeError, TypeError):
+                return None
+            
+            # Lazy import to avoid circular dependencies
+            try:
                 from livestock.serializers import LivestockSerializer
-                return LivestockSerializer(obj.livestock).data
+                return LivestockSerializer(livestock).data
+            except (ImportError, AttributeError, TypeError) as serializer_error:
+                # If full serialization fails, return basic info
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Error serializing livestock {livestock_id} for case {getattr(obj, 'id', 'unknown')}: {serializer_error}")
+                # Return basic info if full serialization fails
+                try:
+                    return {
+                        'id': livestock_id,
+                        'name': getattr(livestock, 'name', None),
+                        'tag_number': getattr(livestock, 'tag_number', None),
+                    }
+                except Exception:
+                    return None
+            except Exception as serializer_error:
+                # Catch any other errors in serialization
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Unexpected error serializing livestock {livestock_id}: {serializer_error}")
+                return None
         except Exception as e:
-            # Log error but don't crash - return basic livestock info instead
+            # Log error but don't crash - return None
             import logging
             logger = logging.getLogger(__name__)
-            logger.warning(f"Error serializing livestock for case {obj.id}: {e}")
-            # Return basic info if full serialization fails
-            if obj.livestock:
-                return {
-                    'id': obj.livestock.id,
-                    'name': getattr(obj.livestock, 'name', None),
-                    'tag_number': getattr(obj.livestock, 'tag_number', None),
-                }
-        return None
+            logger.warning(f"Error getting livestock for case {getattr(obj, 'id', 'unknown')}: {e}")
+            return None
     
     def create(self, validated_data):
         """Override create to handle livestock_id assignment."""

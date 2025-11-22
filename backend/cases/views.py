@@ -20,6 +20,28 @@ class CaseReportViewSet(viewsets.ModelViewSet):
     serializer_class = CaseReportSerializer
     permission_classes = [IsAuthenticated]
     
+    def list(self, request, *args, **kwargs):
+        """Override list to handle serialization errors gracefully."""
+        try:
+            return super().list(request, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"Error in CaseReportViewSet.list: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'An error occurred while fetching cases.',
+                'detail': str(e) if settings.DEBUG else 'Please try again later.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Override retrieve to handle serialization errors gracefully."""
+        try:
+            return super().retrieve(request, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"Error in CaseReportViewSet.retrieve: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'An error occurred while fetching the case.',
+                'detail': str(e) if settings.DEBUG else 'Please try again later.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
     def get_queryset(self):
         user = self.request.user
         user_type = user.user_type
