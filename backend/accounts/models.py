@@ -98,6 +98,12 @@ class User(AbstractUser):
         db_table = 'users'
         verbose_name = 'User'
         verbose_name_plural = 'Users'
+        indexes = [
+            models.Index(fields=['user_type'], name='users_user_type_idx'),
+            models.Index(fields=['-created_at'], name='users_created_at_idx'),
+            models.Index(fields=['user_type', 'created_at'], name='users_type_created_idx'),
+            models.Index(fields=['is_approved_by_admin'], name='users_approved_idx'),
+        ]
     
     def __str__(self):
         return f"{self.get_full_name()} ({self.phone_number})"
