@@ -25,7 +25,6 @@ class _AddLivestockScreenState extends ConsumerState<AddLivestockScreen> {
   LivestockStatus _selectedStatus = LivestockStatus.healthy;
   DateTime? _selectedBirthDate;
   bool _isPregnant = false;
-  bool _isLoadingTypes = false;
   bool _isLoading = false;
 
   @override
@@ -34,44 +33,6 @@ class _AddLivestockScreenState extends ConsumerState<AddLivestockScreen> {
     // No need to load types/breeds - using manual text input
   }
 
-  Future<void> _loadLivestockTypes() async {
-    if (_isLoadingTypes) return;
-    
-    setState(() {
-      _isLoadingTypes = true;
-    });
-    
-    try {
-      await ref.read(livestockProvider.notifier).loadLivestockTypes();
-      // If types loaded successfully, check if we need to show a message
-      final state = ref.read(livestockProvider);
-      if (mounted && state.livestockTypes.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No livestock types available. Please contact support.'),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load livestock types: ${error.toString()}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingTypes = false;
-        });
-      }
-    }
-  }
 
   @override
   void dispose() {
@@ -405,7 +366,7 @@ class _AddLivestockScreenState extends ConsumerState<AddLivestockScreen> {
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: livestockState.isLoading
+                child: _isLoading
                     ? const SizedBox(
                         height: 20,
                         width: 20,
