@@ -254,14 +254,18 @@ if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 else:
     # In production, check environment variable first
-    allow_all_env = config('CORS_ALLOW_ALL_ORIGINS', default='false')
+    # Default to True if explicitly set, otherwise use specific origins
+    allow_all_env = os.environ.get('CORS_ALLOW_ALL_ORIGINS') or config('CORS_ALLOW_ALL_ORIGINS', default='')
     if allow_all_env and allow_all_env.lower() in ('true', '1', 'yes'):
         CORS_ALLOW_ALL_ORIGINS = True
+        print("CORS: Allowing all origins (CORS_ALLOW_ALL_ORIGINS=true)")
     else:
         CORS_ALLOW_ALL_ORIGINS = False
         # Ensure production frontend is always in allowed origins
         if 'https://animalguards.netlify.app' not in CORS_ALLOWED_ORIGINS:
             CORS_ALLOWED_ORIGINS.append('https://animalguards.netlify.app')
+        print(f"CORS: Allowed origins: {CORS_ALLOWED_ORIGINS}")
+        print(f"CORS: Allowed origin regexes: {[str(r.pattern) for r in CORS_ALLOWED_ORIGIN_REGEXES]}")
 
 CORS_ALLOW_CREDENTIALS = True
 
