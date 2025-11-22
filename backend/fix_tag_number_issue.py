@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Script to fix the tag_number unique constraint issue on Railway/production.
+Script to fix the tag_number unique constraint issue on Render/production.
 This converts all empty string tag_numbers to NULL and updates the database schema.
 """
 import os
@@ -90,7 +90,7 @@ def fix_tag_number_issue():
             print("✅ Migration completed!")
         except Exception as e2:
             print(f"❌ Migration also failed: {e2}")
-            print("\nPlease run manually on Railway:")
+            print("\nPlease run manually on Render:")
             print("  python manage.py migrate livestock")
 
 if __name__ == '__main__':
