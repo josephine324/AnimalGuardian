@@ -55,10 +55,10 @@ class CaseReportSerializer(serializers.ModelSerializer):
         """Override create to handle livestock_id assignment."""
         livestock_id = validated_data.pop('livestock_id', None)
         case = super().create(validated_data)
-        if livestock_id:
+        if livestock_id is not None:
             from livestock.models import Livestock
             try:
-                case.livestock = Livestock.objects.get(id=livestock_id)
+                case.livestock = Livestock.objects.get(id=livestock_id) if livestock_id else None
                 case.save()
             except Livestock.DoesNotExist:
                 pass  # Invalid livestock_id, leave as None
