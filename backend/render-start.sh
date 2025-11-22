@@ -16,6 +16,12 @@ python manage.py migrate --noinput --verbosity=0 || {
     }
 }
 
+# Seed livestock types if database is empty (idempotent - safe to run multiple times)
+echo "Checking if livestock types need to be seeded..."
+python manage.py seed_livestock_types --verbosity=0 || {
+    echo "⚠ Seed command failed, but continuing..."
+}
+
 # Get port from environment variable (Render sets this automatically)
 PORT=${PORT:-8000}
 
