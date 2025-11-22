@@ -772,7 +772,7 @@ const CasesPage = () => {
                       <div key={index} className="relative group">
                         <img
                           src={photo}
-                          alt={`Case photo ${index + 1}`}
+                          alt={`Case ${index + 1}`}
                           className="w-full h-48 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
                           onClick={() => window.open(photo, '_blank')}
                           onError={(e) => {
