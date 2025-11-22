@@ -3,13 +3,17 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.db import connection
-from django.db.models import Count, Q, F, ExpressionWrapper, FloatField, Avg
+from django.db.models import Count, Q
 from django.utils import timezone
+from django.conf import settings
 from datetime import timedelta
 from accounts.models import User
 from cases.models import CaseReport
 from livestock.models import Livestock
 from notifications.models import Notification
+import logging
+
+logger = logging.getLogger(__name__)
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -79,111 +83,126 @@ def health_check(request):
 @permission_classes([IsAuthenticated])
 def stats(request):
     """Dashboard statistics endpoint"""
-    user = request.user
-    user_type = user.user_type
-    
-    # Only sector vets and admins can see all stats
-    if user_type not in ['sector_vet', 'admin'] and not (user.is_staff or user.is_superuser):
-        return Response({
-            'error': 'You do not have permission to view dashboard statistics.'
-        }, status=status.HTTP_403_FORBIDDEN)
-    
-    # Optimize statistics queries using aggregation to reduce database hits
-    
-    # Get case statistics in fewer queries using aggregation
-    case_stats = CaseReport.objects.aggregate(
-        total=Count('id'),
-        pending=Count('id', filter=Q(status='pending')),
-        resolved=Count('id', filter=Q(status='resolved')),
-        active=Count('id', filter=Q(status__in=['pending', 'under_review', 'diagnosed', 'treated']))
-    )
-    total_cases = case_stats['total']
-    pending_cases = case_stats['pending']
-    resolved_cases = case_stats['resolved']
-    active_cases = case_stats['active']
-    
-    # Get user statistics using aggregation
-    user_stats = User.objects.aggregate(
-        farmers=Count('id', filter=Q(user_type='farmer')),
-        sector_vets=Count('id', filter=Q(user_type='sector_vet')),
-        local_vets=Count('id', filter=Q(user_type='local_vet'))
-    )
-    total_farmers = user_stats['farmers']
-    total_sector_vets = user_stats['sector_vets']
-    total_local_vets = user_stats['local_vets']
-    total_veterinarians = total_sector_vets + total_local_vets
-    
-    # Active veterinarians (online/available)
-    from accounts.models import VeterinarianProfile
-    active_veterinarians = VeterinarianProfile.objects.filter(is_available=True).count()
-    
-    # Get livestock statistics using aggregation
-    livestock_stats = Livestock.objects.aggregate(
-        total=Count('id'),
-        healthy=Count('id', filter=Q(status='healthy')),
-        sick=Count('id', filter=Q(status='sick'))
-    )
-    total_livestock = livestock_stats['total']
-    healthy_livestock = livestock_stats['healthy']
-    sick_livestock = livestock_stats['sick']
-    
-    # Get recent notifications count
-    from datetime import timedelta
-    recent_notifications = Notification.objects.filter(
-        created_at__gte=timezone.now() - timedelta(days=7)
-    ).count()
-    
-    # Calculate vaccinations due (from VaccinationRecord model)
-    from livestock.models import VaccinationRecord
-    today = timezone.now().date()
-    vaccinations_due = VaccinationRecord.objects.filter(
-        next_due_date__lte=today + timedelta(days=30),  # Due in next 30 days
-        next_due_date__gte=today  # Not past due yet
-    ).count()
-    
-    # Calculate average response time using database aggregation (much faster)
-    
-    assigned_cases = CaseReport.objects.filter(
-        assigned_at__isnull=False,
-        reported_at__isnull=False
-    ).annotate(
-        response_hours=ExpressionWrapper(
-            (F('assigned_at') - F('reported_at')) / timedelta(hours=1),
-            output_field=FloatField()
+    try:
+        user = request.user
+        user_type = user.user_type
+        
+        # Only sector vets and admins can see all stats
+        if user_type not in ['sector_vet', 'admin'] and not (user.is_staff or user.is_superuser):
+            return Response({
+                'error': 'You do not have permission to view dashboard statistics.'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Optimize statistics queries using aggregation to reduce database hits
+        
+        # Get case statistics in fewer queries using aggregation
+        case_stats = CaseReport.objects.aggregate(
+            total=Count('id'),
+            pending=Count('id', filter=Q(status='pending')),
+            resolved=Count('id', filter=Q(status='resolved')),
+            active=Count('id', filter=Q(status__in=['pending', 'under_review', 'diagnosed', 'treated']))
         )
-    ).filter(response_hours__gt=0)
-    
-    if assigned_cases.exists():
-        avg_hours = assigned_cases.aggregate(avg=Avg('response_hours'))['avg'] or 0
-        if avg_hours < 1:
-            average_response_time = f"{int(avg_hours * 60)} minutes"
-        elif avg_hours < 24:
-            average_response_time = f"{avg_hours:.1f} hours"
-        else:
-            average_response_time = f"{avg_hours / 24:.1f} days"
-    else:
-        average_response_time = '0 hours'
-    
-    # Calculate resolution rate
-    resolution_rate = f"{(resolved_cases / total_cases * 100):.1f}%" if total_cases > 0 else "0%"
-    
-    # Return in format expected by frontend
-    return Response({
-        'total_cases': total_cases,
-        'pending_cases': pending_cases,
-        'resolved_cases': resolved_cases,
-        'active_cases': active_cases,
-        'total_farmers': total_farmers,
-        'new_farmers_this_week': User.objects.filter(
-            user_type='farmer',
+        total_cases = case_stats['total'] or 0
+        pending_cases = case_stats['pending'] or 0
+        resolved_cases = case_stats['resolved'] or 0
+        active_cases = case_stats['active'] or 0
+        
+        # Get user statistics using aggregation
+        user_stats = User.objects.aggregate(
+            farmers=Count('id', filter=Q(user_type='farmer')),
+            sector_vets=Count('id', filter=Q(user_type='sector_vet')),
+            local_vets=Count('id', filter=Q(user_type='local_vet'))
+        )
+        total_farmers = user_stats['farmers'] or 0
+        total_sector_vets = user_stats['sector_vets'] or 0
+        total_local_vets = user_stats['local_vets'] or 0
+        total_veterinarians = total_sector_vets + total_local_vets
+        
+        # Active veterinarians (online/available)
+        from accounts.models import VeterinarianProfile
+        active_veterinarians = VeterinarianProfile.objects.filter(is_available=True).count()
+        
+        # Get livestock statistics using aggregation
+        livestock_stats = Livestock.objects.aggregate(
+            total=Count('id'),
+            healthy=Count('id', filter=Q(status='healthy')),
+            sick=Count('id', filter=Q(status='sick'))
+        )
+        total_livestock = livestock_stats['total'] or 0
+        healthy_livestock = livestock_stats['healthy'] or 0
+        sick_livestock = livestock_stats['sick'] or 0
+        
+        # Get recent notifications count
+        recent_notifications = Notification.objects.filter(
             created_at__gte=timezone.now() - timedelta(days=7)
-        ).count(),
-        'total_veterinarians': total_veterinarians,
-        'active_veterinarians': active_veterinarians,
-        'total_livestock': total_livestock,
-        'healthy_livestock': healthy_livestock,
-        'sick_livestock': sick_livestock,
-        'vaccinations_due': vaccinations_due,
-        'average_response_time': average_response_time,
-        'resolution_rate': resolution_rate,
-    }, status=status.HTTP_200_OK)
+        ).count()
+        
+        # Calculate vaccinations due (from VaccinationRecord model)
+        from livestock.models import VaccinationRecord
+        today = timezone.now().date()
+        vaccinations_due = VaccinationRecord.objects.filter(
+            next_due_date__lte=today + timedelta(days=30),  # Due in next 30 days
+            next_due_date__gte=today  # Not past due yet
+        ).count()
+        
+        # Calculate average response time (simplified to avoid database-specific issues)
+        assigned_cases = CaseReport.objects.filter(
+            assigned_at__isnull=False,
+            reported_at__isnull=False
+        )
+        
+        if assigned_cases.exists():
+            response_times = []
+            for case in assigned_cases.only('reported_at', 'assigned_at')[:100]:  # Limit to first 100 for performance
+                try:
+                    if case.reported_at and case.assigned_at:
+                        time_diff = (case.assigned_at - case.reported_at).total_seconds() / 3600  # Hours
+                        if time_diff > 0:  # Only count positive differences
+                            response_times.append(time_diff)
+                except (AttributeError, TypeError):
+                    continue
+            
+            if response_times:
+                avg_hours = sum(response_times) / len(response_times)
+                if avg_hours < 1:
+                    average_response_time = f"{int(avg_hours * 60)} minutes"
+                elif avg_hours < 24:
+                    average_response_time = f"{avg_hours:.1f} hours"
+                else:
+                    average_response_time = f"{avg_hours / 24:.1f} days"
+            else:
+                average_response_time = '0 hours'
+        else:
+            average_response_time = '0 hours'
+        
+        # Calculate resolution rate
+        resolution_rate = f"{(resolved_cases / total_cases * 100):.1f}%" if total_cases > 0 else "0%"
+        
+        # Return in format expected by frontend
+        return Response({
+            'total_cases': total_cases,
+            'pending_cases': pending_cases,
+            'resolved_cases': resolved_cases,
+            'active_cases': active_cases,
+            'total_farmers': total_farmers,
+            'new_farmers_this_week': User.objects.filter(
+                user_type='farmer',
+                created_at__gte=timezone.now() - timedelta(days=7)
+            ).count(),
+            'total_veterinarians': total_veterinarians,
+            'active_veterinarians': active_veterinarians,
+            'total_livestock': total_livestock,
+            'healthy_livestock': healthy_livestock,
+            'sick_livestock': sick_livestock,
+            'vaccinations_due': vaccinations_due,
+            'average_response_time': average_response_time,
+            'resolution_rate': resolution_rate,
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error in dashboard stats: {str(e)}", exc_info=True)
+        return Response({
+            'error': 'An error occurred while fetching dashboard statistics.',
+            'detail': str(e) if settings.DEBUG else 'Please try again later.'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
