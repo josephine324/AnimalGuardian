@@ -174,12 +174,12 @@ const SignupPage = ({ onLogin }) => {
                   className="appearance-none relative block w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   value={formData.user_type}
                   onChange={handleChange}
+                  disabled
                 >
                   <option value="sector_vet">Sector Veterinarian</option>
-                  <option value="field_officer">Field Officer</option>
                 </select>
                 <p className="mt-1 text-xs text-gray-500">
-                  Note: Farmers and Local Veterinarians register via mobile app and are approved by sector veterinarians through the web dashboard.
+                  Note: Only Sector Veterinarians can register through the web dashboard. Farmers and Local Veterinarians must register via the mobile app.
                 </p>
               </div>
             </div>
