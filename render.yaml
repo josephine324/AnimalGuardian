@@ -3,8 +3,9 @@ services:
     name: animalguardian-backend
     env: python
     plan: free
-    buildCommand: cd backend && pip install --upgrade pip && pip install -r requirements.txt
+    buildCommand: cd backend && pip install --upgrade pip setuptools wheel && pip install -r requirements.txt
     startCommand: cd backend && python manage.py migrate --noinput && gunicorn animalguardian.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 2 --timeout 120 --keep-alive 5 --preload
+    skipPoetryInstall: true
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
