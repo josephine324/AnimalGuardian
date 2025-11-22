@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: animalguardian-backend
+    env: python
+    plan: free
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && gunicorn animalguardian.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 2 --timeout 120 --keep-alive 5 --preload
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DJANGO_SETTINGS_MODULE
+        value: animalguardian.settings
+      - key: DEBUG
+        value: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: animalguardian-db
+          property: connectionString
+      - key: CORS_ALLOW_ALL_ORIGINS
+        value: true
+      - key: ALLOWED_HOSTS
+        value: animalguardian-backend.onrender.com,*.onrender.com,localhost,127.0.0.1
+    healthCheckPath: /health/
+
+databases:
+  - name: animalguardian-db
+    plan: free
+    databaseName: animalguardian
+    user: animalguardian_user
+
