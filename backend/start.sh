@@ -35,6 +35,30 @@ python manage.py migrate --noinput --verbosity=2 || {
 # Get port from environment variable, default to 8000
 PORT=${PORT:-8000}
 
-# Start gunicorn
-exec gunicorn animalguardian.wsgi:application --bind 0.0.0.0:$PORT
+# Calculate optimal worker count based on available CPU cores
+# Railway free tier typically has 1-2 cores, so use 2-4 workers
+WORKERS=${WEB_CONCURRENCY:-4}
+THREADS=${GUNICORN_THREADS:-2}
+TIMEOUT=${GUNICORN_TIMEOUT:-120}
+
+# Start gunicorn with optimized settings for Railway
+# Workers: 4 (good for Railway free tier with 1-2 CPU cores)
+# Threads: 2 per worker (allows handling multiple requests concurrently)
+# Timeout: 120 seconds (Railway needs longer timeout for cold starts)
+# Keep-alive: 5 seconds (reuse connections)
+# Max requests: 1000 (restart workers periodically to prevent memory leaks)
+# Preload: Load app before forking (faster startup, less memory per worker)
+exec gunicorn animalguardian.wsgi:application \
+    --bind 0.0.0.0:$PORT \
+    --workers $WORKERS \
+    --threads $THREADS \
+    --worker-class gthread \
+    --timeout $TIMEOUT \
+    --keep-alive 5 \
+    --max-requests 1000 \
+    --max-requests-jitter 50 \
+    --preload \
+    --access-logfile - \
+    --error-logfile - \
+    --log-level info
 
