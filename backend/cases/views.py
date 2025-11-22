@@ -31,6 +31,9 @@ class CaseReportViewSet(viewsets.ModelViewSet):
             'assigned_veterinarian',  # User assigned to handle case
             'assigned_by',        # User who assigned the case
             'livestock',          # Livestock affected
+            'livestock__owner',   # Livestock owner (farmer)
+            'livestock__livestock_type',  # Livestock type
+            'livestock__breed',   # Livestock breed
             'suspected_disease'   # Disease suspected
         ).prefetch_related(
             # For any ManyToMany or reverse ForeignKey relationships if needed

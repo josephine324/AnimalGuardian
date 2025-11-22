@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import CaseReport, Disease
+from livestock.serializers import LivestockSerializer
 
 class DiseaseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -17,9 +18,25 @@ class CaseReportSerializer(serializers.ModelSerializer):
     assigned_veterinarian_email = serializers.SerializerMethodField()
     assigned_by_name = serializers.SerializerMethodField()
     
+    # Include nested livestock data so web dashboard can display it
+    livestock = LivestockSerializer(read_only=True)
+    livestock_id = serializers.PrimaryKeyRelatedField(
+        queryset=None,  # Will be set in __init__
+        source='livestock',
+        write_only=True,
+        required=False,
+        allow_null=True
+    )
+    
     # Make case_id and reporter read-only (auto-generated/set by backend)
     case_id = serializers.CharField(read_only=True)
     reporter = serializers.PrimaryKeyRelatedField(read_only=True)
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set the queryset for livestock_id after models are loaded
+        from livestock.models import Livestock
+        self.fields['livestock_id'].queryset = Livestock.objects.all()
     
     class Meta:
         model = CaseReport
