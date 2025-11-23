@@ -562,11 +562,27 @@ class ApiService {
   Future<Map<String, dynamic>> requestPasswordReset(String emailOrPhone) async {
     final headers = await _getHeaders(includeAuth: false);
     
-    // Determine if it's email or phone
+    // Determine if it's email or phone and clean phone number
     final isEmail = emailOrPhone.contains('@');
+    String? phoneNumber;
+    
+    if (!isEmail) {
+      // Clean and format phone number
+      String cleaned = emailOrPhone.replaceAll(RegExp(r'[^\d+]'), '');
+      if (cleaned.startsWith('+')) {
+        phoneNumber = cleaned;
+      } else if (cleaned.startsWith('250')) {
+        phoneNumber = '+$cleaned';
+      } else if (cleaned.startsWith('0')) {
+        phoneNumber = '+250${cleaned.substring(1)}';
+      } else {
+        phoneNumber = '+250$cleaned';
+      }
+    }
+    
     final payload = isEmail 
-        ? {'email': emailOrPhone}
-        : {'phone_number': emailOrPhone};
+        ? {'email': emailOrPhone.trim()}
+        : {'phone_number': phoneNumber};
     
     final response = await http.post(
       Uri.parse('$baseUrl/auth/password-reset/request/'),
@@ -580,9 +596,26 @@ class ApiService {
   Future<Map<String, dynamic>> verifyPasswordResetOTP(String emailOrPhone, String otpCode) async {
     final headers = await _getHeaders(includeAuth: false);
     
+    // Determine if it's email or phone and clean phone number
     final isEmail = emailOrPhone.contains('@');
+    String? phoneNumber;
+    
+    if (!isEmail) {
+      // Clean and format phone number
+      String cleaned = emailOrPhone.replaceAll(RegExp(r'[^\d+]'), '');
+      if (cleaned.startsWith('+')) {
+        phoneNumber = cleaned;
+      } else if (cleaned.startsWith('250')) {
+        phoneNumber = '+$cleaned';
+      } else if (cleaned.startsWith('0')) {
+        phoneNumber = '+250${cleaned.substring(1)}';
+      } else {
+        phoneNumber = '+250$cleaned';
+      }
+    }
+    
     final payload = {
-      ...(isEmail ? {'email': emailOrPhone} : {'phone_number': emailOrPhone}),
+      ...(isEmail ? {'email': emailOrPhone.trim()} : {'phone_number': phoneNumber}),
       'otp_code': otpCode,
     };
     
@@ -598,9 +631,26 @@ class ApiService {
   Future<Map<String, dynamic>> resetPassword(String emailOrPhone, String otpCode, String newPassword, String passwordConfirm) async {
     final headers = await _getHeaders(includeAuth: false);
     
+    // Determine if it's email or phone and clean phone number
     final isEmail = emailOrPhone.contains('@');
+    String? phoneNumber;
+    
+    if (!isEmail) {
+      // Clean and format phone number
+      String cleaned = emailOrPhone.replaceAll(RegExp(r'[^\d+]'), '');
+      if (cleaned.startsWith('+')) {
+        phoneNumber = cleaned;
+      } else if (cleaned.startsWith('250')) {
+        phoneNumber = '+$cleaned';
+      } else if (cleaned.startsWith('0')) {
+        phoneNumber = '+250${cleaned.substring(1)}';
+      } else {
+        phoneNumber = '+250$cleaned';
+      }
+    }
+    
     final payload = {
-      ...(isEmail ? {'email': emailOrPhone} : {'phone_number': emailOrPhone}),
+      ...(isEmail ? {'email': emailOrPhone.trim()} : {'phone_number': phoneNumber}),
       'otp_code': otpCode,
       'new_password': newPassword,
       'password_confirm': passwordConfirm,
