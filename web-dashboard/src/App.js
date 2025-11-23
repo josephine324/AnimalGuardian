@@ -10,7 +10,6 @@ import CasesPage from './pages/CasesPage';
 import VeterinariansPage from './pages/VeterinariansPage';
 import FarmersPage from './pages/FarmersPage';
 import LivestockPage from './pages/LivestockPage';
-import LivestockTypesPage from './pages/LivestockTypesPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import CommunityPage from './pages/CommunityPage';
@@ -131,7 +130,6 @@ function App() {
           <Route path="veterinarians" element={<VeterinariansPage />} />
           <Route path="farmers" element={<FarmersPage />} />
           <Route path="livestock" element={<LivestockPage />} />
-          <Route path="livestock-types" element={<LivestockTypesPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="community" element={<CommunityPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
