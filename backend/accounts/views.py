@@ -308,6 +308,9 @@ class RequestPasswordResetView(generics.GenericAPIView):
                 # Remove country code if present (250 for Rwanda)
                 if cleaned_phone.startswith('250'):
                     cleaned_phone = cleaned_phone[3:]
+                # Ensure it starts with 0 if it's a local number
+                if not cleaned_phone.startswith('0') and len(cleaned_phone) == 9:
+                    cleaned_phone = '0' + cleaned_phone
                 # Try to find user with cleaned phone number
                 user = User.objects.get(phone_number=cleaned_phone)
             else:
