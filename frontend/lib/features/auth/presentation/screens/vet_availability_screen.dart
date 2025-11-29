@@ -24,7 +24,8 @@ class _VetAvailabilityScreenState extends State<VetAvailabilityScreen> {
     try {
       final user = await _apiService.getCurrentUser();
       setState(() {
-        _currentAvailability = user['veterinarian_profile']?['is_available'] ?? true;
+        _currentAvailability =
+            user['veterinarian_profile']?['is_available'] ?? true;
       });
     } catch (e) {
       // Default to true if we can't load
@@ -43,13 +44,13 @@ class _VetAvailabilityScreenState extends State<VetAvailabilityScreen> {
 
     try {
       await _apiService.toggleAvailability(isOnline);
-      
+
       if (mounted) {
         setState(() {
           _currentAvailability = isOnline;
           _isLoading = false;
         });
-        
+
         // Navigate to vet dashboard
         context.go('/vet-dashboard');
       }
@@ -58,7 +59,7 @@ class _VetAvailabilityScreenState extends State<VetAvailabilityScreen> {
         setState(() {
           _isLoading = false;
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to update availability: ${e.toString()}'),
@@ -86,28 +87,28 @@ class _VetAvailabilityScreenState extends State<VetAvailabilityScreen> {
                 color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(height: 24),
-              
+
               // Title
               Text(
                 'Set Your Availability',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
-              
+
               // Description
               Text(
                 'Choose whether you are available to receive case assignments. You can change this anytime from your profile.',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey[600],
-                ),
+                      color: Colors.grey[600],
+                    ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 48),
-              
+
               // Online Button
               ElevatedButton(
                 onPressed: _isLoading ? null : () => _setAvailability(true),
@@ -120,14 +121,14 @@ class _VetAvailabilityScreenState extends State<VetAvailabilityScreen> {
                   ),
                   elevation: 2,
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
                       Icons.check_circle,
                       size: 28,
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Text(
                       'Go Online',
                       style: TextStyle(
@@ -139,7 +140,7 @@ class _VetAvailabilityScreenState extends State<VetAvailabilityScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // Offline Button
               ElevatedButton(
                 onPressed: _isLoading ? null : () => _setAvailability(false),
@@ -152,14 +153,14 @@ class _VetAvailabilityScreenState extends State<VetAvailabilityScreen> {
                   ),
                   elevation: 2,
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
                       Icons.cancel,
                       size: 28,
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Text(
                       'Go Offline',
                       style: TextStyle(
@@ -171,7 +172,7 @@ class _VetAvailabilityScreenState extends State<VetAvailabilityScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-              
+
               // Info text
               Container(
                 padding: const EdgeInsets.all(16),
@@ -196,7 +197,7 @@ class _VetAvailabilityScreenState extends State<VetAvailabilityScreen> {
                   ],
                 ),
               ),
-              
+
               if (_isLoading)
                 const Padding(
                   padding: EdgeInsets.only(top: 24),
@@ -209,4 +210,3 @@ class _VetAvailabilityScreenState extends State<VetAvailabilityScreen> {
     );
   }
 }
-

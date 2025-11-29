@@ -29,7 +29,6 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
   int _currentIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-
   void changeTab(int index) {
     setState(() {
       _currentIndex = index;
@@ -77,17 +76,17 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.primary,
             ),
-            child: Column(
+            child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                const Icon(
+                Icon(
                   Icons.medical_services,
                   size: 48,
                   color: Colors.white,
                 ),
-                const SizedBox(height: 8),
-                const Text(
+                SizedBox(height: 8),
+                Text(
                   'Veterinarian',
                   style: TextStyle(
                     color: Colors.white,
@@ -235,7 +234,9 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
     final List<Widget> screens = [
       _VetHomeTab(scaffoldKey: _scaffoldKey),
       _VetCasesTab(scaffoldKey: _scaffoldKey),
-      _VetCommunityTab(scaffoldKey: _scaffoldKey), // Community - connect with farmers (replaces Chat)
+      _VetCommunityTab(
+          scaffoldKey:
+              _scaffoldKey), // Community - connect with farmers (replaces Chat)
       _VetProfileTab(
         scaffoldKey: _scaffoldKey,
         buildBottomNavBar: _buildBottomNavigationBar,
@@ -254,7 +255,7 @@ class _VetDashboardScreenState extends State<VetDashboardScreen> {
 // Vet Home Tab
 class _VetHomeTab extends ConsumerStatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
-  
+
   const _VetHomeTab({required this.scaffoldKey});
 
   @override
@@ -298,13 +299,16 @@ class _VetHomeTabState extends ConsumerState<_VetHomeTab> {
   Widget build(BuildContext context) {
     final casesState = ref.watch(casesProvider);
     final assignedCases = casesState.filteredCases;
-    final activeCases = assignedCases.where((c) => c.status != CaseStatus.resolved).length;
-    final resolvedCases = assignedCases.where((c) => c.status == CaseStatus.resolved).length;
-    
+    final activeCases =
+        assignedCases.where((c) => c.status != CaseStatus.resolved).length;
+    final resolvedCases =
+        assignedCases.where((c) => c.status == CaseStatus.resolved).length;
+
     final firstName = _userData?['first_name'] ?? '';
     final lastName = _userData?['last_name'] ?? '';
-    final fullName = '${firstName} ${lastName}'.trim();
-    final displayName = fullName.isNotEmpty ? 'Dr. $fullName' : 'Dr. Veterinarian';
+    final fullName = '$firstName $lastName'.trim();
+    final displayName =
+        fullName.isNotEmpty ? 'Dr. $fullName' : 'Dr. Veterinarian';
 
     return Scaffold(
       appBar: AppBar(
@@ -333,10 +337,11 @@ class _VetHomeTabState extends ConsumerState<_VetHomeTab> {
                   children: [
                     Text(
                       'Welcome, $displayName',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -359,7 +364,8 @@ class _VetHomeTabState extends ConsumerState<_VetHomeTab> {
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
                         children: [
-                          const Icon(Icons.report_problem, color: Colors.red, size: 32),
+                          const Icon(Icons.report_problem,
+                              color: Colors.red, size: 32),
                           const SizedBox(height: 8),
                           Text(
                             'Active Cases',
@@ -367,7 +373,10 @@ class _VetHomeTabState extends ConsumerState<_VetHomeTab> {
                           ),
                           Text(
                             '$activeCases',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                           ),
@@ -383,7 +392,8 @@ class _VetHomeTabState extends ConsumerState<_VetHomeTab> {
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
                         children: [
-                          const Icon(Icons.check_circle, color: Colors.green, size: 32),
+                          const Icon(Icons.check_circle,
+                              color: Colors.green, size: 32),
                           const SizedBox(height: 8),
                           Text(
                             'Resolved',
@@ -391,7 +401,10 @@ class _VetHomeTabState extends ConsumerState<_VetHomeTab> {
                           ),
                           Text(
                             '$resolvedCases',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                           ),
@@ -412,7 +425,8 @@ class _VetHomeTabState extends ConsumerState<_VetHomeTab> {
             ),
             const SizedBox(height: 16),
             casesState.isLoading && assignedCases.isEmpty
-                ? const Center(child: Padding(
+                ? const Center(
+                    child: Padding(
                     padding: EdgeInsets.all(32.0),
                     child: CircularProgressIndicator(),
                   ))
@@ -422,18 +436,25 @@ class _VetHomeTabState extends ConsumerState<_VetHomeTab> {
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
                             children: [
-                              Icon(Icons.error_outline, size: 60, color: Colors.red[400]),
+                              Icon(Icons.error_outline,
+                                  size: 60, color: Colors.red[400]),
                               const SizedBox(height: 16),
                               Text(
                                 'Error loading cases',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
                                       color: Colors.red[600],
                                     ),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 casesState.error ?? 'Unknown error',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
                                       color: Colors.grey[500],
                                     ),
                                 textAlign: TextAlign.center,
@@ -443,74 +464,94 @@ class _VetHomeTabState extends ConsumerState<_VetHomeTab> {
                         ),
                       )
                     : assignedCases.isEmpty
-                ? Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        children: [
-                          Icon(Icons.inbox, size: 60, color: Colors.grey[400]),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No cases assigned yet',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: Colors.grey[600],
-                                ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Cases assigned to you will appear here',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Colors.grey[500],
-                                ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: assignedCases.take(3).length,
-                    itemBuilder: (context, index) {
+                        ? Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                children: [
+                                  Icon(Icons.inbox,
+                                      size: 60, color: Colors.grey[400]),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No cases assigned yet',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: Colors.grey[600],
+                                        ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Cases assigned to you will appear here',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: Colors.grey[500],
+                                        ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: assignedCases.take(3).length,
+                            itemBuilder: (context, index) {
                               final caseReport = assignedCases[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                                    backgroundColor: _getStatusColorFromCaseStatus(caseReport.status),
-                                    child: const Icon(Icons.report_problem, color: Colors.white),
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor:
+                                        _getStatusColorFromCaseStatus(
+                                            caseReport.status),
+                                    child: const Icon(Icons.report_problem,
+                                        color: Colors.white),
                                   ),
                                   title: Text(caseReport.caseId),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                                      Text(caseReport.livestockName ?? 'Unknown Livestock'),
-                              Text(
+                                  subtitle: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(caseReport.livestockName ??
+                                          'Unknown Livestock'),
+                                      Text(
                                         'Farmer: ${caseReport.reporterName ?? 'Unknown'}',
-                                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                              ),
-                            ],
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600]),
+                                      ),
+                                    ],
+                                  ),
+                                  trailing: Chip(
+                                    label: Text(
+                                      caseReport.status.name
+                                          .toUpperCase()
+                                          .replaceAll('_', ' '),
+                                      style: const TextStyle(fontSize: 10),
+                                    ),
+                                    backgroundColor:
+                                        _getStatusColorFromCaseStatus(
+                                                caseReport.status)
+                                            .withOpacity(0.2),
+                                  ),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => CaseDetailScreen(
+                                            caseId: caseReport.id),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
                           ),
-                          trailing: Chip(
-                            label: Text(
-                                      caseReport.status.name.toUpperCase().replaceAll('_', ' '),
-                              style: const TextStyle(fontSize: 10),
-                            ),
-                                    backgroundColor: _getStatusColorFromCaseStatus(caseReport.status).withOpacity(0.2),
-                          ),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                        builder: (context) => CaseDetailScreen(caseId: caseReport.id),
-                              ),
-                            );
-                          },
-                        ),
-                      );
-                    },
-                  ),
           ],
         ),
       ),
@@ -538,7 +579,7 @@ class _VetHomeTabState extends ConsumerState<_VetHomeTab> {
 // Vet Cases Tab
 class _VetCasesTab extends ConsumerStatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
-  
+
   const _VetCasesTab({required this.scaffoldKey});
 
   @override
@@ -768,7 +809,8 @@ class _VetCasesTabState extends ConsumerState<_VetCasesTab> {
                 // Error message
                 if (casesState.error != null)
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Text(
                       'Error: ${casesState.error}',
                       style: TextStyle(color: Colors.red[700]),
@@ -781,18 +823,25 @@ class _VetCasesTabState extends ConsumerState<_VetCasesTab> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.assignment, size: 80, color: Colors.grey[400]),
+                              Icon(Icons.assignment,
+                                  size: 80, color: Colors.grey[400]),
                               const SizedBox(height: 16),
                               Text(
                                 'No cases found',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
                                       color: Colors.grey[600],
                                     ),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 'No cases match the selected filter',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
                                       color: Colors.grey[500],
                                     ),
                               ),
@@ -804,14 +853,15 @@ class _VetCasesTabState extends ConsumerState<_VetCasesTab> {
                           itemCount: filteredCases.length,
                           itemBuilder: (context, index) {
                             final caseReport = filteredCases[index];
-                            final photoUrl = caseReport.photos.isNotEmpty 
-                                ? caseReport.photos.first 
+                            final photoUrl = caseReport.photos.isNotEmpty
+                                ? caseReport.photos.first
                                 : null;
                             return Card(
                               margin: const EdgeInsets.only(bottom: 12),
                               child: ListTile(
                                 leading: CircleAvatar(
-                                  backgroundColor: _getStatusColor(caseReport.status),
+                                  backgroundColor:
+                                      _getStatusColor(caseReport.status),
                                   child: PlaceholderImage(
                                     networkUrl: photoUrl,
                                     placeholderIcon: Icons.report_problem,
@@ -824,10 +874,13 @@ class _VetCasesTabState extends ConsumerState<_VetCasesTab> {
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(caseReport.livestockName ?? 'Unknown Livestock'),
+                                    Text(caseReport.livestockName ??
+                                        'Unknown Livestock'),
                                     Text(
                                       'Farmer: ${caseReport.reporterName ?? 'Unknown'} • ${caseReport.symptomsObserved}',
-                                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600]),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -839,32 +892,40 @@ class _VetCasesTabState extends ConsumerState<_VetCasesTab> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: _getStatusColor(caseReport.status).withOpacity(0.2),
+                                        color:
+                                            _getStatusColor(caseReport.status)
+                                                .withOpacity(0.2),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text(
                                         caseReport.status.name.toUpperCase(),
                                         style: TextStyle(
                                           fontSize: 9,
-                                          color: _getStatusColor(caseReport.status),
+                                          color: _getStatusColor(
+                                              caseReport.status),
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                     ),
                                     const SizedBox(height: 1),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 1),
                                       decoration: BoxDecoration(
-                                        color: _getUrgencyColor(caseReport.urgency).withOpacity(0.2),
+                                        color:
+                                            _getUrgencyColor(caseReport.urgency)
+                                                .withOpacity(0.2),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text(
                                         caseReport.urgency.name.toUpperCase(),
                                         style: TextStyle(
                                           fontSize: 9,
-                                          color: _getUrgencyColor(caseReport.urgency),
+                                          color: _getUrgencyColor(
+                                              caseReport.urgency),
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -872,12 +933,14 @@ class _VetCasesTabState extends ConsumerState<_VetCasesTab> {
                                   ],
                                 ),
                                 isThreeLine: true,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
                                 onTap: () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => CaseDetailScreen(caseId: caseReport.id),
+                                      builder: (context) => CaseDetailScreen(
+                                          caseId: caseReport.id),
                                     ),
                                   );
                                 },
@@ -895,7 +958,7 @@ class _VetCasesTabState extends ConsumerState<_VetCasesTab> {
 // Vet Chat Tab
 class _VetChatTab extends StatelessWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
-  
+
   const _VetChatTab({required this.scaffoldKey});
 
   @override
@@ -916,7 +979,8 @@ class _VetChatTab extends StatelessWidget {
             onPressed: () {
               // TODO: Implement search for farmers
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Search functionality coming soon')),
+                const SnackBar(
+                    content: Text('Search functionality coming soon')),
               );
             },
           ),
@@ -955,18 +1019,19 @@ class _VetChatTab extends StatelessWidget {
 // Vet Community Tab (same as farmer - can create posts)
 class _VetCommunityTab extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
-  
+
   const _VetCommunityTab({required this.scaffoldKey});
 
   @override
   State<_VetCommunityTab> createState() => _VetCommunityTabState();
 }
 
-class _VetCommunityTabState extends State<_VetCommunityTab> with SingleTickerProviderStateMixin {
+class _VetCommunityTabState extends State<_VetCommunityTab>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
   final ApiService _apiService = ApiService();
-  
+
   List<Post> _posts = [];
   bool _isLoading = true;
   String? _error;
@@ -1018,9 +1083,10 @@ class _VetCommunityTabState extends State<_VetCommunityTab> with SingleTickerPro
       } else {
         _filteredPosts = _posts.where((post) {
           return post.title.toLowerCase().contains(query.toLowerCase()) ||
-                 post.content.toLowerCase().contains(query.toLowerCase()) ||
-                 post.authorName.toLowerCase().contains(query.toLowerCase()) ||
-                 post.tags.any((tag) => tag.toLowerCase().contains(query.toLowerCase()));
+              post.content.toLowerCase().contains(query.toLowerCase()) ||
+              post.authorName.toLowerCase().contains(query.toLowerCase()) ||
+              post.tags.any(
+                  (tag) => tag.toLowerCase().contains(query.toLowerCase()));
         }).toList();
       }
     });
@@ -1032,7 +1098,7 @@ class _VetCommunityTabState extends State<_VetCommunityTab> with SingleTickerPro
         'title': title,
         'content': content,
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1189,8 +1255,8 @@ class _VetCommunityTabState extends State<_VetCommunityTab> with SingleTickerPro
                   Row(
                     children: [
                       CircleAvatar(
-                        child: Text(post.authorName.isNotEmpty 
-                            ? post.authorName[0].toUpperCase() 
+                        child: Text(post.authorName.isNotEmpty
+                            ? post.authorName[0].toUpperCase()
                             : 'U'),
                       ),
                       const SizedBox(width: 12),
@@ -1271,7 +1337,8 @@ class _VetCommunityTabState extends State<_VetCommunityTab> with SingleTickerPro
     );
   }
 
-  Widget _buildActionButton(IconData icon, String label, Color color, VoidCallback onTap) {
+  Widget _buildActionButton(
+      IconData icon, String label, Color color, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       child: Row(
@@ -1287,7 +1354,7 @@ class _VetCommunityTabState extends State<_VetCommunityTab> with SingleTickerPro
   Widget _buildCreatePostTab() {
     final titleController = TextEditingController();
     final contentController = TextEditingController();
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -1324,7 +1391,7 @@ class _VetCommunityTabState extends State<_VetCommunityTab> with SingleTickerPro
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () {
-              if (titleController.text.trim().isNotEmpty && 
+              if (titleController.text.trim().isNotEmpty &&
                   contentController.text.trim().isNotEmpty) {
                 _createPost(
                   titleController.text.trim(),
@@ -1450,7 +1517,8 @@ class _VetCommunityTabState extends State<_VetCommunityTab> with SingleTickerPro
   Future<void> _handleShare(int postId) async {
     try {
       final post = _posts.firstWhere((p) => p.id == postId);
-      final shareText = '${post.title}\n\n${post.content}\n\nShared from AnimalGuardian App';
+      final shareText =
+          '${post.title}\n\n${post.content}\n\nShared from AnimalGuardian App';
 
       if (mounted) {
         final result = await showDialog<bool>(
@@ -1497,7 +1565,7 @@ class _VetCommunityTabState extends State<_VetCommunityTab> with SingleTickerPro
   void _showCreatePostDialog(BuildContext context) {
     final titleController = TextEditingController();
     final contentController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1534,7 +1602,7 @@ class _VetCommunityTabState extends State<_VetCommunityTab> with SingleTickerPro
           ),
           ElevatedButton(
             onPressed: () {
-              if (titleController.text.trim().isNotEmpty && 
+              if (titleController.text.trim().isNotEmpty &&
                   contentController.text.trim().isNotEmpty) {
                 _createPost(
                   titleController.text.trim(),
@@ -1562,7 +1630,7 @@ class _VetCommunityTabState extends State<_VetCommunityTab> with SingleTickerPro
 class _VetProfileTab extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final Widget Function(BuildContext)? buildBottomNavBar;
-  
+
   const _VetProfileTab({required this.scaffoldKey, this.buildBottomNavBar});
 
   @override
@@ -1607,18 +1675,20 @@ class _VetProfileTabState extends State<_VetProfileTab> {
     });
 
     try {
-      final currentAvailability = _userData!['veterinarian_profile']?['is_available'] ?? true;
+      final currentAvailability =
+          _userData!['veterinarian_profile']?['is_available'] ?? true;
       final newAvailability = !currentAvailability;
-      
+
       await _apiService.toggleAvailability(newAvailability);
-      
+
       // Reload user data
       await _loadUserData();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('You are now ${newAvailability ? "online" : "offline"}'),
+            content:
+                Text('You are now ${newAvailability ? "online" : "offline"}'),
             backgroundColor: Colors.green,
           ),
         );
@@ -1644,10 +1714,10 @@ class _VetProfileTabState extends State<_VetProfileTab> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
+      return Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.menu),
             onPressed: () => widget.scaffoldKey.currentState?.openDrawer(),
           ),
           title: const Text('Profile'),
@@ -1661,11 +1731,13 @@ class _VetProfileTabState extends State<_VetProfileTab> {
 
     final firstName = _userData?['first_name'] ?? '';
     final lastName = _userData?['last_name'] ?? '';
-    final fullName = '${firstName} ${lastName}'.trim();
+    final fullName = '$firstName $lastName'.trim();
     final userType = _userData?['user_type'] ?? 'local_vet';
     final isApproved = _userData?['is_approved_by_admin'] ?? false;
-    final isAvailable = _userData?['veterinarian_profile']?['is_available'] ?? true;
-    final userTypeLabel = userType == 'sector_vet' ? 'Sector Veterinarian' : 'Local Veterinarian';
+    final isAvailable =
+        _userData?['veterinarian_profile']?['is_available'] ?? true;
+    final userTypeLabel =
+        userType == 'sector_vet' ? 'Sector Veterinarian' : 'Local Veterinarian';
 
     return Scaffold(
       appBar: AppBar(
@@ -1704,19 +1776,20 @@ class _VetProfileTabState extends State<_VetProfileTab> {
           const SizedBox(height: 8),
           // Show approval status only if not approved
           if (!isApproved)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.orange[50],
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.orange[200]!),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.orange[200]!),
+              ),
+              child: const Text(
+                'Pending Approval',
+                style: TextStyle(
+                    color: Colors.orange, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
             ),
-            child: const Text(
-              'Pending Approval',
-              style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-          ),
           // Show online/offline status if approved
           if (isApproved)
             Container(
@@ -1724,7 +1797,9 @@ class _VetProfileTabState extends State<_VetProfileTab> {
               decoration: BoxDecoration(
                 color: isAvailable ? Colors.green[50] : Colors.grey[300],
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: isAvailable ? Colors.green[200]! : Colors.grey[400]!),
+                border: Border.all(
+                    color:
+                        isAvailable ? Colors.green[200]! : Colors.grey[400]!),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -1750,15 +1825,19 @@ class _VetProfileTabState extends State<_VetProfileTab> {
           // Toggle availability button (only if approved)
           if (isApproved)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: ElevatedButton.icon(
                 onPressed: _isToggling ? null : _toggleAvailability,
-                icon: Icon(_isToggling ? Icons.hourglass_empty : (isAvailable ? Icons.cancel : Icons.check_circle)),
-                label: Text(_isToggling 
-                  ? 'Updating...' 
-                  : (isAvailable ? 'Go Offline' : 'Go Online')),
+                icon: Icon(_isToggling
+                    ? Icons.hourglass_empty
+                    : (isAvailable ? Icons.cancel : Icons.check_circle)),
+                label: Text(_isToggling
+                    ? 'Updating...'
+                    : (isAvailable ? 'Go Offline' : 'Go Online')),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isAvailable ? Colors.grey[300] : Colors.green,
+                  backgroundColor:
+                      isAvailable ? Colors.grey[300] : Colors.green,
                   foregroundColor: isAvailable ? Colors.black87 : Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
@@ -1770,7 +1849,7 @@ class _VetProfileTabState extends State<_VetProfileTab> {
             margin: const EdgeInsets.only(bottom: 16),
             child: Column(
               children: [
-          ListTile(
+                ListTile(
                   leading: const Icon(Icons.email, color: Colors.blue),
                   title: const Text('Email'),
                   subtitle: Text(_userData?['email'] ?? 'Not provided'),
@@ -1787,7 +1866,8 @@ class _VetProfileTabState extends State<_VetProfileTab> {
                     leading: const Icon(Icons.badge, color: Colors.purple),
                     title: const Text('License Number'),
                     subtitle: Text(
-                      _userData?['veterinarian_profile']?['license_number'] ?? 'Not provided',
+                      _userData?['veterinarian_profile']?['license_number'] ??
+                          'Not provided',
                     ),
                   ),
                 ],
@@ -1807,64 +1887,69 @@ class _VetProfileTabState extends State<_VetProfileTab> {
               children: [
                 ListTile(
                   leading: const Icon(Icons.edit, color: Colors.blue),
-            title: const Text('Edit Profile'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const EditProfileScreen(),
+                  title: const Text('Edit Profile'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const EditProfileScreen(),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
                 const Divider(height: 1),
-          ListTile(
+                ListTile(
                   leading: const Icon(Icons.assignment, color: Colors.orange),
-            title: const Text('My Cases'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.pop(context);
-              // Navigate to cases tab
-              final state = context.findAncestorStateOfType<_VetDashboardScreenState>();
-              state?.changeTab(1);
-            },
-          ),
+                  title: const Text('My Cases'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Navigate to cases tab
+                    final state = context
+                        .findAncestorStateOfType<_VetDashboardScreenState>();
+                    state?.changeTab(1);
+                  },
+                ),
                 const Divider(height: 1),
-          ListTile(
+                ListTile(
                   leading: const Icon(Icons.people, color: Colors.green),
-            title: const Text('My Farmers'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
+                  title: const Text('My Farmers'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => _VetLivestockTab(
                           scaffoldKey: widget.scaffoldKey,
-                          bottomNavBar: widget.buildBottomNavBar != null ? widget.buildBottomNavBar!(context) : null,
+                          bottomNavBar: widget.buildBottomNavBar != null
+                              ? widget.buildBottomNavBar!(context)
+                              : null,
                         ),
                       ),
-              );
-            },
-          ),
-                const Divider(height: 1),
-          ListTile(
-                  leading: const Icon(Icons.settings, color: Colors.grey),
-            title: const Text('Settings'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => _VetSettingsTab(
-                          scaffoldKey: widget.scaffoldKey,
-                          bottomNavBar: widget.buildBottomNavBar != null ? widget.buildBottomNavBar!(context) : null,
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.settings, color: Colors.grey),
+                  title: const Text('Settings'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => _VetSettingsTab(
+                          scaffoldKey: widget.scaffoldKey,
+                          bottomNavBar: widget.buildBottomNavBar != null
+                              ? widget.buildBottomNavBar!(context)
+                              : null,
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -1872,15 +1957,15 @@ class _VetProfileTabState extends State<_VetProfileTab> {
           // Logout
           Card(
             child: ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('Logout', style: TextStyle(color: Colors.red)),
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text('Logout', style: TextStyle(color: Colors.red)),
               onTap: () async {
                 final apiService = ApiService();
                 await apiService.logout();
                 if (mounted) {
-              context.go('/login');
+                  context.go('/login');
                 }
-            },
+              },
             ),
           ),
         ],
@@ -1893,7 +1978,7 @@ class _VetProfileTabState extends State<_VetProfileTab> {
 class _VetLivestockTab extends ConsumerStatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final Widget? bottomNavBar;
-  
+
   const _VetLivestockTab({required this.scaffoldKey, this.bottomNavBar});
 
   @override
@@ -1912,7 +1997,7 @@ class _VetLivestockTabState extends ConsumerState<_VetLivestockTab> {
   @override
   Widget build(BuildContext context) {
     final livestockState = ref.watch(livestockProvider);
-    
+
     return Scaffold(
       bottomNavigationBar: widget.bottomNavBar,
       appBar: AppBar(
@@ -1934,21 +2019,25 @@ class _VetLivestockTabState extends ConsumerState<_VetLivestockTab> {
                   : ListView.builder(
                       itemCount: livestockState.filteredLivestock.length,
                       itemBuilder: (context, index) {
-                        final livestock = livestockState.filteredLivestock[index];
+                        final livestock =
+                            livestockState.filteredLivestock[index];
                         return ListTile(
-                          leading: PlaceholderImage(
-                            networkUrl: null, // Photos not available in current model
+                          leading: const PlaceholderImage(
+                            networkUrl:
+                                null, // Photos not available in current model
                             placeholderIcon: Icons.pets,
                             width: 50,
                             height: 50,
                           ),
                           title: Text(livestock.name ?? 'Unnamed'),
-                          subtitle: Text('${livestock.livestockType?.name ?? 'Unknown'} - ${livestock.status.name}'),
+                          subtitle: Text(
+                              '${livestock.livestockType?.name ?? 'Unknown'} - ${livestock.status.name}'),
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => LivestockDetailScreen(livestockId: livestock.id),
+                                builder: (context) => LivestockDetailScreen(
+                                    livestockId: livestock.id),
                               ),
                             );
                           },
@@ -1963,8 +2052,11 @@ class _VetLivestockTabState extends ConsumerState<_VetLivestockTab> {
 class _VetMarketTab extends StatelessWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final Widget? bottomNavBar;
-  
-  const _VetMarketTab({required this.scaffoldKey, this.bottomNavBar});
+
+  const _VetMarketTab({
+    required this.scaffoldKey,
+    this.bottomNavBar,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1981,9 +2073,9 @@ class _VetMarketTab extends StatelessWidget {
         elevation: 0,
       ),
       body: Center(
-            child: Column(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+          children: [
             Icon(Icons.store, size: 80, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
@@ -1993,15 +2085,15 @@ class _VetMarketTab extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: 8),
-                      Text(
+            Text(
               'The marketplace feature will be available soon',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.grey[500],
                   ),
               textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2011,8 +2103,11 @@ class _VetMarketTab extends StatelessWidget {
 class _VetWeatherTab extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final Widget? bottomNavBar;
-  
-  const _VetWeatherTab({required this.scaffoldKey, this.bottomNavBar});
+
+  const _VetWeatherTab({
+    required this.scaffoldKey,
+    this.bottomNavBar,
+  });
 
   @override
   State<_VetWeatherTab> createState() => _VetWeatherTabState();
@@ -2068,7 +2163,10 @@ class _VetWeatherTabState extends State<_VetWeatherTab> {
     setState(() {
       _isRefreshing = true;
     });
-    await _loadWeather(location: _searchController.text.trim().isNotEmpty ? _searchController.text.trim() : null);
+    await _loadWeather(
+        location: _searchController.text.trim().isNotEmpty
+            ? _searchController.text.trim()
+            : null);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Weather data refreshed!')),
@@ -2121,7 +2219,7 @@ class _VetWeatherTabState extends State<_VetWeatherTab> {
           padding: const EdgeInsets.all(16.0),
           child: _isLoading
               ? const Center(
-          child: Padding(
+                  child: Padding(
                     padding: EdgeInsets.all(32.0),
                     child: CircularProgressIndicator(),
                   ),
@@ -2130,19 +2228,23 @@ class _VetWeatherTabState extends State<_VetWeatherTab> {
                   ? Center(
                       child: Padding(
                         padding: const EdgeInsets.all(32.0),
-            child: Column(
+                        child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                          children: [
+                            Icon(Icons.error_outline,
+                                size: 64, color: Colors.red[300]),
                             const SizedBox(height: 16),
-                Text(
+                            Text(
                               _errorMessage!,
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
+                                  ?.copyWith(
                                     color: Colors.red,
                                   ),
                               textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
+                            ),
+                            const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: () => _loadWeather(),
                               child: const Text('Retry'),
@@ -2166,10 +2268,12 @@ class _VetWeatherTabState extends State<_VetWeatherTab> {
                               controller: _searchController,
                               onSubmitted: _handleSearch,
                               onChanged: (value) {
-                                setState(() {}); // Rebuild to show/hide clear button
+                                setState(
+                                    () {}); // Rebuild to show/hide clear button
                               },
                               decoration: InputDecoration(
-                                hintText: 'Search for a Farm\'s Location (e.g., Kigali)',
+                                hintText:
+                                    'Search for a Farm\'s Location (e.g., Kigali)',
                                 prefixIcon: const Icon(Icons.search),
                                 suffixIcon: _searchController.text.isNotEmpty
                                     ? IconButton(
@@ -2182,11 +2286,13 @@ class _VetWeatherTabState extends State<_VetWeatherTab> {
                                       )
                                     : IconButton(
                                         icon: const Icon(Icons.search),
-                                        onPressed: () => _handleSearch(_searchController.text),
+                                        onPressed: () => _handleSearch(
+                                            _searchController.text),
                                       ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: Colors.grey[300]!),
+                                  borderSide:
+                                      BorderSide(color: Colors.grey[300]!),
                                 ),
                                 filled: true,
                                 fillColor: Colors.grey[100],
@@ -2197,11 +2303,17 @@ class _VetWeatherTabState extends State<_VetWeatherTab> {
                             if (_weatherData!['location'] != null) ...[
                               Row(
                                 children: [
-                                  Icon(Icons.location_on, color: Theme.of(context).colorScheme.primary),
+                                  Icon(Icons.location_on,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary),
                                   const SizedBox(width: 8),
-                Text(
+                                  Text(
                                     '${_weatherData!['location']['city'] ?? 'Unknown'}, ${_weatherData!['location']['country'] ?? 'Rwanda'}',
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
                                           fontWeight: FontWeight.bold,
                                         ),
                                   ),
@@ -2220,30 +2332,40 @@ class _VetWeatherTabState extends State<_VetWeatherTab> {
                               child: Column(
                                 children: [
                                   Icon(
-                                    _getWeatherIcon(_weatherData!['current']?['condition'] ?? 'Cloudy'),
+                                    _getWeatherIcon(_weatherData!['current']
+                                            ?['condition'] ??
+                                        'Cloudy'),
                                     size: 80,
                                     color: Colors.white,
                                   ),
                                   const SizedBox(height: 16),
-                Text(
+                                  Text(
                                     '${_weatherData!['current']?['temperature'] ?? 'N/A'}°${_weatherData!['current']?['temperature_unit'] == 'celsius' ? 'C' : 'F'}',
-                                    style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .displayMedium
+                                        ?.copyWith(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
                                         ),
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    _weatherData!['current']?['condition'] ?? 'N/A',
-                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    _weatherData!['current']?['condition'] ??
+                                        'N/A',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge
+                                        ?.copyWith(
                                           color: Colors.white,
                                         ),
-                ),
-                const SizedBox(height: 24),
+                                  ),
+                                  const SizedBox(height: 24),
                                   // Weather Details
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceAround,
+                                    children: [
                                       _buildWeatherDetail(
                                         context,
                                         Icons.water_drop,
@@ -2272,13 +2394,16 @@ class _VetWeatherTabState extends State<_VetWeatherTab> {
                             if (_weatherData!['forecast'] != null) ...[
                               Text(
                                 'Forecast',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
                               const SizedBox(height: 12),
                               Row(
-                      children: [
+                                children: [
                                   Expanded(
                                     child: _buildForecastCard(
                                       context,
@@ -2299,10 +2424,14 @@ class _VetWeatherTabState extends State<_VetWeatherTab> {
                               const SizedBox(height: 24),
                             ],
                             // Agricultural Advice
-                            if (_weatherData!['agricultural_advice'] != null) ...[
+                            if (_weatherData!['agricultural_advice'] !=
+                                null) ...[
                               Text(
                                 'Agricultural Advice',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
@@ -2311,27 +2440,34 @@ class _VetWeatherTabState extends State<_VetWeatherTab> {
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
                                       _buildAdviceRow(
                                         context,
                                         Icons.pets,
                                         'Livestock Health',
-                                        _weatherData!['agricultural_advice']['livestock_health'] ?? 'N/A',
+                                        _weatherData!['agricultural_advice']
+                                                ['livestock_health'] ??
+                                            'N/A',
                                       ),
                                       const Divider(),
                                       _buildAdviceRow(
                                         context,
                                         Icons.grass,
                                         'Grazing Conditions',
-                                        _weatherData!['agricultural_advice']['grazing_conditions'] ?? 'N/A',
+                                        _weatherData!['agricultural_advice']
+                                                ['grazing_conditions'] ??
+                                            'N/A',
                                       ),
                                       const Divider(),
                                       _buildAdviceRow(
                                         context,
                                         Icons.warning_amber,
                                         'Disease Risk',
-                                        _weatherData!['agricultural_advice']['disease_risk'] ?? 'N/A',
+                                        _weatherData!['agricultural_advice']
+                                                ['disease_risk'] ??
+                                            'N/A',
                                       ),
                                     ],
                                   ),
@@ -2345,7 +2481,8 @@ class _VetWeatherTabState extends State<_VetWeatherTab> {
     );
   }
 
-  Widget _buildWeatherDetail(BuildContext context, IconData icon, String label, String value) {
+  Widget _buildWeatherDetail(
+      BuildContext context, IconData icon, String label, String value) {
     return Column(
       children: [
         Icon(icon, color: Colors.white70, size: 24),
@@ -2367,7 +2504,8 @@ class _VetWeatherTabState extends State<_VetWeatherTab> {
     );
   }
 
-  Widget _buildForecastCard(BuildContext context, String day, Map<String, dynamic> forecast) {
+  Widget _buildForecastCard(
+      BuildContext context, String day, Map<String, dynamic> forecast) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -2421,7 +2559,8 @@ class _VetWeatherTabState extends State<_VetWeatherTab> {
     );
   }
 
-  Widget _buildAdviceRow(BuildContext context, IconData icon, String title, String advice) {
+  Widget _buildAdviceRow(
+      BuildContext context, IconData icon, String title, String advice) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2456,7 +2595,7 @@ class _VetWeatherTabState extends State<_VetWeatherTab> {
 class _VetSettingsTab extends StatelessWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final Widget? bottomNavBar;
-  
+
   const _VetSettingsTab({required this.scaffoldKey, this.bottomNavBar});
 
   @override

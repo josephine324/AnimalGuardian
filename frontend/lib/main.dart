@@ -21,7 +21,7 @@ import 'core/models/case_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Load .env file (if it exists)
   try {
     await dotenv.load(fileName: ".env");
@@ -29,12 +29,12 @@ void main() async {
     // .env file not found, use default values from AppConstants
     debugPrint('Warning: .env file not found, using default API URL');
   }
-  
+
   runApp(
     // Wrap in MediaQuery with safe text scaler to prevent assertion errors
-    MediaQuery(
-      data: const MediaQueryData(textScaler: TextScaler.linear(1.0)),
-      child: const ProviderScope(
+    const MediaQuery(
+      data: MediaQueryData(textScaler: TextScaler.linear(1.0)),
+      child: ProviderScope(
         child: AnimalGuardianApp(),
       ),
     ),
@@ -67,9 +67,10 @@ class AnimalGuardianApp extends StatelessWidget {
         // This fixes text_scaler.dart:87:12 assertion failures
         final mediaQuery = MediaQuery.maybeOf(context);
         final safeMediaQuery = mediaQuery?.copyWith(
-          textScaler: const TextScaler.linear(1.0),
-        ) ?? const MediaQueryData(textScaler: TextScaler.linear(1.0));
-        
+              textScaler: const TextScaler.linear(1.0),
+            ) ??
+            const MediaQueryData(textScaler: TextScaler.linear(1.0));
+
         return MediaQuery(
           data: safeMediaQuery,
           child: child ?? const SizedBox.shrink(),
@@ -264,4 +265,3 @@ class _WelcomeScreen extends StatelessWidget {
     );
   }
 }
-

@@ -424,13 +424,13 @@ The dashboard will be available at: **http://localhost:3000**
      - `PYTHON_VERSION=3.11.0`
      - `DJANGO_SETTINGS_MODULE=animalguardian.settings`
      - `DEBUG=False`
-     - `SECRET_KEY=<your-secret-key>`
-     - `DATABASE_URL=<from-postgresql-database>`
+     - `SECRET_KEY=your-secret-key-here`
+     - `DATABASE_URL=from-postgresql-database`
      - `CORS_ALLOW_ALL_ORIGINS=True`
      - `ALLOWED_HOSTS=animalguardian.onrender.com,*.onrender.com`
-     - `EMAIL_HOST_USER=<your-email>`
-     - `EMAIL_HOST_PASSWORD=<your-app-password>`
-     - `DEFAULT_FROM_EMAIL=<your-email>`
+     - `EMAIL_HOST_USER=your-email@gmail.com`
+     - `EMAIL_HOST_PASSWORD=your-app-password`
+     - `DEFAULT_FROM_EMAIL=your-email@gmail.com`
 
 4. **Deploy using `render.yaml`** (Blueprints) or manually configure
 

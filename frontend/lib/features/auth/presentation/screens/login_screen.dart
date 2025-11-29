@@ -54,12 +54,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
         // Ensure user_type and user_id are stored (API service should have done this, but double-check)
         if (user != null) {
-          final storage = const FlutterSecureStorage();
+          const storage = FlutterSecureStorage();
           if (userType != null) {
             await storage.write(key: AppConstants.userTypeKey, value: userType);
           }
           if (user['id'] != null) {
-            await storage.write(key: AppConstants.userIdKey, value: user['id'].toString());
+            await storage.write(
+                key: AppConstants.userIdKey, value: user['id'].toString());
           }
           print('DEBUG Login: Stored userType=$userType, userId=${user['id']}');
         }
@@ -87,15 +88,19 @@ class _LoginScreenState extends State<LoginScreen> {
         });
 
         String errorMessage = 'Login failed. Please check your credentials.';
-        if (e.toString().contains('401') || e.toString().contains('Invalid credentials')) {
+        if (e.toString().contains('401') ||
+            e.toString().contains('Invalid credentials')) {
           errorMessage = 'Invalid phone number/email or password.';
         } else if (e.toString().contains('403')) {
           if (e.toString().contains('not verified')) {
-            errorMessage = 'Your phone number is not verified. Please verify it first.';
+            errorMessage =
+                'Your phone number is not verified. Please verify it first.';
           } else if (e.toString().contains('pending approval')) {
-            errorMessage = 'Your account is pending approval. Please wait for approval.';
+            errorMessage =
+                'Your account is pending approval. Please wait for approval.';
           } else if (e.toString().contains('deactivated')) {
-            errorMessage = 'Your account has been deactivated. Please contact support.';
+            errorMessage =
+                'Your account has been deactivated. Please contact support.';
           }
         } else if (e.toString().isNotEmpty) {
           errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -120,7 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             children: [
               // Image section (top half)
-              Container(
+              SizedBox(
                 height: MediaQuery.of(context).size.height * 0.4,
                 width: double.infinity,
                 child: Stack(
@@ -131,7 +136,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: double.infinity,
                       height: double.infinity,
                       fit: BoxFit.cover,
-                      backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      backgroundColor: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withOpacity(0.1),
                     ),
                     // Back button
                     Positioned(
@@ -164,7 +172,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       Text(
                         'AnimalGuardian',
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineMedium
+                            ?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                         textAlign: TextAlign.center,
@@ -203,7 +214,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           prefixIcon: const Icon(Icons.lock),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                              _obscurePassword
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
                             ),
                             onPressed: () {
                               setState(() {
@@ -228,7 +241,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       ElevatedButton(
                         onPressed: _isLoading ? null : _handleLogin,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
@@ -267,7 +281,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           context.go('/register');
                         },
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.primary,
                           side: BorderSide(
                             color: Theme.of(context).colorScheme.primary,
                             width: 2,
@@ -296,4 +311,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-

@@ -14,7 +14,8 @@ class EditLivestockScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<EditLivestockScreen> createState() => _EditLivestockScreenState();
+  ConsumerState<EditLivestockScreen> createState() =>
+      _EditLivestockScreenState();
 }
 
 class _EditLivestockScreenState extends ConsumerState<EditLivestockScreen> {
@@ -46,7 +47,9 @@ class _EditLivestockScreenState extends ConsumerState<EditLivestockScreen> {
 
   Future<void> _loadLivestockData() async {
     try {
-      final livestock = await ref.read(livestockProvider.notifier).getLivestockById(widget.livestockId);
+      final livestock = await ref
+          .read(livestockProvider.notifier)
+          .getLivestockById(widget.livestockId);
       if (mounted && livestock != null) {
         setState(() {
           _livestock = livestock;
@@ -56,19 +59,21 @@ class _EditLivestockScreenState extends ConsumerState<EditLivestockScreen> {
           _selectedStatus = livestock.status;
           _selectedBirthDate = livestock.birthDate;
           _isPregnant = livestock.isPregnant;
-          
+
           _nameController.text = livestock.name ?? '';
           _tagNumberController.text = livestock.tagNumber ?? '';
           _weightController.text = livestock.weightKg?.toString() ?? '';
           _colorController.text = livestock.color ?? '';
           _descriptionController.text = livestock.description ?? '';
-          
+
           _isLoadingData = false;
         });
-        
+
         // Load breeds for the selected type
         if (_selectedLivestockTypeId != null) {
-          await ref.read(livestockProvider.notifier).loadBreeds(livestockTypeId: _selectedLivestockTypeId!);
+          await ref
+              .read(livestockProvider.notifier)
+              .loadBreeds(livestockTypeId: _selectedLivestockTypeId!);
         }
       } else if (mounted) {
         setState(() {
@@ -119,7 +124,8 @@ class _EditLivestockScreenState extends ConsumerState<EditLivestockScreen> {
   Future<void> _selectBirthDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _selectedBirthDate ?? DateTime.now().subtract(const Duration(days: 365)),
+      initialDate: _selectedBirthDate ??
+          DateTime.now().subtract(const Duration(days: 365)),
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
     );
@@ -135,7 +141,9 @@ class _EditLivestockScreenState extends ConsumerState<EditLivestockScreen> {
       return;
     }
 
-    if (_selectedLivestockTypeId == null || _selectedGender == null || _selectedStatus == null) {
+    if (_selectedLivestockTypeId == null ||
+        _selectedGender == null ||
+        _selectedStatus == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill in all required fields')),
       );
@@ -145,14 +153,20 @@ class _EditLivestockScreenState extends ConsumerState<EditLivestockScreen> {
     final livestockData = {
       'livestock_type_id': _selectedLivestockTypeId,
       if (_selectedBreedId != null) 'breed_id': _selectedBreedId,
-      if (_nameController.text.trim().isNotEmpty) 'name': _nameController.text.trim(),
-      if (_tagNumberController.text.trim().isNotEmpty) 'tag_number': _tagNumberController.text.trim(),
+      if (_nameController.text.trim().isNotEmpty)
+        'name': _nameController.text.trim(),
+      if (_tagNumberController.text.trim().isNotEmpty)
+        'tag_number': _tagNumberController.text.trim(),
       'gender': _selectedGender!.apiValue,
       'status': _selectedStatus!.apiValue,
-      if (_selectedBirthDate != null) 'birth_date': DateFormat('yyyy-MM-dd').format(_selectedBirthDate!),
-      if (_weightController.text.trim().isNotEmpty) 'weight_kg': double.tryParse(_weightController.text.trim()),
-      if (_colorController.text.trim().isNotEmpty) 'color': _colorController.text.trim(),
-      if (_descriptionController.text.trim().isNotEmpty) 'description': _descriptionController.text.trim(),
+      if (_selectedBirthDate != null)
+        'birth_date': DateFormat('yyyy-MM-dd').format(_selectedBirthDate!),
+      if (_weightController.text.trim().isNotEmpty)
+        'weight_kg': double.tryParse(_weightController.text.trim()),
+      if (_colorController.text.trim().isNotEmpty)
+        'color': _colorController.text.trim(),
+      if (_descriptionController.text.trim().isNotEmpty)
+        'description': _descriptionController.text.trim(),
       'is_pregnant': _isPregnant,
     };
 
@@ -161,13 +175,15 @@ class _EditLivestockScreenState extends ConsumerState<EditLivestockScreen> {
     });
 
     try {
-      await ref.read(livestockProvider.notifier).updateLivestock(widget.livestockId, livestockData);
-      
+      await ref
+          .read(livestockProvider.notifier)
+          .updateLivestock(widget.livestockId, livestockData);
+
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Livestock updated successfully!'),
@@ -175,7 +191,7 @@ class _EditLivestockScreenState extends ConsumerState<EditLivestockScreen> {
             duration: Duration(seconds: 2),
           ),
         );
-        
+
         await ref.read(livestockProvider.notifier).loadLivestock(refresh: true);
         if (mounted) {
           context.pop();
@@ -186,7 +202,7 @@ class _EditLivestockScreenState extends ConsumerState<EditLivestockScreen> {
         setState(() {
           _isLoading = false;
         });
-        
+
         String errorMessage = e.toString();
         if (errorMessage.contains('Exception:')) {
           errorMessage = errorMessage.split('Exception:').last.trim();
@@ -195,7 +211,7 @@ class _EditLivestockScreenState extends ConsumerState<EditLivestockScreen> {
         if (errorMessage.length > 200) {
           errorMessage = '${errorMessage.substring(0, 200)}...';
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to update livestock: $errorMessage'),
@@ -246,7 +262,7 @@ class _EditLivestockScreenState extends ConsumerState<EditLivestockScreen> {
             children: [
               // Livestock Type Selection
               DropdownButtonFormField<int>(
-                value: _selectedLivestockTypeId,
+                initialValue: _selectedLivestockTypeId,
                 decoration: const InputDecoration(
                   labelText: 'Livestock Type *',
                   prefixIcon: Icon(Icons.pets),
@@ -264,25 +280,30 @@ class _EditLivestockScreenState extends ConsumerState<EditLivestockScreen> {
                       _selectedLivestockTypeId = value;
                       _selectedBreedId = null;
                     });
-                    ref.read(livestockProvider.notifier).loadBreeds(livestockTypeId: value);
+                    ref
+                        .read(livestockProvider.notifier)
+                        .loadBreeds(livestockTypeId: value);
                   }
                 },
-                validator: (value) => value == null ? 'Please select a livestock type' : null,
+                validator: (value) =>
+                    value == null ? 'Please select a livestock type' : null,
               ),
               const SizedBox(height: 16),
 
               // Breed Selection
               DropdownButtonFormField<int>(
-                value: _selectedBreedId,
+                initialValue: _selectedBreedId,
                 decoration: const InputDecoration(
                   labelText: 'Breed (Optional)',
                   prefixIcon: Icon(Icons.category),
                   border: OutlineInputBorder(),
                 ),
                 items: [
-                  const DropdownMenuItem<int>(value: null, child: Text('No breed (optional)')),
+                  const DropdownMenuItem<int>(
+                      value: null, child: Text('No breed (optional)')),
                   ...livestockState.breeds
-                      .where((breed) => breed.livestockTypeId == _selectedLivestockTypeId)
+                      .where((breed) =>
+                          breed.livestockTypeId == _selectedLivestockTypeId)
                       .map((breed) => DropdownMenuItem<int>(
                             value: breed.id,
                             child: Text(breed.name),
@@ -320,7 +341,7 @@ class _EditLivestockScreenState extends ConsumerState<EditLivestockScreen> {
 
               // Gender
               DropdownButtonFormField<LivestockGender>(
-                value: _selectedGender,
+                initialValue: _selectedGender,
                 decoration: const InputDecoration(
                   labelText: 'Gender *',
                   prefixIcon: Icon(Icons.wc),
@@ -342,13 +363,14 @@ class _EditLivestockScreenState extends ConsumerState<EditLivestockScreen> {
                     });
                   }
                 },
-                validator: (value) => value == null ? 'Please select gender' : null,
+                validator: (value) =>
+                    value == null ? 'Please select gender' : null,
               ),
               const SizedBox(height: 16),
 
               // Status
               DropdownButtonFormField<LivestockStatus>(
-                value: _selectedStatus,
+                initialValue: _selectedStatus,
                 decoration: const InputDecoration(
                   labelText: 'Status *',
                   prefixIcon: Icon(Icons.health_and_safety),
@@ -367,7 +389,8 @@ class _EditLivestockScreenState extends ConsumerState<EditLivestockScreen> {
                     });
                   }
                 },
-                validator: (value) => value == null ? 'Please select status' : null,
+                validator: (value) =>
+                    value == null ? 'Please select status' : null,
               ),
               const SizedBox(height: 16),
 
@@ -466,4 +489,3 @@ class _EditLivestockScreenState extends ConsumerState<EditLivestockScreen> {
     );
   }
 }
-

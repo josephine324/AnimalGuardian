@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test AnimalGuardian API Sync</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .success { color: green; }
+        .error { color: red; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>AnimalGuardian API Sync Test</h1>
+    
+    <div>
+        <h2>Step 1: Get Auth Token</h2>
+        <p>Login to web dashboard first, then copy your auth token from browser console:</p>
+        <code>localStorage.getItem('authToken')</code>
+        <br><br>
+        <input type="text" id="authToken" placeholder="Paste auth token here" style="width: 500px; padding: 5px;">
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <h2>Step 2: Test API Endpoints</h2>
+        <button onclick="testFarmers()">Test Farmers API</button>
+        <button onclick="testVeterinarians()">Test Veterinarians API</button>
+        <button onclick="testBoth()">Test Both</button>
+    </div>
+    
+    <div id="results" style="margin-top: 20px;"></div>
+    
+    <script>
+        const API_BASE = 'https://animalguardian.onrender.com/api';
+        
+        async function testFarmers() {
+            const token = document.getElementById('authToken').value;
+            if (!token) {
+                alert('Please enter auth token first');
+                return;
+            }
+            
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Testing Farmers API...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/farmers/?page_size=1000`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                const farmers = Array.isArray(data) ? data : (data.results || []);
+                
+                resultsDiv.innerHTML = `
+                    <h3 class="success">✅ Farmers API Test</h3>
+                    <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                    <p><strong>Total Farmers:</strong> ${farmers.length}</p>
+                    <p><strong>Response Format:</strong> ${Array.isArray(data) ? 'Array' : 'Paginated Object'}</p>
+                    <h4>Farmers List:</h4>
+                    <pre>${JSON.stringify(farmers.map(f => ({
+                        id: f.id,
+                        name: `${f.first_name} ${f.last_name}`,
+                        phone: f.phone_number,
+                        type: f.user_type,
+                        approved: f.is_approved_by_admin,
+                        created: f.created_at
+                    })), null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <h3 class="error">❌ Farmers API Error</h3>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+        
+        async function testVeterinarians() {
+            const token = document.getElementById('authToken').value;
+            if (!token) {
+                alert('Please enter auth token first');
+                return;
+            }
+            
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Testing Veterinarians API...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/veterinarians/?page_size=1000`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                const vets = Array.isArray(data) ? data : (data.results || []);
+                const localVets = vets.filter(v => v.user_type === 'local_vet');
+                
+                resultsDiv.innerHTML = `
+                    <h3 class="success">✅ Veterinarians API Test</h3>
+                    <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                    <p><strong>Total Vets:</strong> ${vets.length}</p>
+                    <p><strong>Local Vets:</strong> ${localVets.length}</p>
+                    <p><strong>Response Format:</strong> ${Array.isArray(data) ? 'Array' : 'Paginated Object'}</p>
+                    <h4>Local Veterinarians List:</h4>
+                    <pre>${JSON.stringify(localVets.map(v => ({
+                        id: v.id,
+                        name: `${v.first_name} ${v.last_name}`,
+                        phone: v.phone_number,
+                        type: v.user_type,
+                        approved: v.is_approved_by_admin,
+                        created: v.created_at
+                    })), null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <h3 class="error">❌ Veterinarians API Error</h3>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+        
+        async function testBoth() {
+            await testFarmers();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await testVeterinarians();
+        }
+    </script>
+</body>
+</html>
+
+
+
+

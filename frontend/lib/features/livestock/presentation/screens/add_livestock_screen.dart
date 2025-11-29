@@ -33,7 +33,6 @@ class _AddLivestockScreenState extends ConsumerState<AddLivestockScreen> {
     // No need to load types/breeds - using manual text input
   }
 
-
   @override
   void dispose() {
     _nameController.dispose();
@@ -74,15 +73,22 @@ class _AddLivestockScreenState extends ConsumerState<AddLivestockScreen> {
 
     final livestockData = {
       'livestock_type_name': _livestockTypeController.text.trim(),
-      if (_breedController.text.trim().isNotEmpty) 'breed_name': _breedController.text.trim(),
-      if (_nameController.text.trim().isNotEmpty) 'name': _nameController.text.trim(),
-      if (_tagNumberController.text.trim().isNotEmpty) 'tag_number': _tagNumberController.text.trim(),
+      if (_breedController.text.trim().isNotEmpty)
+        'breed_name': _breedController.text.trim(),
+      if (_nameController.text.trim().isNotEmpty)
+        'name': _nameController.text.trim(),
+      if (_tagNumberController.text.trim().isNotEmpty)
+        'tag_number': _tagNumberController.text.trim(),
       'gender': _selectedGender.apiValue,
       'status': _selectedStatus.apiValue,
-      if (_selectedBirthDate != null) 'birth_date': DateFormat('yyyy-MM-dd').format(_selectedBirthDate!),
-      if (_weightController.text.trim().isNotEmpty) 'weight_kg': double.tryParse(_weightController.text.trim()),
-      if (_colorController.text.trim().isNotEmpty) 'color': _colorController.text.trim(),
-      if (_descriptionController.text.trim().isNotEmpty) 'description': _descriptionController.text.trim(),
+      if (_selectedBirthDate != null)
+        'birth_date': DateFormat('yyyy-MM-dd').format(_selectedBirthDate!),
+      if (_weightController.text.trim().isNotEmpty)
+        'weight_kg': double.tryParse(_weightController.text.trim()),
+      if (_colorController.text.trim().isNotEmpty)
+        'color': _colorController.text.trim(),
+      if (_descriptionController.text.trim().isNotEmpty)
+        'description': _descriptionController.text.trim(),
       'is_pregnant': _isPregnant,
     };
 
@@ -92,7 +98,8 @@ class _AddLivestockScreenState extends ConsumerState<AddLivestockScreen> {
 
     try {
       final livestockNotifier = ref.read(livestockProvider.notifier);
-      final newLivestock = await livestockNotifier.createLivestock(livestockData);
+      final newLivestock =
+          await livestockNotifier.createLivestock(livestockData);
 
       if (mounted) {
         setState(() {
@@ -125,7 +132,7 @@ class _AddLivestockScreenState extends ConsumerState<AddLivestockScreen> {
           if (errorMessage.length > 200) {
             errorMessage = '${errorMessage.substring(0, 200)}...';
           }
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Failed to add livestock: $errorMessage'),
@@ -150,7 +157,7 @@ class _AddLivestockScreenState extends ConsumerState<AddLivestockScreen> {
         if (errorMessage.length > 200) {
           errorMessage = '${errorMessage.substring(0, 200)}...';
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $errorMessage'),
@@ -237,7 +244,7 @@ class _AddLivestockScreenState extends ConsumerState<AddLivestockScreen> {
 
               // Gender
               DropdownButtonFormField<LivestockGender>(
-                value: _selectedGender,
+                initialValue: _selectedGender,
                 decoration: const InputDecoration(
                   labelText: 'Gender *',
                   prefixIcon: Icon(Icons.wc),
@@ -263,7 +270,7 @@ class _AddLivestockScreenState extends ConsumerState<AddLivestockScreen> {
 
               // Status
               DropdownButtonFormField<LivestockStatus>(
-                value: _selectedStatus,
+                initialValue: _selectedStatus,
                 decoration: const InputDecoration(
                   labelText: 'Status *',
                   prefixIcon: Icon(Icons.health_and_safety),
@@ -297,7 +304,9 @@ class _AddLivestockScreenState extends ConsumerState<AddLivestockScreen> {
                         ? DateFormat('yyyy-MM-dd').format(_selectedBirthDate!)
                         : 'Select birth date',
                     style: TextStyle(
-                      color: _selectedBirthDate != null ? Colors.black : Colors.grey,
+                      color: _selectedBirthDate != null
+                          ? Colors.black
+                          : Colors.grey,
                     ),
                   ),
                 ),
@@ -381,4 +390,3 @@ class _AddLivestockScreenState extends ConsumerState<AddLivestockScreen> {
     );
   }
 }
-

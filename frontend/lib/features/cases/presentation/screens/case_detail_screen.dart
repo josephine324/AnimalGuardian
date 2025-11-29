@@ -37,14 +37,14 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
     // Try to get from storage first
     String? userType = await _storage.read(key: AppConstants.userTypeKey);
     String? userId = await _storage.read(key: AppConstants.userIdKey);
-    
+
     // If not in storage, try to get from API
     if (userType == null || userId == null) {
       try {
         final userData = await _apiService.getCurrentUser();
         userType = userData['user_type']?.toString();
         userId = userData['id']?.toString();
-        
+
         // Store for future use
         if (userType != null) {
           await _storage.write(key: AppConstants.userTypeKey, value: userType);
@@ -56,7 +56,7 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
         print('Error loading user info from API: $e');
       }
     }
-    
+
     // Debug: Print values to console
     print('DEBUG: Loaded userType: $userType, userId: $userId');
     if (mounted) {
@@ -68,13 +68,14 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
     }
   }
 
-  Future<void> _navigateToEditCase(BuildContext context, CaseReport caseReport) async {
+  Future<void> _navigateToEditCase(
+      BuildContext context, CaseReport caseReport) async {
     // Navigate to edit screen using go_router
     final result = await context.push<bool>(
       '/cases/edit',
       extra: caseReport,
     );
-    
+
     if (result == true) {
       // Case was updated, refresh
       ref.read(casesProvider.notifier).loadCases(refresh: true);
@@ -89,12 +90,14 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
     }
   }
 
-  Future<void> _confirmDeleteCase(BuildContext context, CaseReport caseReport) async {
+  Future<void> _confirmDeleteCase(
+      BuildContext context, CaseReport caseReport) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Case'),
-        content: Text('Are you sure you want to delete case ${caseReport.caseId}? This action cannot be undone.'),
+        content: Text(
+            'Are you sure you want to delete case ${caseReport.caseId}? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -115,8 +118,9 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
       });
 
       try {
-        final success = await ref.read(casesProvider.notifier).deleteCase(caseReport.id);
-        
+        final success =
+            await ref.read(casesProvider.notifier).deleteCase(caseReport.id);
+
         if (success && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -128,7 +132,8 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
         } else if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to delete case: ${ref.read(casesProvider).error ?? "Unknown error"}'),
+              content: Text(
+                  'Failed to delete case: ${ref.read(casesProvider).error ?? "Unknown error"}'),
               backgroundColor: Colors.red,
             ),
           );
@@ -196,7 +201,7 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final casesState = ref.watch(casesProvider);
-    
+
     // Try to find the case in the list
     CaseReport? caseReport;
     try {
@@ -221,7 +226,8 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                    const Icon(Icons.error_outline,
+                        size: 64, color: Colors.red),
                     const SizedBox(height: 16),
                     const Text('Case not found'),
                     const SizedBox(height: 16),
@@ -248,10 +254,10 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
         },
       );
     }
-    
+
     // Case found in list, build the detail view
     return _CaseDetailContent(
-      caseReport: caseReport!,
+      caseReport: caseReport,
       userType: _userType,
       userId: _userId,
       onLoadUserInfo: _loadUserInfo,
@@ -261,7 +267,7 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
       isUpdating: _isUpdating,
     );
   }
-  
+
   Widget _buildCaseDetail(CaseReport caseReport) {
     // This method is deprecated - use _CaseDetailContent widget instead
     return _CaseDetailContent(
@@ -306,31 +312,34 @@ class _CaseDetailContent extends ConsumerWidget {
     // Check if user is the reporter (owner) of the case - compare as strings to avoid type issues
     final userIdStr = userId?.toString().trim();
     final reporterIdStr = caseReport.reporterId.toString().trim();
-    final isCaseOwner = userIdStr != null && userIdStr.isNotEmpty && userIdStr == reporterIdStr;
-    
+    final isCaseOwner =
+        userIdStr != null && userIdStr.isNotEmpty && userIdStr == reporterIdStr;
+
     // Check status - use string comparison to be safe
     final statusStr = caseReport.status.toString().toLowerCase();
-    final isEditableStatus = statusStr.contains('pending') || 
-                             statusStr.contains('rejected') || 
-                             statusStr.contains('underreview') ||
-                             caseReport.status == CaseStatus.pending ||
-                             caseReport.status == CaseStatus.rejected ||
-                             caseReport.status == CaseStatus.underReview;
-    final isDeletableStatus = statusStr.contains('pending') || 
-                              statusStr.contains('rejected') ||
-                              caseReport.status == CaseStatus.pending ||
-                              caseReport.status == CaseStatus.rejected;
-    
+    final isEditableStatus = statusStr.contains('pending') ||
+        statusStr.contains('rejected') ||
+        statusStr.contains('underreview') ||
+        caseReport.status == CaseStatus.pending ||
+        caseReport.status == CaseStatus.rejected ||
+        caseReport.status == CaseStatus.underReview;
+    final isDeletableStatus = statusStr.contains('pending') ||
+        statusStr.contains('rejected') ||
+        caseReport.status == CaseStatus.pending ||
+        caseReport.status == CaseStatus.rejected;
+
     final canEdit = isFarmer && isCaseOwner && isEditableStatus;
     final canDelete = isFarmer && isCaseOwner && isDeletableStatus;
-    
+
     // Debug output
     print('DEBUG Case Detail:');
     print('  userType: $userType');
     print('  userId: $userId (string: $userIdStr)');
-    print('  caseReport.reporterId: ${caseReport.reporterId} (string: $reporterIdStr)');
+    print(
+        '  caseReport.reporterId: ${caseReport.reporterId} (string: $reporterIdStr)');
     print('  isFarmer: $isFarmer');
-    print('  isCaseOwner: $isCaseOwner (userIdStr == reporterIdStr: ${userIdStr == reporterIdStr})');
+    print(
+        '  isCaseOwner: $isCaseOwner (userIdStr == reporterIdStr: ${userIdStr == reporterIdStr})');
     print('  caseStatus: ${caseReport.status} (string: $statusStr)');
     print('  isEditableStatus: $isEditableStatus');
     print('  isDeletableStatus: $isDeletableStatus');
@@ -511,7 +520,8 @@ class _CaseDetailContent extends ConsumerWidget {
                 const SizedBox(width: 16),
                 Expanded(
                   child: Card(
-                    color: _getPriorityColor(caseReport.urgency).withOpacity(0.1),
+                    color:
+                        _getPriorityColor(caseReport.urgency).withOpacity(0.1),
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
@@ -643,15 +653,18 @@ class _CaseDetailContent extends ConsumerWidget {
                     _buildInfoRow('Case ID', caseReport.caseId),
                     _buildInfoRow(
                       'Livestock',
-                      caseReport.livestockName ?? 'Livestock #${caseReport.livestockId}',
+                      caseReport.livestockName ??
+                          'Livestock #${caseReport.livestockId}',
                     ),
                     _buildInfoRow(
                       'Reported At',
-                      DateFormat('yyyy-MM-dd HH:mm').format(caseReport.reportedAt),
+                      DateFormat('yyyy-MM-dd HH:mm')
+                          .format(caseReport.reportedAt),
                     ),
                     _buildInfoRow(
                       'Last Updated',
-                      DateFormat('yyyy-MM-dd HH:mm').format(caseReport.updatedAt),
+                      DateFormat('yyyy-MM-dd HH:mm')
+                          .format(caseReport.updatedAt),
                     ),
                     _buildInfoRow(
                       'Affected Animals',
@@ -679,9 +692,11 @@ class _CaseDetailContent extends ConsumerWidget {
                     ),
                     const Divider(),
                     _buildInfoRow('Name', caseReport.reporterName ?? 'Unknown'),
-                    if (caseReport.reporterPhone != null && caseReport.reporterPhone!.isNotEmpty)
+                    if (caseReport.reporterPhone != null &&
+                        caseReport.reporterPhone!.isNotEmpty)
                       _buildInfoRow('Phone', caseReport.reporterPhone!),
-                    if (caseReport.reporterEmail != null && caseReport.reporterEmail!.isNotEmpty)
+                    if (caseReport.reporterEmail != null &&
+                        caseReport.reporterEmail!.isNotEmpty)
                       _buildInfoRow('Email', caseReport.reporterEmail!),
                   ],
                 ),
@@ -690,7 +705,8 @@ class _CaseDetailContent extends ConsumerWidget {
             const SizedBox(height: 16),
 
             // Assigned Veterinarian Information (if assigned)
-            if (caseReport.assignedVeterinarianName != null && caseReport.assignedVeterinarianName!.isNotEmpty)
+            if (caseReport.assignedVeterinarianName != null &&
+                caseReport.assignedVeterinarianName!.isNotEmpty)
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -705,16 +721,22 @@ class _CaseDetailContent extends ConsumerWidget {
                         ),
                       ),
                       const Divider(),
-                      _buildInfoRow('Name', caseReport.assignedVeterinarianName!),
-                      if (caseReport.assignedVeterinarianPhone != null && caseReport.assignedVeterinarianPhone!.isNotEmpty)
-                        _buildInfoRow('Phone', caseReport.assignedVeterinarianPhone!),
-                      if (caseReport.assignedVeterinarianEmail != null && caseReport.assignedVeterinarianEmail!.isNotEmpty)
-                        _buildInfoRow('Email', caseReport.assignedVeterinarianEmail!),
+                      _buildInfoRow(
+                          'Name', caseReport.assignedVeterinarianName!),
+                      if (caseReport.assignedVeterinarianPhone != null &&
+                          caseReport.assignedVeterinarianPhone!.isNotEmpty)
+                        _buildInfoRow(
+                            'Phone', caseReport.assignedVeterinarianPhone!),
+                      if (caseReport.assignedVeterinarianEmail != null &&
+                          caseReport.assignedVeterinarianEmail!.isNotEmpty)
+                        _buildInfoRow(
+                            'Email', caseReport.assignedVeterinarianEmail!),
                     ],
                   ),
                 ),
               ),
-            if (caseReport.assignedVeterinarianName != null && caseReport.assignedVeterinarianName!.isNotEmpty)
+            if (caseReport.assignedVeterinarianName != null &&
+                caseReport.assignedVeterinarianName!.isNotEmpty)
               const SizedBox(height: 16),
 
             // Symptoms
@@ -902,9 +924,8 @@ class _CaseDetailContent extends ConsumerWidget {
   ) {
     final isCurrentStatus = status == currentStatus;
     return ElevatedButton(
-      onPressed: isUpdating || isCurrentStatus
-          ? null
-          : () => onUpdateStatus(status),
+      onPressed:
+          isUpdating || isCurrentStatus ? null : () => onUpdateStatus(status),
       style: ElevatedButton.styleFrom(
         backgroundColor: isCurrentStatus ? Colors.grey : color,
         foregroundColor: Colors.white,
@@ -914,4 +935,3 @@ class _CaseDetailContent extends ConsumerWidget {
     );
   }
 }
-

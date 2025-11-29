@@ -35,14 +35,19 @@ const FarmersPage = () => {
         return;
       }
       // No approval filtering - farmers are auto-approved
-      const params = {};
+      // Fetch all pages to get complete list
+      const params = { page_size: 1000 }; // Large page size to get all farmers
       
       const data = await usersAPI.getFarmers(params);
       // Handle both array and object with results property
       const farmersList = Array.isArray(data) ? data : (data.results || []);
+      console.log('Fetched farmers:', farmersList.length, 'farmers');
+      console.log('Raw API response:', data);
+      console.log('Farmers list:', farmersList.map(f => `${f.first_name} ${f.last_name} (${f.phone_number})`));
       setFarmers(Array.isArray(farmersList) ? farmersList : []);
     } catch (err) {
       console.error('Error fetching farmers:', err);
+      console.error('Error details:', err.response?.data);
       setError(err.response?.data?.error || err.response?.data?.detail || 'Failed to load farmers');
     } finally {
       setLoading(false);
@@ -154,6 +159,16 @@ const FarmersPage = () => {
           <p className="text-gray-600 mt-1">Manage registered farmers and their livestock</p>
           <p className="text-sm text-gray-500 mt-1">Note: Farmers register via mobile app and can login immediately after registration.</p>
         </div>
+        <button
+          onClick={fetchFarmers}
+          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+          title="Refresh farmers list"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>Refresh</span>
+        </button>
       </div>
 
       {/* Stats */}

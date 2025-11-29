@@ -106,13 +106,14 @@ class LivestockNotifier extends StateNotifier<LivestockState> {
         livestockTypes: const [],
       );
       // Re-throw so UI can show error message
-      throw error;
+      rethrow;
     }
   }
 
   Future<void> loadBreeds({int? livestockTypeId}) async {
     try {
-      final breeds = await _apiService.getBreeds(livestockTypeId: livestockTypeId);
+      final breeds =
+          await _apiService.getBreeds(livestockTypeId: livestockTypeId);
       state = state.copyWith(breeds: breeds, clearError: true);
     } catch (error) {
       state = state.copyWith(
@@ -120,7 +121,7 @@ class LivestockNotifier extends StateNotifier<LivestockState> {
         breeds: const [],
       );
       // Re-throw so UI can show error message
-      throw error;
+      rethrow;
     }
   }
 
@@ -213,7 +214,8 @@ class LivestockNotifier extends StateNotifier<LivestockState> {
       state = state.copyWith(isLoading: true, clearError: true);
       await _apiService.deleteLivestock(id);
 
-      final updatedList = state.livestock.where((livestock) => livestock.id != id).toList();
+      final updatedList =
+          state.livestock.where((livestock) => livestock.id != id).toList();
       state = state.copyWith(
         livestock: updatedList,
         filteredLivestock: _filterLivestock(updatedList, state.searchQuery),
@@ -239,14 +241,16 @@ class LivestockNotifier extends StateNotifier<LivestockState> {
     return livestock.where((animal) {
       final nameMatch = (animal.name ?? '').toLowerCase().contains(lower);
       final tagMatch = (animal.tagNumber ?? '').toLowerCase().contains(lower);
-      final typeMatch = (animal.livestockType?.name ?? '').toLowerCase().contains(lower);
-      final breedMatch = (animal.breed?.name ?? '').toLowerCase().contains(lower);
+      final typeMatch =
+          (animal.livestockType?.name ?? '').toLowerCase().contains(lower);
+      final breedMatch =
+          (animal.breed?.name ?? '').toLowerCase().contains(lower);
       return nameMatch || tagMatch || typeMatch || breedMatch;
     }).toList();
   }
 }
 
-final livestockProvider = StateNotifierProvider<LivestockNotifier, LivestockState>((ref) {
+final livestockProvider =
+    StateNotifierProvider<LivestockNotifier, LivestockState>((ref) {
   return LivestockNotifier();
 });
-

@@ -10,7 +10,7 @@ import '../../../../core/models/case_model.dart';
 
 class ReportCaseScreen extends ConsumerStatefulWidget {
   final CaseReport? editCase;
-  
+
   const ReportCaseScreen({super.key, this.editCase});
 
   @override
@@ -26,7 +26,7 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
 
   int? _selectedLivestockId;
   CaseUrgency _selectedUrgency = CaseUrgency.medium;
-  List<XFile> _selectedImages = [];
+  final List<XFile> _selectedImages = [];
   bool _isEditing = false;
   int? _caseId;
 
@@ -39,7 +39,8 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
       _symptomsController.text = widget.editCase!.symptomsObserved;
       _durationController.text = widget.editCase!.durationOfSymptoms ?? '';
       _locationNotesController.text = widget.editCase!.locationNotes ?? '';
-      _numberOfAnimalsController.text = widget.editCase!.numberOfAffectedAnimals.toString();
+      _numberOfAnimalsController.text =
+          widget.editCase!.numberOfAffectedAnimals.toString();
       _selectedLivestockId = widget.editCase!.livestockId;
       _selectedUrgency = widget.editCase!.urgency;
     }
@@ -141,23 +142,26 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
         if (_selectedLivestockId != null) 'livestock': _selectedLivestockId,
         'urgency': _selectedUrgency.apiValue,
         'symptoms_observed': _symptomsController.text.trim(),
-        if (_durationController.text.trim().isNotEmpty) 'duration_of_symptoms': _durationController.text.trim(),
-        'number_of_affected_animals': int.tryParse(_numberOfAnimalsController.text) ?? 1,
-        if (_locationNotesController.text.trim().isNotEmpty) 'location_notes': _locationNotesController.text.trim(),
+        if (_durationController.text.trim().isNotEmpty)
+          'duration_of_symptoms': _durationController.text.trim(),
+        'number_of_affected_animals':
+            int.tryParse(_numberOfAnimalsController.text) ?? 1,
+        if (_locationNotesController.text.trim().isNotEmpty)
+          'location_notes': _locationNotesController.text.trim(),
         if (photoUrls.isNotEmpty) 'photos': photoUrls,
       };
 
       final casesNotifier = ref.read(casesProvider.notifier);
-      
+
       if (_isEditing && _caseId != null) {
         // Update existing case
         final success = await casesNotifier.updateCase(_caseId!, caseData);
-        
+
         // Close loading indicator
         if (mounted) {
           Navigator.of(context).pop();
         }
-        
+
         if (mounted) {
           if (success) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -168,7 +172,8 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
             );
             context.pop(true); // Return true to indicate success
           } else {
-            final errorMessage = casesNotifier.state.error ?? 'Failed to update case. Please try again.';
+            final errorMessage = casesNotifier.state.error ??
+                'Failed to update case. Please try again.';
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(errorMessage),
@@ -198,7 +203,8 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
             context.pop();
           } else {
             // Show the actual error message from the provider
-            final errorMessage = casesNotifier.state.error ?? 'Failed to report case. Please try again.';
+            final errorMessage = casesNotifier.state.error ??
+                'Failed to report case. Please try again.';
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(errorMessage),
@@ -246,7 +252,7 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
             children: [
               // Livestock Selection (Optional)
               DropdownButtonFormField<int>(
-                value: _selectedLivestockId,
+                initialValue: _selectedLivestockId,
                 decoration: const InputDecoration(
                   labelText: 'Select Livestock (Optional)',
                   prefixIcon: Icon(Icons.pets),
@@ -264,7 +270,7 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
                         '${livestock.displayName} (${livestock.livestockType?.name ?? "Unknown"})',
                       ),
                     );
-                  }).toList(),
+                  }),
                 ],
                 onChanged: (value) {
                   setState(() {
@@ -276,7 +282,7 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
 
               // Urgency Selection
               DropdownButtonFormField<CaseUrgency>(
-                value: _selectedUrgency,
+                initialValue: _selectedUrgency,
                 decoration: const InputDecoration(
                   labelText: 'Urgency Level *',
                   prefixIcon: Icon(Icons.priority_high),
@@ -360,7 +366,7 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
               const SizedBox(height: 16),
 
               // Photos Section
-              Text(
+              const Text(
                 'Photos (Optional)',
                 style: TextStyle(
                   fontSize: 16.0,
@@ -400,7 +406,8 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
                       return FutureBuilder<Uint8List?>(
                         future: _selectedImages[index].readAsBytes(),
                         builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
                             return Container(
                               width: 100,
                               height: 100,
@@ -414,7 +421,7 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
                               ),
                             );
                           }
-                          
+
                           if (snapshot.hasError || !snapshot.hasData) {
                             return Container(
                               width: 100,
@@ -457,7 +464,8 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
                                   child: IconButton(
                                     padding: EdgeInsets.zero,
                                     iconSize: 16,
-                                    icon: const Icon(Icons.close, color: Colors.white),
+                                    icon: const Icon(Icons.close,
+                                        color: Colors.white),
                                     onPressed: () => _removeImage(index),
                                   ),
                                 ),
@@ -492,4 +500,3 @@ class _ReportCaseScreenState extends ConsumerState<ReportCaseScreen> {
     );
   }
 }
-

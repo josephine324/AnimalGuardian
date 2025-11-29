@@ -20,7 +20,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   final _tagsController = TextEditingController();
 
   PostType _selectedType = PostType.general;
-  List<XFile> _selectedImages = [];
+  final List<XFile> _selectedImages = [];
 
   @override
   void dispose() {
@@ -120,7 +120,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
             children: [
               // Post Type
               DropdownButtonFormField<PostType>(
-                value: _selectedType,
+                initialValue: _selectedType,
                 decoration: const InputDecoration(
                   labelText: 'Post Type',
                   prefixIcon: Icon(Icons.category),
@@ -211,7 +211,8 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                       return FutureBuilder<Uint8List?>(
                         future: _selectedImages[index].readAsBytes(),
                         builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
                             return Container(
                               width: 100,
                               height: 100,
@@ -225,7 +226,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                               ),
                             );
                           }
-                          
+
                           if (snapshot.hasError || !snapshot.hasData) {
                             return Container(
                               width: 100,
@@ -268,7 +269,8 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                                   child: IconButton(
                                     padding: EdgeInsets.zero,
                                     iconSize: 16,
-                                    icon: const Icon(Icons.close, color: Colors.white),
+                                    icon: const Icon(Icons.close,
+                                        color: Colors.white),
                                     onPressed: () => _removeImage(index),
                                   ),
                                 ),
@@ -303,4 +305,3 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     );
   }
 }
-

@@ -78,7 +78,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildBottomNavigationBar(BuildContext context, {bool isPushedScreen = false, Function(int)? onTabChanged}) {
+  Widget _buildBottomNavigationBar(BuildContext context,
+      {bool isPushedScreen = false, Function(int)? onTabChanged}) {
     return BottomNavigationBar(
       currentIndex: _currentIndex,
       onTap: (index) {
@@ -206,7 +207,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.primary,
             ),
-            child: Column(
+            child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -215,8 +216,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   size: 48,
                   color: Colors.white,
                 ),
-                const SizedBox(height: 8),
-                const Text(
+                SizedBox(height: 8),
+                Text(
                   'AnimalGuardian',
                   style: TextStyle(
                     color: Colors.white,
@@ -397,12 +398,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Build screens here to ensure context is available
     final screens = [
       _HomeTab(scaffoldKey: _scaffoldKey),
-      _LivestockTab(scaffoldKey: _scaffoldKey, bottomNavBar: null), // Don't pass bottomNavBar to avoid duplication
+      _LivestockTab(
+          scaffoldKey: _scaffoldKey,
+          bottomNavBar: null), // Don't pass bottomNavBar to avoid duplication
       _CasesTab(scaffoldKey: _scaffoldKey),
-      _CommunityTab(scaffoldKey: _scaffoldKey), // Community - connect with other farmers
+      _CommunityTab(
+          scaffoldKey: _scaffoldKey), // Community - connect with other farmers
       _ProfileTab(scaffoldKey: _scaffoldKey), // Profile tab
     ];
-    
+
     return Scaffold(
       key: _scaffoldKey,
       drawer: _buildDrawer(context),
@@ -415,7 +419,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 // Home Tab
 class _HomeTab extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
-  
+
   const _HomeTab({required this.scaffoldKey});
 
   @override
@@ -467,12 +471,14 @@ class _HomeTabState extends State<_HomeTab> {
       // Load livestock count
       final livestock = await _apiService.getLivestock();
       final livestockCount = livestock.length;
-      
+
       // Load cases count
       final cases = await _apiService.getCases();
-      final activeCasesCount = cases.where((c) => c.status != CaseStatus.resolved).length;
-      final resolvedCasesCount = cases.where((c) => c.status == CaseStatus.resolved).length;
-      
+      final activeCasesCount =
+          cases.where((c) => c.status != CaseStatus.resolved).length;
+      final resolvedCasesCount =
+          cases.where((c) => c.status == CaseStatus.resolved).length;
+
       if (mounted) {
         setState(() {
           _totalLivestock = livestockCount;
@@ -487,7 +493,7 @@ class _HomeTabState extends State<_HomeTab> {
 
   @override
   Widget build(BuildContext context) {
-      return Scaffold(
+    return Scaffold(
       appBar: AppBar(
         title: const Text('Farmzi'),
         backgroundColor: Colors.white,
@@ -502,7 +508,8 @@ class _HomeTabState extends State<_HomeTab> {
             icon: const Icon(Icons.search),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Search functionality is active!')),
+                const SnackBar(
+                    content: Text('Search functionality is active!')),
               );
             },
           ),
@@ -525,13 +532,17 @@ class _HomeTabState extends State<_HomeTab> {
                     Text(
                       _isLoadingUser
                           ? 'Welcome!'
-                          : 'Welcome, ${_userData?['first_name'] ?? ''} ${_userData?['last_name'] ?? ''}'.trim().isEmpty
+                          : 'Welcome, ${_userData?['first_name'] ?? ''} ${_userData?['last_name'] ?? ''}'
+                                  .trim()
+                                  .isEmpty
                               ? 'Welcome!'
-                              : 'Welcome, ${_userData?['first_name'] ?? ''} ${_userData?['last_name'] ?? ''}'.trim(),
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                              : 'Welcome, ${_userData?['first_name'] ?? ''} ${_userData?['last_name'] ?? ''}'
+                                  .trim(),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -562,7 +573,10 @@ class _HomeTabState extends State<_HomeTab> {
                           ),
                           Text(
                             '$_totalLivestock',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                           ),
@@ -578,7 +592,8 @@ class _HomeTabState extends State<_HomeTab> {
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
                         children: [
-                          const Icon(Icons.report_problem, color: Colors.red, size: 32),
+                          const Icon(Icons.report_problem,
+                              color: Colors.red, size: 32),
                           const SizedBox(height: 8),
                           Text(
                             'Active Cases',
@@ -586,7 +601,10 @@ class _HomeTabState extends State<_HomeTab> {
                           ),
                           Text(
                             '$_activeCases',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                           ),
@@ -602,7 +620,8 @@ class _HomeTabState extends State<_HomeTab> {
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
                         children: [
-                          const Icon(Icons.check_circle, color: Colors.green, size: 32),
+                          const Icon(Icons.check_circle,
+                              color: Colors.green, size: 32),
                           const SizedBox(height: 8),
                           Text(
                             'Resolved',
@@ -610,7 +629,10 @@ class _HomeTabState extends State<_HomeTab> {
                           ),
                           Text(
                             '$_resolvedCases',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                           ),
@@ -638,13 +660,14 @@ class _HomeTabState extends State<_HomeTab> {
                       onTap: () {
                         context.push('/cases/report');
                       },
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
+                      child: const Padding(
+                        padding: EdgeInsets.all(16.0),
                         child: Column(
                           children: [
-                            const Icon(Icons.add_circle_outline, size: 40, color: Colors.blue),
-                            const SizedBox(height: 8),
-                            const Text(
+                            Icon(Icons.add_circle_outline,
+                                size: 40, color: Colors.blue),
+                            SizedBox(height: 8),
+                            Text(
                               'Report Case',
                               textAlign: TextAlign.center,
                               style: TextStyle(fontWeight: FontWeight.bold),
@@ -662,13 +685,14 @@ class _HomeTabState extends State<_HomeTab> {
                       onTap: () {
                         context.push('/livestock/add');
                       },
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
+                      child: const Padding(
+                        padding: EdgeInsets.all(16.0),
                         child: Column(
                           children: [
-                            const Icon(Icons.add_circle_outline, size: 40, color: Colors.green),
-                            const SizedBox(height: 8),
-                            const Text(
+                            Icon(Icons.add_circle_outline,
+                                size: 40, color: Colors.green),
+                            SizedBox(height: 8),
+                            Text(
                               'Add Livestock',
                               textAlign: TextAlign.center,
                               style: TextStyle(fontWeight: FontWeight.bold),
@@ -702,14 +726,15 @@ class _HomeTabState extends State<_HomeTab> {
       builder: (context, ref, child) {
         final casesState = ref.watch(casesProvider);
         final recentCases = casesState.filteredCases.take(3).toList();
-        
+
         if (casesState.isLoading && recentCases.isEmpty) {
-          return const Center(child: Padding(
+          return const Center(
+              child: Padding(
             padding: EdgeInsets.all(32.0),
             child: CircularProgressIndicator(),
           ));
         }
-        
+
         if (recentCases.isEmpty) {
           return Card(
             child: Padding(
@@ -737,7 +762,7 @@ class _HomeTabState extends State<_HomeTab> {
             ),
           );
         }
-        
+
         return Column(
           children: recentCases.map((caseReport) {
             return Card(
@@ -758,13 +783,15 @@ class _HomeTabState extends State<_HomeTab> {
                     caseReport.status.name,
                     style: const TextStyle(fontSize: 10),
                   ),
-                  backgroundColor: _getStatusColor(caseReport.status).withOpacity(0.2),
+                  backgroundColor:
+                      _getStatusColor(caseReport.status).withOpacity(0.2),
                 ),
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => CaseDetailScreen(caseId: caseReport.id),
+                      builder: (context) =>
+                          CaseDetailScreen(caseId: caseReport.id),
                     ),
                   );
                 },
@@ -790,12 +817,11 @@ class _HomeTabState extends State<_HomeTab> {
   }
 }
 
-
 // Livestock Tab
 class _LivestockTab extends ConsumerStatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final Widget? bottomNavBar;
-  
+
   const _LivestockTab({required this.scaffoldKey, this.bottomNavBar});
 
   @override
@@ -840,25 +866,25 @@ class _LivestockTabState extends ConsumerState<_LivestockTab> {
     // Filter by livestock type name - improved matching
     return livestock.where((animal) {
       if (animal.livestockType == null) return false;
-      
+
       final typeName = animal.livestockType!.name.toLowerCase();
       final filterLower = _selectedFilter.toLowerCase();
-      
+
       // Map filter names to type names with better matching
       switch (filterLower) {
         case 'cattle':
-          return typeName.contains('cow') || 
-                 typeName.contains('cattle') || 
-                 typeName.contains('bull') ||
-                 typeName == 'cattle';
+          return typeName.contains('cow') ||
+              typeName.contains('cattle') ||
+              typeName.contains('bull') ||
+              typeName == 'cattle';
         case 'goats':
           return typeName.contains('goat') || typeName == 'goats';
         case 'sheep':
           return typeName.contains('sheep') || typeName == 'sheep';
         case 'pigs':
-          return typeName.contains('pig') || 
-                 typeName.contains('swine') || 
-                 typeName == 'pigs';
+          return typeName.contains('pig') ||
+              typeName.contains('swine') ||
+              typeName == 'pigs';
         default:
           return typeName.contains(filterLower) || typeName == filterLower;
       }
@@ -885,7 +911,8 @@ class _LivestockTabState extends ConsumerState<_LivestockTab> {
   @override
   Widget build(BuildContext context) {
     final livestockState = ref.watch(livestockProvider);
-    final filteredLivestock = _getFilteredLivestock(livestockState.filteredLivestock);
+    final filteredLivestock =
+        _getFilteredLivestock(livestockState.filteredLivestock);
 
     return Scaffold(
       bottomNavigationBar: widget.bottomNavBar,
@@ -989,7 +1016,10 @@ class _LivestockTabState extends ConsumerState<_LivestockTab> {
                               const SizedBox(height: 16),
                               Text(
                                 'No livestock found',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
                                       color: Colors.grey[600],
                                     ),
                               ),
@@ -1010,12 +1040,14 @@ class _LivestockTabState extends ConsumerState<_LivestockTab> {
                           itemCount: filteredLivestock.length,
                           itemBuilder: (context, index) {
                             final livestock = filteredLivestock[index];
-                            final photoUrl = null; // Photos not available in current model
+                            const photoUrl =
+                                null; // Photos not available in current model
                             return Card(
                               margin: const EdgeInsets.only(bottom: 12),
                               child: ListTile(
                                 leading: CircleAvatar(
-                                  backgroundColor: _getStatusColor(livestock.status),
+                                  backgroundColor:
+                                      _getStatusColor(livestock.status),
                                   child: PlaceholderImage(
                                     networkUrl: photoUrl,
                                     placeholderIcon: Icons.pets,
@@ -1033,13 +1065,17 @@ class _LivestockTabState extends ConsumerState<_LivestockTab> {
                                     livestock.status.name,
                                     style: const TextStyle(fontSize: 12),
                                   ),
-                                  backgroundColor: _getStatusColor(livestock.status).withOpacity(0.2),
+                                  backgroundColor:
+                                      _getStatusColor(livestock.status)
+                                          .withOpacity(0.2),
                                 ),
                                 onTap: () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => LivestockDetailScreen(livestockId: livestock.id),
+                                      builder: (context) =>
+                                          LivestockDetailScreen(
+                                              livestockId: livestock.id),
                                     ),
                                   );
                                 },
@@ -1057,7 +1093,7 @@ class _LivestockTabState extends ConsumerState<_LivestockTab> {
 // Cases Tab
 class _CasesTab extends ConsumerStatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
-  
+
   const _CasesTab({required this.scaffoldKey});
 
   @override
@@ -1188,7 +1224,8 @@ class _CasesTabState extends ConsumerState<_CasesTab> {
                         FilterChip(
                           label: const Text('Under Review'),
                           selected: _selectedFilter == 'Under Review',
-                          onSelected: (selected) => _filterCases('Under Review'),
+                          onSelected: (selected) =>
+                              _filterCases('Under Review'),
                         ),
                         const SizedBox(width: 8),
                         FilterChip(
@@ -1200,7 +1237,8 @@ class _CasesTabState extends ConsumerState<_CasesTab> {
                         FilterChip(
                           label: const Text('Investigation'),
                           selected: _selectedFilter == 'Investigation',
-                          onSelected: (selected) => _filterCases('Investigation'),
+                          onSelected: (selected) =>
+                              _filterCases('Investigation'),
                         ),
                         const SizedBox(width: 8),
                         FilterChip(
@@ -1235,7 +1273,10 @@ class _CasesTabState extends ConsumerState<_CasesTab> {
                               const SizedBox(height: 16),
                               Text(
                                 'No cases found',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
                                       color: Colors.grey[600],
                                     ),
                               ),
@@ -1256,14 +1297,15 @@ class _CasesTabState extends ConsumerState<_CasesTab> {
                           itemCount: filteredCases.length,
                           itemBuilder: (context, index) {
                             final caseReport = filteredCases[index];
-                            final photoUrl = caseReport.photos.isNotEmpty 
-                                ? caseReport.photos.first 
+                            final photoUrl = caseReport.photos.isNotEmpty
+                                ? caseReport.photos.first
                                 : null;
                             return Card(
                               margin: const EdgeInsets.only(bottom: 12),
                               child: ListTile(
                                 leading: CircleAvatar(
-                                  backgroundColor: _getStatusColor(caseReport.status),
+                                  backgroundColor:
+                                      _getStatusColor(caseReport.status),
                                   child: PlaceholderImage(
                                     networkUrl: photoUrl,
                                     placeholderIcon: Icons.report_problem,
@@ -1276,10 +1318,13 @@ class _CasesTabState extends ConsumerState<_CasesTab> {
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(caseReport.livestockName ?? 'Unknown Livestock'),
+                                    Text(caseReport.livestockName ??
+                                        'Unknown Livestock'),
                                     Text(
                                       caseReport.symptomsObserved,
-                                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600]),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -1291,32 +1336,40 @@ class _CasesTabState extends ConsumerState<_CasesTab> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: _getStatusColor(caseReport.status).withOpacity(0.2),
+                                        color:
+                                            _getStatusColor(caseReport.status)
+                                                .withOpacity(0.2),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text(
                                         caseReport.status.name.toUpperCase(),
                                         style: TextStyle(
                                           fontSize: 9,
-                                          color: _getStatusColor(caseReport.status),
+                                          color: _getStatusColor(
+                                              caseReport.status),
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                     ),
                                     const SizedBox(height: 1),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 1),
                                       decoration: BoxDecoration(
-                                        color: _getUrgencyColor(caseReport.urgency).withOpacity(0.2),
+                                        color:
+                                            _getUrgencyColor(caseReport.urgency)
+                                                .withOpacity(0.2),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text(
                                         caseReport.urgency.name.toUpperCase(),
                                         style: TextStyle(
                                           fontSize: 9,
-                                          color: _getUrgencyColor(caseReport.urgency),
+                                          color: _getUrgencyColor(
+                                              caseReport.urgency),
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -1324,12 +1377,14 @@ class _CasesTabState extends ConsumerState<_CasesTab> {
                                   ],
                                 ),
                                 isThreeLine: true,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
                                 onTap: () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => CaseDetailScreen(caseId: caseReport.id),
+                                      builder: (context) => CaseDetailScreen(
+                                          caseId: caseReport.id),
                                     ),
                                   );
                                 },
@@ -1349,23 +1404,24 @@ class _CasesTabState extends ConsumerState<_CasesTab> {
 // Community Tab
 class _CommunityTab extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
-  
+
   const _CommunityTab({required this.scaffoldKey});
 
   @override
   State<_CommunityTab> createState() => _CommunityTabState();
 }
 
-class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderStateMixin {
+class _CommunityTabState extends State<_CommunityTab>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _selectedTab = 'Community';
   final TextEditingController _searchController = TextEditingController();
   final ApiService _apiService = ApiService();
-  
+
   List<Post> _posts = [];
   bool _isLoading = true;
   String? _error;
-  
+
   List<Post> _filteredPosts = [];
 
   @override
@@ -1420,9 +1476,10 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
       } else {
         _filteredPosts = _posts.where((post) {
           return post.title.toLowerCase().contains(query.toLowerCase()) ||
-                 post.content.toLowerCase().contains(query.toLowerCase()) ||
-                 post.authorName.toLowerCase().contains(query.toLowerCase()) ||
-                 post.tags.any((tag) => tag.toLowerCase().contains(query.toLowerCase()));
+              post.content.toLowerCase().contains(query.toLowerCase()) ||
+              post.authorName.toLowerCase().contains(query.toLowerCase()) ||
+              post.tags.any(
+                  (tag) => tag.toLowerCase().contains(query.toLowerCase()));
         }).toList();
       }
     });
@@ -1434,7 +1491,7 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
         'title': title,
         'content': content,
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1460,7 +1517,7 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
   void _showCreatePostDialog(BuildContext context) {
     final titleController = TextEditingController();
     final contentController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1497,7 +1554,7 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
           ),
           ElevatedButton(
             onPressed: () {
-              if (titleController.text.trim().isNotEmpty && 
+              if (titleController.text.trim().isNotEmpty &&
                   contentController.text.trim().isNotEmpty) {
                 _createPost(
                   titleController.text.trim(),
@@ -1522,7 +1579,7 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
 
   Future<void> _handleComment(int postId) async {
     final commentController = TextEditingController();
-    
+
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -1559,7 +1616,7 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
           'post': postId,
           'content': commentController.text.trim(),
         });
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -1585,8 +1642,9 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
   Future<void> _handleShare(int postId) async {
     try {
       final post = _posts.firstWhere((p) => p.id == postId);
-      final shareText = '${post.title}\n\n${post.content}\n\nShared from AnimalGuardian App';
-      
+      final shareText =
+          '${post.title}\n\n${post.content}\n\nShared from AnimalGuardian App';
+
       // Use Flutter's share functionality
       // Note: This requires share_plus package, but we'll use a simple approach
       // For web, we can copy to clipboard
@@ -1783,8 +1841,8 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
                   Row(
                     children: [
                       CircleAvatar(
-                        child: Text(post.authorName.isNotEmpty 
-                            ? post.authorName[0].toUpperCase() 
+                        child: Text(post.authorName.isNotEmpty
+                            ? post.authorName[0].toUpperCase()
                             : 'U'),
                       ),
                       const SizedBox(width: 12),
@@ -1865,7 +1923,8 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
     );
   }
 
-  Widget _buildActionButton(IconData icon, String label, Color color, VoidCallback onTap) {
+  Widget _buildActionButton(
+      IconData icon, String label, Color color, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       child: Row(
@@ -1881,7 +1940,7 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
   Widget _buildCreatePostTab() {
     final titleController = TextEditingController();
     final contentController = TextEditingController();
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -1918,7 +1977,7 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () {
-              if (titleController.text.trim().isNotEmpty && 
+              if (titleController.text.trim().isNotEmpty &&
                   contentController.text.trim().isNotEmpty) {
                 _createPost(
                   titleController.text.trim(),
@@ -1978,7 +2037,6 @@ class _CommunityTabState extends State<_CommunityTab> with SingleTickerProviderS
       }
     }
   }
-
 }
 
 class _CommunityCard extends StatelessWidget {
@@ -2057,9 +2115,9 @@ class _PostCard extends StatelessWidget {
     required this.location,
     required this.time,
     this.imagePath,
-    this.placeholderIcon = Icons.image,
+    required this.placeholderIcon,
     required this.content,
-    this.tags = const [],
+    required this.tags,
     required this.likes,
     required this.comments,
     required this.saves,
@@ -2077,7 +2135,8 @@ class _PostCard extends StatelessWidget {
         children: [
           ListTile(
             leading: const CircleAvatar(child: Icon(Icons.person)),
-            title: Text(authorName, style: const TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(authorName,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text('$location • $time'),
             trailing: const Icon(Icons.more_vert),
           ),
@@ -2105,9 +2164,12 @@ class _PostCard extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _EngagementButton(Icons.favorite, likes.toString(), Colors.green),
-                _EngagementButton(Icons.comment, comments.toString(), Colors.grey),
-                _EngagementButton(Icons.bookmark, saves.toString(), Colors.grey),
+                _EngagementButton(
+                    Icons.favorite, likes.toString(), Colors.green),
+                _EngagementButton(
+                    Icons.comment, comments.toString(), Colors.grey),
+                _EngagementButton(
+                    Icons.bookmark, saves.toString(), Colors.grey),
                 _EngagementButton(Icons.share, shares.toString(), Colors.grey),
               ],
             ),
@@ -2146,7 +2208,7 @@ class _VideoPostCard extends StatelessWidget {
     required this.duration,
     required this.content,
     required this.marketView,
-    this.tags = const [],
+    required this.tags,
     required this.likes,
     required this.comments,
     required this.saves,
@@ -2167,7 +2229,8 @@ class _VideoPostCard extends StatelessWidget {
               backgroundColor: Colors.green,
               child: Icon(Icons.person, color: Colors.white),
             ),
-            title: Text(authorName, style: const TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(authorName,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text('$location • $time'),
             trailing: const Icon(Icons.more_vert),
           ),
@@ -2186,20 +2249,23 @@ class _VideoPostCard extends StatelessWidget {
                 height: 200,
                 width: double.infinity,
                 color: Colors.grey[200],
-                child: const Icon(Icons.play_circle_filled, size: 80, color: Colors.red),
+                child: const Icon(Icons.play_circle_filled,
+                    size: 80, color: Colors.red),
               ),
               Positioned(
                 bottom: 8,
                 left: 8,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.orange,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     videoTitle,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -2229,7 +2295,8 @@ class _VideoPostCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   'Market View: $marketView',
-                  style: TextStyle(color: Colors.grey[600], fontStyle: FontStyle.italic),
+                  style: TextStyle(
+                      color: Colors.grey[600], fontStyle: FontStyle.italic),
                 ),
                 TextButton(
                   onPressed: () {
@@ -2249,16 +2316,20 @@ class _VideoPostCard extends StatelessWidget {
               children: [
                 GestureDetector(
                   onTap: onLike,
-                  child: _EngagementButton(Icons.favorite, likes.toString(), Colors.green),
+                  child: _EngagementButton(
+                      Icons.favorite, likes.toString(), Colors.green),
                 ),
                 GestureDetector(
                   onTap: onComment,
-                  child: _EngagementButton(Icons.comment, comments.toString(), Colors.grey),
+                  child: _EngagementButton(
+                      Icons.comment, comments.toString(), Colors.grey),
                 ),
-                _EngagementButton(Icons.bookmark, saves.toString(), Colors.grey),
+                _EngagementButton(
+                    Icons.bookmark, saves.toString(), Colors.grey),
                 GestureDetector(
                   onTap: onShare,
-                  child: _EngagementButton(Icons.share, shares.toString(), Colors.grey),
+                  child: _EngagementButton(
+                      Icons.share, shares.toString(), Colors.grey),
                 ),
               ],
             ),
@@ -2301,7 +2372,7 @@ class _ChatListItem extends StatelessWidget {
       title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
       subtitle: Row(
         children: [
-          Icon(Icons.check_circle, size: 16, color: Colors.green),
+          const Icon(Icons.check_circle, size: 16, color: Colors.green),
           const SizedBox(width: 4),
           Expanded(child: Text(lastMessage, overflow: TextOverflow.ellipsis)),
         ],
@@ -2314,7 +2385,8 @@ class _ChatListItem extends StatelessWidget {
           const SizedBox(height: 4),
           Container(
             padding: const EdgeInsets.all(4),
-            decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+            decoration: const BoxDecoration(
+                color: Colors.green, shape: BoxShape.circle),
             child: Text(
               unreadCount.toString(),
               style: const TextStyle(color: Colors.white, fontSize: 12),
@@ -2375,7 +2447,7 @@ class _EngagementButton extends StatelessWidget {
 class _MarketTab extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final Widget? bottomNavBar;
-  
+
   const _MarketTab({required this.scaffoldKey, this.bottomNavBar});
 
   @override
@@ -2413,7 +2485,10 @@ class _MarketTabState extends State<_MarketTab> {
       _filteredProducts = _products;
     } else {
       _filteredProducts = _products.where((product) {
-        return product['name'].toString().toLowerCase().contains(query.toLowerCase());
+        return product['name']
+            .toString()
+            .toLowerCase()
+            .contains(query.toLowerCase());
       }).toList();
     }
   }
@@ -2534,7 +2609,7 @@ class _MarketTabState extends State<_MarketTab> {
 class _WeatherTab extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final Widget? bottomNavBar;
-  
+
   const _WeatherTab({required this.scaffoldKey, this.bottomNavBar});
 
   @override
@@ -2591,7 +2666,10 @@ class _WeatherTabState extends State<_WeatherTab> {
     setState(() {
       _isRefreshing = true;
     });
-    await _loadWeather(location: _searchController.text.trim().isNotEmpty ? _searchController.text.trim() : null);
+    await _loadWeather(
+        location: _searchController.text.trim().isNotEmpty
+            ? _searchController.text.trim()
+            : null);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Weather data refreshed!')),
@@ -2641,7 +2719,9 @@ class _WeatherTabState extends State<_WeatherTab> {
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Notifications feature will be available soon')),
+                const SnackBar(
+                    content:
+                        Text('Notifications feature will be available soon')),
               );
             },
           ),
@@ -2666,11 +2746,15 @@ class _WeatherTabState extends State<_WeatherTab> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                            Icon(Icons.error_outline,
+                                size: 64, color: Colors.red[300]),
                             const SizedBox(height: 16),
                             Text(
                               _errorMessage!,
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
+                                  ?.copyWith(
                                     color: Colors.red,
                                   ),
                               textAlign: TextAlign.center,
@@ -2699,10 +2783,12 @@ class _WeatherTabState extends State<_WeatherTab> {
                               controller: _searchController,
                               onSubmitted: _handleSearch,
                               onChanged: (value) {
-                                setState(() {}); // Rebuild to show/hide clear button
+                                setState(
+                                    () {}); // Rebuild to show/hide clear button
                               },
                               decoration: InputDecoration(
-                                hintText: 'Search for a Farm\'s Location (e.g., Kigali)',
+                                hintText:
+                                    'Search for a Farm\'s Location (e.g., Kigali)',
                                 prefixIcon: const Icon(Icons.search),
                                 suffixIcon: _searchController.text.isNotEmpty
                                     ? IconButton(
@@ -2715,11 +2801,13 @@ class _WeatherTabState extends State<_WeatherTab> {
                                       )
                                     : IconButton(
                                         icon: const Icon(Icons.search),
-                                        onPressed: () => _handleSearch(_searchController.text),
+                                        onPressed: () => _handleSearch(
+                                            _searchController.text),
                                       ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: Colors.grey[300]!),
+                                  borderSide:
+                                      BorderSide(color: Colors.grey[300]!),
                                 ),
                                 filled: true,
                                 fillColor: Colors.grey[100],
@@ -2730,11 +2818,17 @@ class _WeatherTabState extends State<_WeatherTab> {
                             if (_weatherData!['location'] != null) ...[
                               Row(
                                 children: [
-                                  Icon(Icons.location_on, color: Theme.of(context).colorScheme.primary),
+                                  Icon(Icons.location_on,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary),
                                   const SizedBox(width: 8),
                                   Text(
                                     '${_weatherData!['location']['city'] ?? 'Unknown'}, ${_weatherData!['location']['country'] ?? 'Rwanda'}',
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
                                           fontWeight: FontWeight.bold,
                                         ),
                                   ),
@@ -2753,29 +2847,39 @@ class _WeatherTabState extends State<_WeatherTab> {
                               child: Column(
                                 children: [
                                   Icon(
-                                    _getWeatherIcon(_weatherData!['current']?['condition'] ?? 'Cloudy'),
+                                    _getWeatherIcon(_weatherData!['current']
+                                            ?['condition'] ??
+                                        'Cloudy'),
                                     size: 80,
                                     color: Colors.white,
                                   ),
                                   const SizedBox(height: 16),
                                   Text(
                                     '${_weatherData!['current']?['temperature'] ?? 'N/A'}°${_weatherData!['current']?['temperature_unit'] == 'celsius' ? 'C' : 'F'}',
-                                    style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .displayMedium
+                                        ?.copyWith(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
                                         ),
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    _weatherData!['current']?['condition'] ?? 'N/A',
-                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    _weatherData!['current']?['condition'] ??
+                                        'N/A',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge
+                                        ?.copyWith(
                                           color: Colors.white,
                                         ),
                                   ),
                                   const SizedBox(height: 24),
                                   // Weather Details
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceAround,
                                     children: [
                                       _buildWeatherDetail(
                                         context,
@@ -2805,7 +2909,10 @@ class _WeatherTabState extends State<_WeatherTab> {
                             if (_weatherData!['forecast'] != null) ...[
                               Text(
                                 'Forecast',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
@@ -2832,10 +2939,14 @@ class _WeatherTabState extends State<_WeatherTab> {
                               const SizedBox(height: 24),
                             ],
                             // Agricultural Advice
-                            if (_weatherData!['agricultural_advice'] != null) ...[
+                            if (_weatherData!['agricultural_advice'] !=
+                                null) ...[
                               Text(
                                 'Agricultural Advice',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
@@ -2844,27 +2955,34 @@ class _WeatherTabState extends State<_WeatherTab> {
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       _buildAdviceRow(
                                         context,
                                         Icons.pets,
                                         'Livestock Health',
-                                        _weatherData!['agricultural_advice']['livestock_health'] ?? 'N/A',
+                                        _weatherData!['agricultural_advice']
+                                                ['livestock_health'] ??
+                                            'N/A',
                                       ),
                                       const Divider(),
                                       _buildAdviceRow(
                                         context,
                                         Icons.grass,
                                         'Grazing Conditions',
-                                        _weatherData!['agricultural_advice']['grazing_conditions'] ?? 'N/A',
+                                        _weatherData!['agricultural_advice']
+                                                ['grazing_conditions'] ??
+                                            'N/A',
                                       ),
                                       const Divider(),
                                       _buildAdviceRow(
                                         context,
                                         Icons.warning_amber,
                                         'Disease Risk',
-                                        _weatherData!['agricultural_advice']['disease_risk'] ?? 'N/A',
+                                        _weatherData!['agricultural_advice']
+                                                ['disease_risk'] ??
+                                            'N/A',
                                       ),
                                     ],
                                   ),
@@ -2878,7 +2996,8 @@ class _WeatherTabState extends State<_WeatherTab> {
     );
   }
 
-  Widget _buildWeatherDetail(BuildContext context, IconData icon, String label, String value) {
+  Widget _buildWeatherDetail(
+      BuildContext context, IconData icon, String label, String value) {
     return Column(
       children: [
         Icon(icon, color: Colors.white70, size: 24),
@@ -2900,7 +3019,8 @@ class _WeatherTabState extends State<_WeatherTab> {
     );
   }
 
-  Widget _buildForecastCard(BuildContext context, String day, Map<String, dynamic> forecast) {
+  Widget _buildForecastCard(
+      BuildContext context, String day, Map<String, dynamic> forecast) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -2954,7 +3074,8 @@ class _WeatherTabState extends State<_WeatherTab> {
     );
   }
 
-  Widget _buildAdviceRow(BuildContext context, IconData icon, String title, String advice) {
+  Widget _buildAdviceRow(
+      BuildContext context, IconData icon, String title, String advice) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -3025,8 +3146,11 @@ class _HourlyForecast extends StatelessWidget {
 class _ProfileTab extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final Function(int)? onTabChanged;
-  
-  const _ProfileTab({required this.scaffoldKey, this.onTabChanged});
+
+  const _ProfileTab({
+    required this.scaffoldKey,
+    this.onTabChanged,
+  });
 
   @override
   State<_ProfileTab> createState() => _ProfileTabState();
@@ -3128,9 +3252,12 @@ class _ProfileTabState extends State<_ProfileTab> {
                 const SizedBox(height: 16),
                 Text(
                   _userData != null
-                      ? '${_userData!['first_name'] ?? ''} ${_userData!['last_name'] ?? ''}'.trim().isEmpty
+                      ? '${_userData!['first_name'] ?? ''} ${_userData!['last_name'] ?? ''}'
+                              .trim()
+                              .isEmpty
                           ? _userData!['username'] ?? 'User'
-                          : '${_userData!['first_name'] ?? ''} ${_userData!['last_name'] ?? ''}'.trim()
+                          : '${_userData!['first_name'] ?? ''} ${_userData!['last_name'] ?? ''}'
+                              .trim()
                       : 'User',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
@@ -3145,55 +3272,57 @@ class _ProfileTabState extends State<_ProfileTab> {
                       ),
                   textAlign: TextAlign.center,
                 ),
-          const SizedBox(height: 32),
-          ListTile(
-            leading: const Icon(Icons.edit),
-            title: const Text('Edit Profile'),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const EditProfileScreen(),
+                const SizedBox(height: 32),
+                ListTile(
+                  leading: const Icon(Icons.edit),
+                  title: const Text('Edit Profile'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const EditProfileScreen(),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.settings),
-            title: const Text('Settings'),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => _SettingsTab(
-                    scaffoldKey: widget.scaffoldKey,
-                    bottomNavBar: _buildBottomNavigationBarForChild(context),
-                  ),
+                ListTile(
+                  leading: const Icon(Icons.settings),
+                  title: const Text('Settings'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => _SettingsTab(
+                          scaffoldKey: widget.scaffoldKey,
+                          bottomNavBar:
+                              _buildBottomNavigationBarForChild(context),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.help),
-            title: const Text('Help & Support'),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const HelpSupportScreen(),
+                ListTile(
+                  leading: const Icon(Icons.help),
+                  title: const Text('Help & Support'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const HelpSupportScreen(),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('Logout', style: TextStyle(color: Colors.red)),
-            onTap: () {
-              context.go('/login');
-            },
-          ),
-        ],
-      ),
+                ListTile(
+                  leading: const Icon(Icons.logout, color: Colors.red),
+                  title:
+                      const Text('Logout', style: TextStyle(color: Colors.red)),
+                  onTap: () {
+                    context.go('/login');
+                  },
+                ),
+              ],
+            ),
     );
   }
 }
@@ -3202,7 +3331,7 @@ class _ProfileTabState extends State<_ProfileTab> {
 class _SettingsTab extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final Widget? bottomNavBar;
-  
+
   const _SettingsTab({required this.scaffoldKey, this.bottomNavBar});
 
   @override
@@ -3293,7 +3422,8 @@ class _SettingsTabState extends State<_SettingsTab> {
                       });
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Notifications ${value ? 'enabled' : 'disabled'}'),
+                          content: Text(
+                              'Notifications ${value ? 'enabled' : 'disabled'}'),
                           duration: const Duration(seconds: 1),
                         ),
                       );
@@ -3327,7 +3457,8 @@ class _SettingsTabState extends State<_SettingsTab> {
                       });
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Dark mode ${value ? 'enabled' : 'disabled'}'),
+                          content: Text(
+                              'Dark mode ${value ? 'enabled' : 'disabled'}'),
                           duration: const Duration(seconds: 1),
                         ),
                       );
@@ -3349,10 +3480,10 @@ class _SettingsTabState extends State<_SettingsTab> {
           Card(
             child: Column(
               children: [
-                ListTile(
-                  leading: const Icon(Icons.info),
-                  title: const Text('App Version'),
-                  subtitle: const Text('1.0.0'),
+                const ListTile(
+                  leading: Icon(Icons.info),
+                  title: Text('App Version'),
+                  subtitle: Text('1.0.0'),
                 ),
                 const Divider(height: 1),
                 ListTile(
@@ -3507,13 +3638,17 @@ class _FilterChip extends StatelessWidget {
           color: isSelected ? Colors.grey[200] : Colors.grey[100],
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : Colors.transparent,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey[600],
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : Colors.grey[600],
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
         ),
@@ -3542,7 +3677,9 @@ class _CategoryTab extends StatelessWidget {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.transparent,
               width: 2,
             ),
           ),
@@ -3550,7 +3687,9 @@ class _CategoryTab extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.orange : Theme.of(context).colorScheme.primary,
+            color: isSelected
+                ? Colors.orange
+                : Theme.of(context).colorScheme.primary,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
         ),
@@ -3569,7 +3708,7 @@ class _ProductCard extends StatelessWidget {
     required this.name,
     required this.price,
     this.imagePath,
-    this.placeholderIcon = Icons.eco,
+    required this.placeholderIcon,
   });
 
   @override
@@ -3584,7 +3723,8 @@ class _ProductCard extends StatelessWidget {
               placeholderIcon: placeholderIcon,
               width: double.infinity,
               height: double.infinity,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(12)),
             ),
           ),
           Padding(
@@ -3614,4 +3754,3 @@ class _ProductCard extends StatelessWidget {
     );
   }
 }
-

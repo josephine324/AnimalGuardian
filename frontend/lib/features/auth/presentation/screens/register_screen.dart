@@ -44,18 +44,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       // Parse name into first_name and last_name
       final nameParts = _nameController.text.trim().split(' ');
       final firstName = nameParts.isNotEmpty ? nameParts.first : '';
-      final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+      final lastName =
+          nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
 
       // Prepare registration data
       // Backend will auto-fill password_confirm from password if not provided
       // Clean phone number (remove spaces/dashes)
-      final cleanedPhone = _phoneController.text.trim().replaceAll(RegExp(r'[\s-]'), '');
+      final cleanedPhone =
+          _phoneController.text.trim().replaceAll(RegExp(r'[\s-]'), '');
       final registrationData = {
         'phone_number': cleanedPhone,
         'password': _passwordController.text,
         'user_type': _selectedUserType,
         'first_name': firstName,
-        'last_name': lastName.isNotEmpty ? lastName : firstName, // Use first name as last name if not provided
+        'last_name': lastName.isNotEmpty
+            ? lastName
+            : firstName, // Use first name as last name if not provided
       };
 
       // Email is optional - only include if provided
@@ -71,15 +75,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         setState(() {
           _isLoading = false;
         });
-        
+
         // Show different message based on user type
         String successMessage;
         if (_selectedUserType == 'farmer') {
           successMessage = 'Account created successfully! You can now login.';
         } else {
-          successMessage = 'Registration successful! Your account is pending approval from a sector veterinarian. You will receive a notification on your phone number once approved.';
+          successMessage =
+              'Registration successful! Your account is pending approval from a sector veterinarian. You will receive a notification on your phone number once approved.';
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(successMessage),
@@ -87,7 +92,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             duration: const Duration(seconds: 5),
           ),
         );
-        
+
         // Navigate to login page after registration
         context.go('/login');
       }
@@ -96,34 +101,52 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         setState(() {
           _isLoading = false;
         });
-        
+
         String errorMessage = 'Registration failed. Please try again.';
-        
+
         // Handle specific error cases
-        if (e.toString().contains('TimeoutException') || e.toString().contains('timeout')) {
-          errorMessage = 'Registration is taking longer than expected. Your account may have been created. Please try logging in or contact support.';
-        } else if (e.toString().contains('phone_number') && e.toString().contains('already exists')) {
-          errorMessage = 'An account with this phone number already exists. Please use a different phone number or try logging in.';
-        } else if (e.toString().contains('email') && e.toString().contains('already exists')) {
-          errorMessage = 'An account with this email address already exists. Please use a different email or try logging in.';
-        } else if (e.toString().contains('username') && e.toString().contains('already exists')) {
-          errorMessage = 'An account with this username already exists. Please use a different username.';
-        } else if (e.toString().contains('Password must be at least 8 characters')) {
+        if (e.toString().contains('TimeoutException') ||
+            e.toString().contains('timeout')) {
+          errorMessage =
+              'Registration is taking longer than expected. Your account may have been created. Please try logging in or contact support.';
+        } else if (e.toString().contains('phone_number') &&
+            e.toString().contains('already exists')) {
+          errorMessage =
+              'An account with this phone number already exists. Please use a different phone number or try logging in.';
+        } else if (e.toString().contains('email') &&
+            e.toString().contains('already exists')) {
+          errorMessage =
+              'An account with this email address already exists. Please use a different email or try logging in.';
+        } else if (e.toString().contains('username') &&
+            e.toString().contains('already exists')) {
+          errorMessage =
+              'An account with this username already exists. Please use a different username.';
+        } else if (e
+            .toString()
+            .contains('Password must be at least 8 characters')) {
           errorMessage = 'Password must be at least 8 characters long.';
-        } else if (e.toString().contains('Password must contain at least one number')) {
+        } else if (e
+            .toString()
+            .contains('Password must contain at least one number')) {
           errorMessage = 'Password must contain at least one number.';
-        } else if (e.toString().contains('Password must contain at least one letter')) {
+        } else if (e
+            .toString()
+            .contains('Password must contain at least one letter')) {
           errorMessage = 'Password must contain at least one letter.';
         } else if (e.toString().contains('phone_number')) {
           errorMessage = 'This phone number is already registered.';
         } else if (e.toString().contains('email')) {
           errorMessage = 'This email is already registered.';
-        } else if (e.toString().contains('network') || e.toString().contains('connection')) {
-          errorMessage = 'Network error. Please check your internet connection and try again.';
+        } else if (e.toString().contains('network') ||
+            e.toString().contains('connection')) {
+          errorMessage =
+              'Network error. Please check your internet connection and try again.';
         } else if (e.toString().isNotEmpty) {
-          errorMessage = e.toString().replaceAll('Exception: ', '').replaceAll('TimeoutException after 0:00:60.000000: Future not completed', 'Request timed out. Please try again.');
+          errorMessage = e.toString().replaceAll('Exception: ', '').replaceAll(
+              'TimeoutException after 0:00:60.000000: Future not completed',
+              'Request timed out. Please try again.');
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),
@@ -143,13 +166,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           child: Column(
             children: [
               // Image section (top half)
-              Container(
+              SizedBox(
                 height: MediaQuery.of(context).size.height * 0.35,
                 width: double.infinity,
                 child: Stack(
                   children: [
                     // Farmer/cow image with placeholder
-                    PlaceholderImage(
+                    const PlaceholderImage(
                       assetPath: 'assets/images/register_farmer.jpg',
                       placeholderIcon: Icons.pets,
                       width: double.infinity,
@@ -182,9 +205,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       const SizedBox(height: 24),
                       Text(
                         'Join the future of livestock management',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
@@ -219,7 +243,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           hintText: '0781234567 (10 digits)',
                           prefixIcon: Icon(Icons.phone),
                           border: OutlineInputBorder(),
-                          helperText: 'Must start with 078, 079, 073, or 072 and be 10 digits',
+                          helperText:
+                              'Must start with 078, 079, 073, or 072 and be 10 digits',
                         ),
                         keyboardType: TextInputType.phone,
                         maxLength: 10,
@@ -228,26 +253,27 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             return 'Please enter your phone number';
                           }
                           // Remove any spaces or dashes
-                          final cleaned = value.trim().replaceAll(RegExp(r'[\s-]'), '');
-                          
+                          final cleaned =
+                              value.trim().replaceAll(RegExp(r'[\s-]'), '');
+
                           // Check if it's exactly 10 digits
                           if (cleaned.length != 10) {
                             return 'Phone number must be exactly 10 digits';
                           }
-                          
+
                           // Check if it starts with valid prefix
-                          if (!cleaned.startsWith('078') && 
-                              !cleaned.startsWith('079') && 
-                              !cleaned.startsWith('073') && 
+                          if (!cleaned.startsWith('078') &&
+                              !cleaned.startsWith('079') &&
+                              !cleaned.startsWith('073') &&
                               !cleaned.startsWith('072')) {
                             return 'Phone number must start with 078, 079, 073, or 072';
                           }
-                          
+
                           // Check if all characters are digits
                           if (!RegExp(r'^\d+$').hasMatch(cleaned)) {
                             return 'Phone number must contain only digits';
                           }
-                          
+
                           return null;
                         },
                       ),
@@ -259,7 +285,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           hintText: 'Enter your email (optional)',
                           prefixIcon: Icon(Icons.email),
                           border: OutlineInputBorder(),
-                          helperText: 'Email is optional. Phone number is required.',
+                          helperText:
+                              'Email is optional. Phone number is required.',
                         ),
                         keyboardType: TextInputType.emailAddress,
                         validator: (value) {
@@ -274,16 +301,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        value: _selectedUserType,
+                        initialValue: _selectedUserType,
                         decoration: const InputDecoration(
                           labelText: 'User Type',
                           prefixIcon: Icon(Icons.account_circle),
                           border: OutlineInputBorder(),
                         ),
-                        isExpanded: true, // Prevent overflow by expanding dropdown
+                        isExpanded:
+                            true, // Prevent overflow by expanding dropdown
                         items: const [
-                          DropdownMenuItem(value: 'farmer', child: Text('Farmer')),
-                          DropdownMenuItem(value: 'local_vet', child: Text('Local Veterinarian')),
+                          DropdownMenuItem(
+                              value: 'farmer', child: Text('Farmer')),
+                          DropdownMenuItem(
+                              value: 'local_vet',
+                              child: Text('Local Veterinarian')),
                         ],
                         onChanged: (value) {
                           setState(() {
@@ -291,8 +322,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           });
                         },
                       ),
-                        const SizedBox(height: 8),
-                        if (_selectedUserType == 'local_vet')
+                      const SizedBox(height: 8),
+                      if (_selectedUserType == 'local_vet')
                         Container(
                           padding: const EdgeInsets.all(12.0),
                           decoration: BoxDecoration(
@@ -302,11 +333,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                              Icon(Icons.info_outline,
+                                  color: Colors.blue[700], size: 20),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                    'Your registration will require approval from a Sector Veterinarian via the web dashboard. You will receive an email once approved.',
+                                  'Your registration will require approval from a Sector Veterinarian via the web dashboard. You will receive an email once approved.',
                                   style: TextStyle(
                                     color: Colors.blue[900],
                                     fontSize: 12,
@@ -314,32 +346,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 ),
                               ),
                             ],
-                            ),
-                          ),
-                        if (_selectedUserType == 'farmer')
-                          Container(
-                            padding: const EdgeInsets.all(12.0),
-                            decoration: BoxDecoration(
-                              color: Colors.green[50],
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.green[200]!),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.check_circle_outline, color: Colors.green[700], size: 20),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Farmers can login immediately after registration. No approval needed!',
-                                    style: TextStyle(
-                                      color: Colors.green[900],
-                                      fontSize: 12,
-                                    ),
                           ),
                         ),
-                      ],
-                            ),
+                      if (_selectedUserType == 'farmer')
+                        Container(
+                          padding: const EdgeInsets.all(12.0),
+                          decoration: BoxDecoration(
+                            color: Colors.green[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.green[200]!),
                           ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.check_circle_outline,
+                                  color: Colors.green[700], size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Farmers can login immediately after registration. No approval needed!',
+                                  style: TextStyle(
+                                    color: Colors.green[900],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _passwordController,
@@ -347,10 +380,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           labelText: 'Password',
                           hintText: 'Enter your password (min. 8 characters)',
                           prefixIcon: const Icon(Icons.lock),
-                          helperText: 'Password must be at least 8 characters and contain both letters and numbers',
+                          helperText:
+                              'Password must be at least 8 characters and contain both letters and numbers',
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                              _obscurePassword
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
                             ),
                             onPressed: () {
                               setState(() {
@@ -394,7 +430,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ElevatedButton(
                         onPressed: _isLoading ? null : _handleRegister,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
@@ -425,17 +462,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         children: [
                           Flexible(
                             child: Text(
-                            'Already have an account? ',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 14,
+                              'Already have an account? ',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
                               ),
                             ),
                           ),
                           TextButton(
                             onPressed: () => context.go('/login'),
                             style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
                               minimumSize: Size.zero,
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
@@ -461,4 +499,3 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 }
-

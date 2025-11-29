@@ -58,30 +58,33 @@ class HelpSupportScreen extends StatelessWidget {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          ExpansionTile(
-            title: const Text('How do I report a case?'),
-            children: const [
+          const ExpansionTile(
+            title: Text('How do I report a case?'),
+            children: [
               Padding(
                 padding: EdgeInsets.all(16.0),
-                child: Text('Go to the Cases tab and tap the + button to report a new case. Fill in the details about your livestock and symptoms.'),
+                child: Text(
+                    'Go to the Cases tab and tap the + button to report a new case. Fill in the details about your livestock and symptoms.'),
               ),
             ],
           ),
-          ExpansionTile(
-            title: const Text('How do I add livestock?'),
-            children: const [
+          const ExpansionTile(
+            title: Text('How do I add livestock?'),
+            children: [
               Padding(
                 padding: EdgeInsets.all(16.0),
-                child: Text('Navigate to Livestock from the menu, then tap the + button to add a new animal. Enter the details and save.'),
+                child: Text(
+                    'Navigate to Livestock from the menu, then tap the + button to add a new animal. Enter the details and save.'),
               ),
             ],
           ),
-          ExpansionTile(
-            title: const Text('How do I contact a veterinarian?'),
-            children: const [
+          const ExpansionTile(
+            title: Text('How do I contact a veterinarian?'),
+            children: [
               Padding(
                 padding: EdgeInsets.all(16.0),
-                child: Text('You can contact veterinarians through the Community tab or by reporting a case. They will be notified and can respond to your case.'),
+                child: Text(
+                    'You can contact veterinarians through the Community tab or by reporting a case. They will be notified and can respond to your case.'),
               ),
             ],
           ),
@@ -90,4 +93,3 @@ class HelpSupportScreen extends StatelessWidget {
     );
   }
 }
-

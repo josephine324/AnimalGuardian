@@ -278,12 +278,16 @@ export const usersAPI = {
   },
 
   getFarmers: async (params = {}) => {
+    console.log('getFarmers called with params:', params);
     const response = await api.get('/farmers/', { params });
+    console.log('getFarmers response:', response.data);
     return response.data;
   },
 
   getVeterinarians: async (params = {}) => {
+    console.log('getVeterinarians called with params:', params);
     const response = await api.get('/veterinarians/', { params });
+    console.log('getVeterinarians response:', response.data);
     return response.data;
   },
 

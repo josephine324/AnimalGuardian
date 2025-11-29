@@ -62,16 +62,23 @@ const VeterinariansPage = () => {
         window.location.href = '/login';
         return;
       }
-      const data = await usersAPI.getVeterinarians();
+      // Fetch all pages to get complete list
+      const params = { page_size: 1000 }; // Large page size to get all veterinarians
+      const data = await usersAPI.getVeterinarians(params);
       const vetsList = data.results || (Array.isArray(data) ? data : []);
       // Filter out sector vets - they should NOT appear in this list
       // Only local vets should be shown here
       const localVetsOnly = Array.isArray(vetsList) 
         ? vetsList.filter(vet => vet.user_type === 'local_vet')
         : [];
+      console.log('Fetched veterinarians:', localVetsOnly.length, 'local vets');
+      console.log('Raw API response:', data);
+      console.log('All vets (before filter):', vetsList.map(v => `${v.first_name} ${v.last_name} (${v.user_type})`));
+      console.log('Local vets (after filter):', localVetsOnly.map(v => `${v.first_name} ${v.last_name} (${v.phone_number})`));
       setVeterinarians(localVetsOnly);
     } catch (err) {
       console.error('Error fetching veterinarians:', err);
+      console.error('Error details:', err.response?.data);
       setError(err.response?.data?.error || err.response?.data?.detail || 'Failed to load veterinarians');
     } finally {
       setLoading(false);
@@ -287,15 +294,27 @@ const VeterinariansPage = () => {
           <h1 className="text-3xl font-bold text-gray-900">Local Veterinarians</h1>
           <p className="text-gray-600 mt-1">Manage local veterinarians and their assignments. Sector veterinarians access the dashboard directly and do not appear in this list.</p>
         </div>
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition-colors flex items-center"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Add Veterinarian
-        </button>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={fetchVeterinarians}
+            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2"
+            title="Refresh veterinarians list"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>Refresh</span>
+          </button>
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium shadow-md transition-colors flex items-center"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Veterinarian
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
