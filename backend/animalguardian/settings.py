@@ -14,7 +14,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
+# For local development, force DEBUG=True to use SQLite
+# Only set DEBUG=False explicitly for production
 DEBUG = config('DEBUG', default=True, cast=bool)
+# Force DEBUG=True if running locally (not on Render)
+if 'RENDER' not in os.environ and 'RAILWAY' not in os.environ:
+    DEBUG = True
 
 # ALLOWED_HOSTS - Read from environment or use defaults
 ALLOWED_HOSTS_STR = config('ALLOWED_HOSTS', default='localhost,127.0.0.1')
@@ -107,19 +112,19 @@ import os
 # If DATABASE_URL is explicitly set to empty string in environment, force SQLite
 DATABASE_URL_ENV = os.environ.get('DATABASE_URL')
 
-# Only use .env file if DATABASE_URL is NOT in environment at all
-# If it's set to empty string, that means we explicitly want SQLite
-if 'DATABASE_URL' in os.environ:
-    # Environment variable exists (even if empty) - use it and ignore .env
-    DATABASE_URL = DATABASE_URL_ENV.strip() if DATABASE_URL_ENV and DATABASE_URL_ENV.strip() else None
+# For local development (DEBUG=True), ALWAYS use SQLite
+# Only use PostgreSQL in production (DEBUG=False)
+if DEBUG:
+    # Local development mode - FORCE SQLite
+    # Ignore any DATABASE_URL from environment or .env files
+    # This ensures local dev always uses SQLite
+    DATABASE_URL = None
 else:
-    # Not in environment at all - check .env file (for production/Render)
-    # But only if we're not in DEBUG mode (local dev should use SQLite)
-    if not DEBUG:
-        DATABASE_URL = config('DATABASE_URL', default=None)
+    # Production mode - use DATABASE_URL from environment or .env
+    if 'DATABASE_URL' in os.environ:
+        DATABASE_URL = DATABASE_URL_ENV.strip() if DATABASE_URL_ENV and DATABASE_URL_ENV.strip() else None
     else:
-        # In DEBUG mode, default to SQLite if not in environment
-        DATABASE_URL = None
+        DATABASE_URL = config('DATABASE_URL', default=None)
 
 # Debug: Print database configuration (only in DEBUG mode)
 if DEBUG:

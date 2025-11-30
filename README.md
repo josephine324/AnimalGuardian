@@ -660,6 +660,35 @@ flutter build ios --release
 
 ### Backend Issues
 
+**Problem: Database connection error (PostgreSQL)**
+```
+psycopg2.OperationalError: could not translate host name "dpg-..." to address
+```
+
+**Solution:** This happens when Django tries to connect to a production PostgreSQL database. For local development, use SQLite:
+
+**Git Bash:**
+```bash
+export DATABASE_URL=""
+python manage.py runserver
+```
+
+**PowerShell:**
+```powershell
+$env:DATABASE_URL = ""
+python manage.py runserver
+```
+
+**Or use the startup script:**
+```bash
+cd backend
+bash start_local.sh  # Git Bash
+# OR
+.\start_local.ps1    # PowerShell
+```
+
+The settings are configured to automatically use SQLite when `DEBUG=True` (local development mode).
+
 **Problem: Module not found**
 ```bash
 # Solution: Reinstall dependencies
