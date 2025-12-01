@@ -78,7 +78,8 @@ class RegisterView(generics.CreateAPIView):
                 'user_id': user.id
             }, status=status.HTTP_201_CREATED)
         else:
-            # Local vets need approval
+            # Local vets need approval - explicitly ensure is_approved_by_admin is False
+            user.is_approved_by_admin = False
             user.save()
             return Response({
                 'message': 'User created successfully. Your account is pending approval from a sector veterinarian. You will receive a notification on your phone number once approved.',
@@ -727,9 +728,11 @@ AnimalGuardian Team
                 'error': 'You do not have permission to view pending approvals. Only administrators and sector veterinarians can view pending approvals.'
             }, status=status.HTTP_403_FORBIDDEN)
         
+        # Get users pending approval - must be verified but not approved
         pending_users = User.objects.filter(
             is_approved_by_admin=False,
-            user_type__in=['farmer', 'local_vet']
+            user_type__in=['farmer', 'local_vet'],
+            is_verified=True  # Only show verified users (all users are auto-verified on registration)
         ).order_by('-created_at')
         
         serializer = self.get_serializer(pending_users, many=True)
