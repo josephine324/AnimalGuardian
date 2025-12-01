@@ -1,73 +1,76 @@
 #!/usr/bin/env python
-"""
-Check why a user cannot login.
-"""
-import requests
-import json
+"""Check user login status and approval."""
+import os
+import sys
+import django
 
-BACKEND_URL = "https://animalguardian.onrender.com"
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'animalguardian.settings')
+django.setup()
 
-def check_user(email):
-    # First login as admin
-    login_url = f"{BACKEND_URL}/api/auth/login/"
-    admin_login = requests.post(login_url, json={
-        "email": "mutesijosephine324@gmail.com",
-        "password": "Admin@123456"
-    })
+from accounts.models import User
+from django.contrib.auth import authenticate
+
+phone_number = '0780480780'
+password = 'Aggyirakiza123'
+
+print("\n" + "="*60)
+print("Checking User Login Status")
+print("="*60 + "\n")
+
+user = User.objects.filter(phone_number=phone_number).first()
+
+if not user:
+    print(f"❌ User with phone {phone_number} NOT FOUND in local database!")
+    print("\nPossible reasons:")
+    print("  1. Account was created on PRODUCTION, not local")
+    print("  2. Account doesn't exist yet")
+    print("\nSolution: Create the account on local backend or sync from production")
+else:
+    print(f"✓ User found: {user.get_full_name()}")
+    print(f"  Phone: {user.phone_number}")
+    print(f"  User type: {user.user_type}")
+    print(f"  is_active: {user.is_active}")
+    print(f"  is_approved_by_admin: {user.is_approved_by_admin}")
+    print(f"  is_verified: {user.is_verified}")
     
-    if admin_login.status_code != 200:
-        print(f"[FAIL] Cannot login as admin: {admin_login.status_code}")
-        return
+    # Test password
+    auth_user = authenticate(username=user.username, password=password)
+    password_correct = auth_user is not None
     
-    token = admin_login.json()['access']
-    headers = {'Authorization': f'Bearer {token}'}
+    print(f"\nPassword check:")
+    print(f"  Password correct: {password_correct}")
     
-    # Get all users
-    users_url = f"{BACKEND_URL}/api/users/"
-    users_response = requests.get(users_url, headers=headers)
-    
-    if users_response.status_code != 200:
-        print(f"[FAIL] Cannot get users: {users_response.status_code}")
-        return
-    
-    users_data = users_response.json()
-    # Handle both list and dict with results
-    if isinstance(users_data, dict) and 'results' in users_data:
-        users = users_data['results']
-    elif isinstance(users_data, list):
-        users = users_data
+    if not password_correct:
+        print("\n❌ PASSWORD IS INCORRECT!")
+        print("The password you're using doesn't match the stored password.")
     else:
-        users = []
-    
-    user = next((u for u in users if isinstance(u, dict) and u.get('email') == email), None)
-    
-    if not user:
-        print(f"[FAIL] User with email {email} not found")
-        return
-    
-    print(f"[OK] User found:")
-    print(f"  ID: {user.get('id')}")
-    print(f"  Email: {user.get('email')}")
-    print(f"  Phone: {user.get('phone_number')}")
-    print(f"  Username: {user.get('username')}")
-    print(f"  User Type: {user.get('user_type')}")
-    print(f"  Is Active: {user.get('is_active')}")
-    print(f"  Is Verified: {user.get('is_verified')}")
-    print(f"  Is Approved: {user.get('is_approved_by_admin')}")
-    
-    # Try to login with this user
-    print(f"\nTesting login...")
-    test_login = requests.post(login_url, json={
-        "email": email,
-        "password": "Test1234!"  # Try common password
-    })
-    
-    print(f"Login Status: {test_login.status_code}")
-    if test_login.status_code == 200:
-        print("[OK] Login successful!")
-    else:
-        print(f"[FAIL] Login failed: {test_login.json()}")
+        print("\n✓ Password is correct")
+        
+        # Check if user can login
+        can_login = True
+        issues = []
+        
+        if not user.is_active:
+            can_login = False
+            issues.append("Account is deactivated (is_active=False)")
+        
+        if user.user_type == 'local_vet' and not user.is_approved_by_admin:
+            can_login = False
+            issues.append("Local vet account not approved (is_approved_by_admin=False)")
+        
+        if can_login:
+            print("\n✅ USER CAN LOGIN - All checks passed!")
+        else:
+            print("\n❌ USER CANNOT LOGIN - Issues found:")
+            for issue in issues:
+                print(f"  - {issue}")
+            
+            print("\nSolutions:")
+            if not user.is_active:
+                print("  - Reactivate account: user.is_active = True")
+            if user.user_type == 'local_vet' and not user.is_approved_by_admin:
+                print("  - Approve account: user.is_approved_by_admin = True")
+                print("  - Or approve via dashboard: /user-approval")
 
-if __name__ == '__main__':
-    check_user('telesphore91073@gmail.com')
-
+print("\n" + "="*60 + "\n")
