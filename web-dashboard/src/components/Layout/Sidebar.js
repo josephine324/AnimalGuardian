@@ -42,13 +42,33 @@ const Sidebar = ({ isOpen, onClose, currentPath, user }) => {
       }
     };
 
+    const fetchPendingApprovals = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+          const { usersAPI } = await import('../../services/api');
+          const data = await usersAPI.getPendingApprovals();
+          const usersList = Array.isArray(data) ? data : (data.results || []);
+          const filteredUsers = Array.isArray(usersList) 
+            ? usersList.filter(user => user.user_type === 'farmer' || user.user_type === 'local_vet')
+            : [];
+          setPendingApprovalsCount(filteredUsers.length);
+        }
+      } catch (err) {
+        // Silently fail
+        setPendingApprovalsCount(0);
+      }
+    };
+
     fetchPendingCases();
     fetchUnreadNotifications();
+    fetchPendingApprovals();
 
     // Refresh counts every 30 seconds
     const interval = setInterval(() => {
       fetchPendingCases();
       fetchUnreadNotifications();
+      fetchPendingApprovals();
     }, 30000);
 
     return () => clearInterval(interval);
