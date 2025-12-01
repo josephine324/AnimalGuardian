@@ -501,6 +501,110 @@ AnimalGuardian Team
             'message': 'Case unassigned successfully.',
             'case': CaseReportSerializer(case).data
         }, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['post'])
+    def confirm_completion(self, request, pk=None):
+        """Allow farmers to confirm task completion for their cases."""
+        case = self.get_object()
+        farmer = request.user
+        
+        # Only the farmer who reported the case can confirm completion
+        if farmer.user_type != 'farmer':
+            return Response({
+                'error': 'Only farmers can confirm task completion.'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        if case.reporter != farmer:
+            return Response({
+                'error': 'You can only confirm completion for your own cases.'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Check if case is assigned to a veterinarian
+        if not case.assigned_veterinarian:
+            return Response({
+                'error': 'This case has not been assigned to a veterinarian yet.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if case status indicates it's been treated/resolved
+        if case.status not in ['treated', 'resolved']:
+            return Response({
+                'error': f'You can only confirm completion for cases that have been treated or resolved. Current status: {case.get_status_display()}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Update farmer confirmation
+        case.farmer_confirmed_completion = True
+        case.farmer_confirmed_at = timezone.now()
+        case.save(update_fields=['farmer_confirmed_completion', 'farmer_confirmed_at'])
+        
+        # Send notification to assigned veterinarian
+        from notifications.models import Notification
+        
+        Notification.objects.create(
+            recipient=case.assigned_veterinarian,
+            channel='in_app',
+            title='Task Completion Confirmed by Farmer',
+            message=f'Farmer {farmer.get_full_name() or farmer.username} has confirmed that the task for case {case.case_id} has been completed.',
+            related_case=case,
+            status='sent',
+            sent_at=timezone.now()
+        )
+        
+        # Send notification to sector veterinarian who assigned the case (if any)
+        if case.assigned_by:
+            Notification.objects.create(
+                recipient=case.assigned_by,
+                channel='in_app',
+                title='Task Completion Confirmed by Farmer',
+                message=f'Farmer {farmer.get_full_name() or farmer.username} has confirmed completion of case {case.case_id} assigned to {case.assigned_veterinarian.get_full_name() if case.assigned_veterinarian else "veterinarian"}.',
+                related_case=case,
+                status='sent',
+                sent_at=timezone.now()
+            )
+        
+        # Email notification to assigned vet
+        def send_confirmation_email():
+            try:
+                if case.assigned_veterinarian.email:
+                    # Refresh case from database to ensure farmer_confirmed_at is available
+                    case.refresh_from_db()
+                    confirmed_at_str = case.farmer_confirmed_at.strftime("%Y-%m-%d %H:%M:%S") if case.farmer_confirmed_at else timezone.now().strftime("%Y-%m-%d %H:%M:%S")
+                    
+                    subject = f'AnimalGuardian - Task Completion Confirmed for Case {case.case_id}'
+                    message = f'''
+Hello {case.assigned_veterinarian.get_full_name() or case.assigned_veterinarian.username},
+
+The farmer has confirmed that the task for case {case.case_id} has been completed.
+
+Case ID: {case.case_id}
+Farmer: {farmer.get_full_name() or farmer.username}
+Status: {case.get_status_display()}
+Confirmed at: {confirmed_at_str}
+
+Thank you for your service.
+
+Best regards,
+AnimalGuardian Team
+'''
+                    send_mail(
+                        subject=subject,
+                        message=message,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[case.assigned_veterinarian.email],
+                        fail_silently=True,
+                    )
+                    logger.info(f'Completion confirmation email sent to vet {case.assigned_veterinarian.email} for case {case.case_id}')
+            except Exception as e:
+                logger.error(f'Error sending completion confirmation email: {str(e)}', exc_info=True)
+        
+        if case.assigned_veterinarian.email:
+            email_thread = threading.Thread(target=send_confirmation_email)
+            email_thread.daemon = True
+            email_thread.start()
+        
+        return Response({
+            'message': 'Task completion confirmed successfully.',
+            'case': CaseReportSerializer(case).data
+        }, status=status.HTTP_200_OK)
 
 class DiseaseViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet for Diseases."""

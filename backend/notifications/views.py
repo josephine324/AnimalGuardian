@@ -17,6 +17,45 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     
     def get_queryset(self):
         return Notification.objects.filter(recipient=self.request.user)
+    
+    @action(detail=True, methods=['patch', 'put'])
+    def mark_as_read(self, request, pk=None):
+        """Mark a notification as read."""
+        notification = self.get_object()
+        
+        # Ensure user can only mark their own notifications as read
+        if notification.recipient != request.user:
+            return Response(
+                {'error': 'You can only mark your own notifications as read.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Update notification status
+        notification.status = 'read'
+        if not notification.read_at:
+            notification.read_at = timezone.now()
+        notification.save(update_fields=['status', 'read_at'])
+        
+        serializer = self.get_serializer(notification)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['post'])
+    def mark_all_read(self, request):
+        """Mark all notifications for the current user as read."""
+        notifications = Notification.objects.filter(
+            recipient=request.user,
+            status__in=['pending', 'sent', 'delivered']
+        )
+        
+        updated_count = notifications.update(
+            status='read',
+            read_at=timezone.now()
+        )
+        
+        return Response({
+            'message': f'Marked {updated_count} notifications as read.',
+            'updated_count': updated_count
+        })
 
 
 class BroadcastMessageViewSet(viewsets.ModelViewSet):

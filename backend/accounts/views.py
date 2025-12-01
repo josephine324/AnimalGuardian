@@ -872,16 +872,98 @@ class VeterinarianViewSet(viewsets.ReadOnlyModelViewSet):
                 is_available=False  # Start as offline - vet must set themselves to online via app
             )
         
+        # Store old availability status
+        old_availability = profile.is_available
+        
         # Toggle availability
         profile.is_available = not profile.is_available
         profile.save()
         
-        # Update user active status to match
-        user.is_active = profile.is_available
-        user.save(update_fields=['is_active'])
+        # DO NOT deactivate the user account - they should still be able to login
+        # Only is_available controls whether they can receive new case assignments
+        # user.is_active should remain True so they can always login
+        
+        # Send notification to sector veterinarians when local vet goes online
+        if user.user_type == 'local_vet' and not old_availability and profile.is_available:
+            self._notify_sector_vets_local_vet_online(user, profile)
         
         return Response({
             'message': f'You are now {"online" if profile.is_available else "offline"}',
             'is_available': profile.is_available,
             'user': UserSerializer(user).data
         }, status=status.HTTP_200_OK)
+    
+    def _notify_sector_vets_local_vet_online(self, local_vet, profile):
+        """Notify sector veterinarians when a local veterinarian goes online."""
+        from notifications.models import Notification
+        from django.core.mail import send_mail
+        from django.conf import settings
+        from django.db.models import Q
+        import threading
+        
+        # Get all sector veterinarians and admins
+        from django.db.models import Q
+        sector_vets = User.objects.filter(
+            (Q(user_type__in=['sector_vet', 'admin']) & Q(is_approved_by_admin=True)) |
+            (Q(is_staff=True) & Q(is_superuser=False))
+        ).distinct()
+        
+        vet_name = local_vet.get_full_name() or local_vet.username
+        vet_location = f"{local_vet.district or 'Unknown District'}"
+        if local_vet.sector:
+            vet_location += f", {local_vet.sector}"
+        
+        # Send in-app notifications to all sector vets
+        notifications = []
+        for sector_vet in sector_vets:
+            notification = Notification(
+                recipient=sector_vet,
+                channel='in_app',
+                title='Local Veterinarian Online',
+                message=f'{vet_name} ({local_vet.phone_number}) is now online. Location: {vet_location}',
+                status='sent',
+                sent_at=timezone.now()
+            )
+            notifications.append(notification)
+        
+        # Bulk create notifications
+        if notifications:
+            Notification.objects.bulk_create(notifications)
+        
+        # Send email notifications (in background thread)
+        def send_email_notifications():
+            for sector_vet in sector_vets:
+                try:
+                    if sector_vet.email:
+                        subject = 'AnimalGuardian - Local Veterinarian Online'
+                        message = f'''
+Hello {sector_vet.get_full_name() or sector_vet.username},
+
+A local veterinarian in your area is now online and available for case assignments.
+
+Veterinarian Details:
+- Name: {vet_name}
+- Phone: {local_vet.phone_number}
+- Location: {vet_location}
+- License: {profile.license_number}
+
+You can now assign cases to this veterinarian through the web dashboard.
+
+Best regards,
+AnimalGuardian Team
+'''
+                        send_mail(
+                            subject=subject,
+                            message=message,
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            recipient_list=[sector_vet.email],
+                            fail_silently=True,
+                        )
+                        logger.info(f'Local vet online notification email sent to sector vet {sector_vet.email}')
+                except Exception as e:
+                    logger.error(f'Error sending local vet online notification email to {sector_vet.email}: {str(e)}', exc_info=True)
+        
+        # Send emails in background thread
+        email_thread = threading.Thread(target=send_email_notifications)
+        email_thread.daemon = True
+        email_thread.start()

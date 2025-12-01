@@ -167,6 +167,21 @@ class ApiService {
     return CaseReport.fromMap(data as Map<String, dynamic>);
   }
 
+  // Confirm task completion as a farmer
+  Future<CaseReport> confirmCaseCompletion(int caseId) async {
+    final headers = await _getHeaders();
+    final response = await http.post(
+      Uri.parse('$baseUrl/cases/reports/$caseId/confirm_completion/'),
+      headers: headers,
+    ).timeout(AppConstants.connectionTimeout);
+
+    final data = _handleResponse(response) as Map<String, dynamic>;
+    if (data.containsKey('case')) {
+      return CaseReport.fromMap(data['case']);
+    }
+    return CaseReport.fromMap(data);
+  }
+
   Future<void> deleteCase(int id) async {
     final headers = await _getHeaders();
     final response = await http.delete(

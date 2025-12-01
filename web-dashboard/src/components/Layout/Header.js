@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { notificationsAPI } from '../../services/api';
+import { getUserDisplayName, getUserInitials } from '../../utils/userUtils';
 
 const Header = ({ onMenuClick, user, onLogout }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -44,7 +45,7 @@ const Header = ({ onMenuClick, user, onLogout }) => {
             </svg>
           </button>
           <div className="ml-4">
-            <h1 className="text-xl font-semibold text-gray-900">Welcome back, {user?.name?.split(' ')[1] || 'Admin'}!</h1>
+            <h1 className="text-xl font-semibold text-gray-900">Welcome back, {getUserDisplayName(user)}!</h1>
             <p className="text-sm text-gray-500">Here's what's happening with your livestock today</p>
           </div>
         </div>
@@ -130,11 +131,18 @@ const Header = ({ onMenuClick, user, onLogout }) => {
               className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
             >
               <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold shadow-md">
-                {user?.name?.charAt(0) || 'A'}
+                {getUserInitials(user)}
               </div>
               <div className="hidden md:block text-left">
-                <p className="text-sm font-medium text-gray-700">{user?.name || 'Admin'}</p>
-                <p className="text-xs text-gray-500 capitalize">{user?.role || 'Administrator'}</p>
+                <p className="text-sm font-medium text-gray-700">
+                  {getUserDisplayName(user)}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {user?.user_type === 'admin' ? 'Administrator' : 
+                   user?.user_type === 'sector_vet' ? 'Sector Veterinarian' :
+                   user?.user_type === 'local_vet' ? 'Local Veterinarian' :
+                   user?.user_type === 'farmer' ? 'Farmer' : 'User'}
+                </p>
               </div>
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -145,8 +153,10 @@ const Header = ({ onMenuClick, user, onLogout }) => {
             {showUserMenu && (
               <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden z-50">
                 <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-                  <p className="text-sm font-medium text-gray-900">{user?.name || 'Admin'}</p>
-                  <p className="text-xs text-gray-500">{user?.email || 'admin@animalguardian.rw'}</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {getUserDisplayName(user)}
+                  </p>
+                  <p className="text-xs text-gray-500">{user?.email || user?.phone_number || 'No contact info'}</p>
                 </div>
                 <div className="py-2">
                   <a href="/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">

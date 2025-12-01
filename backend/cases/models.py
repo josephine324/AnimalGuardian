@@ -114,6 +114,17 @@ class CaseReport(models.Model):
     # Location information
     location_notes = models.TextField(blank=True)
     
+    # Farmer confirmation for task completion
+    farmer_confirmed_completion = models.BooleanField(
+        default=False,
+        help_text="Farmer confirmation that the task/assignment has been completed"
+    )
+    farmer_confirmed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp when farmer confirmed task completion"
+    )
+    
     # Timestamps
     reported_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

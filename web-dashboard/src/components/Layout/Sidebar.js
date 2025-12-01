@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { casesAPI, notificationsAPI } from '../../services/api';
+import { getUserDisplayName, getUserInitials, getUserRole } from '../../utils/userUtils';
 
 const Sidebar = ({ isOpen, onClose, currentPath, user }) => {
   const [pendingCasesCount, setPendingCasesCount] = useState(0);
@@ -198,11 +199,15 @@ const Sidebar = ({ isOpen, onClose, currentPath, user }) => {
         <div className="absolute bottom-0 left-0 right-0 p-4 bg-gray-800 border-t border-gray-700">
           <div className="flex items-center">
             <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">
-              {user?.name?.charAt(0) || 'A'}
+              {getUserInitials(user)}
             </div>
             <div className="ml-3 flex-1">
-              <p className="text-sm font-medium text-white">{user?.name || 'Admin'}</p>
-              <p className="text-xs text-gray-400">{user?.role || 'Administrator'}</p>
+              <p className="text-sm font-medium text-white">
+                {getUserDisplayName(user)}
+              </p>
+              <p className="text-xs text-gray-400">
+                {getUserRole(user)}
+              </p>
             </div>
           </div>
         </div>

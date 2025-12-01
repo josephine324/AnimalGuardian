@@ -46,9 +46,11 @@ const NotificationsPage = () => {
   const handleMarkAsRead = async (id) => {
     try {
       await notificationsAPI.markAsRead(id);
-      setNotifications(notifications.map(n => n.id === id ? { ...n, is_read: true } : n));
+      // Refresh notifications to get updated data
+      await fetchNotifications();
     } catch (err) {
       console.error('Error marking notification as read:', err);
+      alert(err.response?.data?.error || 'Failed to mark notification as read');
     }
   };
 

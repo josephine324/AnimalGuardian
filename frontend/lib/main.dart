@@ -23,11 +23,29 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load .env file (if it exists)
+  // Always initialize dotenv to prevent NotInitializedError
+  bool envLoaded = false;
   try {
     await dotenv.load(fileName: ".env");
+    envLoaded = true;
+    debugPrint('✓ Loaded .env file successfully');
   } catch (e) {
-    // .env file not found, use default values from AppConstants
-    debugPrint('Warning: .env file not found, using default API URL');
+    // .env file not found or failed to load
+    debugPrint('Warning: .env file not found or failed to load: $e');
+    debugPrint('Using default API URL: http://localhost:8000/api');
+  }
+  
+  // Ensure dotenv is always initialized to prevent NotInitializedError
+  // If loading failed, initialize with empty map
+  if (!envLoaded) {
+    try {
+      // Initialize with empty to allow safe access to dotenv.env
+      dotenv.testLoad(fileInput: "");
+      debugPrint('✓ Initialized dotenv with empty values');
+    } catch (_) {
+      // Ignore if initialization fails - app_constants will use default
+      debugPrint('Note: Could not initialize dotenv, will use defaults');
+    }
   }
 
   runApp(

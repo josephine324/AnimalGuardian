@@ -1,10 +1,22 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConstants {
-  // API Configuration - Read from .env or use Render backend as default
+  // API Configuration - Read from .env or use localhost for development
   static String get baseUrl {
-    return dotenv.env['API_BASE_URL'] ?? 
-           'https://animalguardian.onrender.com/api'; // Default to Render backend
+    try {
+      // Safely check if dotenv is initialized and access env variables
+      if (dotenv.isInitialized) {
+        final apiUrl = dotenv.env['API_BASE_URL'];
+        if (apiUrl != null && apiUrl.isNotEmpty) {
+          return apiUrl;
+        }
+      }
+    } catch (e) {
+      // If dotenv is not initialized or throws error, use default
+      // This handles NotInitializedError gracefully
+    }
+    // Default to localhost for development
+    return 'http://localhost:8000/api';
   }
   
   // Pagination

@@ -155,6 +155,10 @@ class CaseReport {
   final String? assignedVeterinarianName;
   final String? assignedVeterinarianPhone;
   final String? assignedVeterinarianEmail;
+  
+  // Farmer confirmation fields
+  final bool farmerConfirmedCompletion;
+  final DateTime? farmerConfirmedAt;
 
   const CaseReport({
     required this.id,
@@ -181,6 +185,8 @@ class CaseReport {
     this.assignedVeterinarianName,
     this.assignedVeterinarianPhone,
     this.assignedVeterinarianEmail,
+    this.farmerConfirmedCompletion = false,
+    this.farmerConfirmedAt,
   });
 
   factory CaseReport.fromMap(Map<String, dynamic> map) {
@@ -213,6 +219,10 @@ class CaseReport {
       assignedVeterinarianName: map['assigned_veterinarian_name'],
       assignedVeterinarianPhone: map['assigned_veterinarian_phone'],
       assignedVeterinarianEmail: map['assigned_veterinarian_email'],
+      farmerConfirmedCompletion: map['farmer_confirmed_completion'] ?? false,
+      farmerConfirmedAt: map['farmer_confirmed_at'] != null 
+          ? DateTime.parse(map['farmer_confirmed_at']) 
+          : null,
     );
   }
 
@@ -260,6 +270,8 @@ class CaseReport {
     String? assignedVeterinarianName,
     String? assignedVeterinarianPhone,
     String? assignedVeterinarianEmail,
+    bool? farmerConfirmedCompletion,
+    DateTime? farmerConfirmedAt,
   }) {
     return CaseReport(
       id: id ?? this.id,
@@ -286,6 +298,8 @@ class CaseReport {
       assignedVeterinarianName: assignedVeterinarianName ?? this.assignedVeterinarianName,
       assignedVeterinarianPhone: assignedVeterinarianPhone ?? this.assignedVeterinarianPhone,
       assignedVeterinarianEmail: assignedVeterinarianEmail ?? this.assignedVeterinarianEmail,
+      farmerConfirmedCompletion: farmerConfirmedCompletion ?? this.farmerConfirmedCompletion,
+      farmerConfirmedAt: farmerConfirmedAt ?? this.farmerConfirmedAt,
     );
   }
 }

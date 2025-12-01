@@ -198,6 +198,69 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
     }
   }
 
+  Future<void> _confirmTaskCompletion() async {
+    if (_isUpdating) return;
+
+    // Confirm with user
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Task Completion'),
+        content: const Text(
+          'Are you sure the task for this case has been completed successfully? This will notify the veterinarian and sector veterinarian.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.green),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() {
+      _isUpdating = true;
+    });
+
+    try {
+      await _apiService.confirmCaseCompletion(widget.caseId);
+
+      // Refresh cases
+      ref.read(casesProvider.notifier).loadCases(refresh: true);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Task completion confirmed successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to confirm completion: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUpdating = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final casesState = ref.watch(casesProvider);
@@ -249,6 +312,7 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
             onNavigateToEdit: _navigateToEditCase,
             onConfirmDelete: _confirmDeleteCase,
             onUpdateStatus: _updateCaseStatus,
+            onConfirmCompletion: _confirmTaskCompletion,
             isUpdating: _isUpdating,
           );
         },
@@ -264,6 +328,7 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
       onNavigateToEdit: _navigateToEditCase,
       onConfirmDelete: _confirmDeleteCase,
       onUpdateStatus: _updateCaseStatus,
+      onConfirmCompletion: _confirmTaskCompletion,
       isUpdating: _isUpdating,
     );
   }
@@ -278,6 +343,7 @@ class _CaseDetailScreenState extends ConsumerState<CaseDetailScreen> {
       onNavigateToEdit: _navigateToEditCase,
       onConfirmDelete: _confirmDeleteCase,
       onUpdateStatus: _updateCaseStatus,
+      onConfirmCompletion: _confirmTaskCompletion,
       isUpdating: _isUpdating,
     );
   }
@@ -292,6 +358,7 @@ class _CaseDetailContent extends ConsumerWidget {
   final Function(BuildContext, CaseReport) onNavigateToEdit;
   final Function(BuildContext, CaseReport) onConfirmDelete;
   final Function(CaseStatus) onUpdateStatus;
+  final VoidCallback onConfirmCompletion;
   final bool isUpdating;
 
   const _CaseDetailContent({
@@ -302,6 +369,7 @@ class _CaseDetailContent extends ConsumerWidget {
     required this.onNavigateToEdit,
     required this.onConfirmDelete,
     required this.onUpdateStatus,
+    required this.onConfirmCompletion,
     required this.isUpdating,
   });
 
@@ -628,6 +696,93 @@ class _CaseDetailContent extends ConsumerWidget {
                           padding: EdgeInsets.only(top: 16.0),
                           child: Center(child: CircularProgressIndicator()),
                         ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Farmer Confirmation Section (for farmers only)
+            if (isFarmer && isCaseOwner && 
+                caseReport.assignedVeterinarianName != null &&
+                (caseReport.status == CaseStatus.treated || caseReport.status == CaseStatus.resolved) &&
+                !caseReport.farmerConfirmedCompletion) ...[
+              Card(
+                color: Colors.green.shade50,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Confirm Task Completion',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Divider(),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Has the veterinarian completed the task for this case? Confirm when you are satisfied with the work done.',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: isUpdating ? null : onConfirmCompletion,
+                          icon: const Icon(Icons.check_circle),
+                          label: const Text('Confirm Task Completion'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                      if (isUpdating)
+                        const Padding(
+                          padding: EdgeInsets.only(top: 16.0),
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Show confirmation status if already confirmed
+            if (caseReport.farmerConfirmedCompletion && caseReport.farmerConfirmedAt != null) ...[
+              Card(
+                color: Colors.green.shade50,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle, color: Colors.green),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Task Completion Confirmed',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Confirmed on: ${DateFormat('yyyy-MM-dd HH:mm').format(caseReport.farmerConfirmedAt!)}',
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),

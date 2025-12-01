@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authAPI } from '../services/api';
+import { clearUserData } from '../utils/userUtils';
 
 const LoginPage = ({ onLogin }) => {
   const [formData, setFormData] = useState({
@@ -25,10 +26,22 @@ const LoginPage = ({ onLogin }) => {
         response = await authAPI.login(formData.email, formData.password);
       }
 
-      // Store tokens
+      // Clear any old data first
+      clearUserData();
+      
+      // Store tokens and user data
       localStorage.setItem('authToken', response.access);
       localStorage.setItem('refreshToken', response.refresh);
-      localStorage.setItem('userData', JSON.stringify(response.user));
+      // Ensure user data is properly formatted
+      const userData = {
+        ...response.user,
+        first_name: response.user?.first_name || '',
+        last_name: response.user?.last_name || '',
+        username: response.user?.username || '',
+        email: response.user?.email || '',
+        user_type: response.user?.user_type || 'user',
+      };
+      localStorage.setItem('userData', JSON.stringify(userData));
 
       // Handle redirect based on user type
       const userType = response.user?.user_type;
@@ -40,14 +53,15 @@ const LoginPage = ({ onLogin }) => {
       // For web dashboard, only sector_vet and admin should access
       if (userType === 'local_vet' || userType === 'farmer') {
         setError('This is the admin dashboard. Please use the mobile app to access your dashboard.');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('userData');
+        clearUserData();
         return;
       }
+      
+      // Clear any old/corrupted user data before setting new data
+      clearUserData();
 
-      // Call onLogin callback with all tokens
-      onLogin(response.user, response.access, response.refresh);
+      // Call onLogin callback with all tokens - use formatted userData
+      onLogin(userData, response.access, response.refresh);
     } catch (err) {
       // Log full error for debugging
       console.error('Login error:', err);

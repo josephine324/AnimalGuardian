@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Use Render backend URL by default, or allow override via environment variable
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://animalguardian.onrender.com/api';
+// Use localhost for development, or allow override via environment variable
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -210,6 +210,11 @@ export const casesAPI = {
     const response = await api.post(`/cases/reports/${caseId}/unassign/`);
     return response.data;
   },
+
+  confirmCompletion: async (caseId) => {
+    const response = await api.post(`/cases/reports/${caseId}/confirm_completion/`);
+    return response.data;
+  },
 };
 
 // Livestock API
@@ -339,9 +344,7 @@ export const notificationsAPI = {
   },
 
   markAsRead: async (id) => {
-    const response = await api.patch(`/notifications/${id}/`, {
-      is_read: true,
-    });
+    const response = await api.patch(`/notifications/${id}/mark_as_read/`);
     return response.data;
   },
 
