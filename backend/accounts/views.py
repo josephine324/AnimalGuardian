@@ -693,6 +693,29 @@ AnimalGuardian Team
             'user': UserSerializer(user_to_reject).data
         }, status=status.HTTP_200_OK)
     
+    @action(detail=True, methods=['post'])
+    def reactivate(self, request, pk=None):
+        """Reactivate a user account (admin or sector vet only). Use this as backup if account gets deactivated."""
+        user_to_reactivate = self.get_object()
+        requester = request.user
+        
+        # Check if requester is admin or sector vet
+        if not (requester.is_staff or requester.is_superuser or requester.user_type in ['admin', 'sector_vet']):
+            return Response({
+                'error': 'You do not have permission to reactivate users. Only administrators and sector veterinarians can reactivate users.'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Reactivate the account - ensure it's always active for local vets
+        user_to_reactivate.is_active = True
+        if user_to_reactivate.user_type == 'local_vet':
+            user_to_reactivate.is_approved_by_admin = True  # Also ensure approval
+        user_to_reactivate.save(update_fields=['is_active', 'is_approved_by_admin'] if user_to_reactivate.user_type == 'local_vet' else ['is_active'])
+        
+        return Response({
+            'message': f'User {user_to_reactivate.get_full_name() or user_to_reactivate.username} account has been reactivated. Going offline will not deactivate the account.',
+            'user': UserSerializer(user_to_reactivate).data
+        }, status=status.HTTP_200_OK)
+    
     @action(detail=False, methods=['get'])
     def pending_approval(self, request):
         """Get list of users pending approval (admin or sector vet only)."""
