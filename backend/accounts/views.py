@@ -879,9 +879,16 @@ class VeterinarianViewSet(viewsets.ReadOnlyModelViewSet):
         profile.is_available = not profile.is_available
         profile.save()
         
-        # DO NOT deactivate the user account - they should still be able to login
-        # Only is_available controls whether they can receive new case assignments
-        # user.is_active should remain True so they can always login
+        # CRITICAL: Always ensure the user account stays active - NEVER deactivate
+        # Offline status (is_available=False) should ONLY affect:
+        # - Visibility in sector vet's available vets list
+        # - Ability to receive NEW case assignments
+        # It should NOT affect:
+        # - Login capability (is_active must always be True)
+        # - Access to existing cases
+        # - Normal app functionality
+        user.is_active = True  # Always keep account active
+        user.save(update_fields=['is_active'])
         
         # Send notification to sector veterinarians when local vet goes online
         if user.user_type == 'local_vet' and not old_availability and profile.is_available:
