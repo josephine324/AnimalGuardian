@@ -14,6 +14,7 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import CommunityPage from './pages/CommunityPage';
 import SettingsPage from './pages/SettingsPage';
+import UserApprovalPage from './pages/UserApprovalPage';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -133,6 +134,7 @@ function App() {
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="community" element={<CommunityPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
+          <Route path="user-approval" element={<UserApprovalPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>

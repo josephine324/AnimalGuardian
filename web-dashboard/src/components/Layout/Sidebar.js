@@ -6,6 +6,7 @@ import { getUserDisplayName, getUserInitials, getUserRole } from '../../utils/us
 const Sidebar = ({ isOpen, onClose, currentPath, user }) => {
   const [pendingCasesCount, setPendingCasesCount] = useState(0);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
 
   useEffect(() => {
     // Fetch pending cases count
@@ -127,6 +128,16 @@ const Sidebar = ({ isOpen, onClose, currentPath, user }) => {
         </svg>
       ),
       badge: unreadNotificationsCount > 0 ? unreadNotificationsCount : null
+    },
+    { 
+      name: 'User Approval', 
+      href: '/user-approval', 
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      badge: pendingApprovalsCount > 0 ? pendingApprovalsCount : null
     },
     { 
       name: 'Settings', 
