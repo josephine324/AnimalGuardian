@@ -42,7 +42,6 @@ AnimalGuardian is a multi-platform digital livestock health management system th
 - **Livestock management** with health records and vaccination tracking
 - **Case assignment system** connecting farmers with local veterinarians
 - **Multi-language support** (English, Kinyarwanda, French)
-- **USSD support** for farmers without smartphones
 
 ### 🎯 Target Users
 
@@ -244,10 +243,6 @@ EMAIL_USE_TLS=True
 EMAIL_HOST_USER=your-email@gmail.com
 EMAIL_HOST_PASSWORD=your-app-password
 DEFAULT_FROM_EMAIL=your-email@gmail.com
-
-# Africa's Talking (for SMS/USSD - optional)
-AFRICASTALKING_USERNAME=your-username
-AFRICASTALKING_API_KEY=your-api-key
 ```
 
 **Important:** 
@@ -879,6 +874,6 @@ Visit: http://localhost:8000/api/schema/swagger-ui/
 
 ---
 
-**Last Updated:** November 2024  
+**Last Updated:** December 2024  
 **Version:** 1.0.0  
 **Maintainer:** josephine324
