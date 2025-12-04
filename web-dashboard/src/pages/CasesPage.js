@@ -841,6 +841,27 @@ const CasesPage = () => {
                   </div>
                 </div>
               )}
+
+              {/* Task Completion Confirmation - Only show when case is treated or resolved */}
+              {selectedCaseDetail.farmer_confirmed_completion && 
+               selectedCaseDetail.farmer_confirmed_at && 
+               (selectedCaseDetail.status === 'treated' || selectedCaseDetail.status === 'resolved') && (
+                <div className="border-t border-gray-200 pt-6">
+                  <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+                    <div className="flex items-center">
+                      <svg className="w-6 h-6 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <h3 className="text-lg font-semibold text-green-900">Task Completion Confirmed</h3>
+                        <p className="text-sm text-green-700 mt-1">
+                          Confirmed on: {new Date(selectedCaseDetail.farmer_confirmed_at).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end sticky bottom-0 bg-white">
               <button

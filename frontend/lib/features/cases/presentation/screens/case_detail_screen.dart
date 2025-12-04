@@ -754,8 +754,15 @@ class _CaseDetailContent extends ConsumerWidget {
               const SizedBox(height: 16),
             ],
 
-            // Show confirmation status if already confirmed
-            if (caseReport.farmerConfirmedCompletion && caseReport.farmerConfirmedAt != null) ...[
+            // Show confirmation status ONLY if ALL conditions are met:
+            // 1. Farmer has explicitly confirmed completion (farmerConfirmedCompletion must be true)
+            // 2. Confirmation timestamp exists and is valid (farmerConfirmedAt is not null)
+            // 3. Case status is treated or resolved (not pending, under review, etc.)
+            // This ensures we only show the banner when the farmer has actually confirmed, not just when data exists
+            if (caseReport.farmerConfirmedCompletion == true && 
+                caseReport.farmerConfirmedAt != null &&
+                caseReport.farmerConfirmedAt is DateTime &&
+                (caseReport.status == CaseStatus.treated || caseReport.status == CaseStatus.resolved)) ...[
               Card(
                 color: Colors.green.shade50,
                 child: Padding(

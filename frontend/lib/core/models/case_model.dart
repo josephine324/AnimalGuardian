@@ -219,7 +219,7 @@ class CaseReport {
       assignedVeterinarianName: map['assigned_veterinarian_name'],
       assignedVeterinarianPhone: map['assigned_veterinarian_phone'],
       assignedVeterinarianEmail: map['assigned_veterinarian_email'],
-      farmerConfirmedCompletion: map['farmer_confirmed_completion'] ?? false,
+      farmerConfirmedCompletion: (map['farmer_confirmed_completion'] == true) || (map['farmer_confirmed_completion'] == 1) || (map['farmer_confirmed_completion'] == 'true'),
       farmerConfirmedAt: map['farmer_confirmed_at'] != null 
           ? DateTime.parse(map['farmer_confirmed_at']) 
           : null,

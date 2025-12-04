@@ -150,7 +150,7 @@ const Sidebar = ({ isOpen, onClose, currentPath, user }) => {
       badge: unreadNotificationsCount > 0 ? unreadNotificationsCount : null
     },
     { 
-      name: 'User Approval', 
+      name: 'Local Vet Approval', 
       href: '/user-approval', 
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -18,15 +18,15 @@ const UserApprovalPage = () => {
       const data = await usersAPI.getPendingApprovals();
       // Handle both array and object with results property
       const usersList = Array.isArray(data) ? data : (data.results || []);
-      // Filter to show only farmers and local_vets (not sector_vets or admins)
+      // Filter to show only local_vets (sector vets approve local vets)
       // Backend returns users with is_verified=True and is_approved_by_admin=False
       const filteredUsers = Array.isArray(usersList) 
-        ? usersList.filter(user => user.user_type === 'farmer' || user.user_type === 'local_vet')
+        ? usersList.filter(user => user.user_type === 'local_vet')
         : [];
       setPendingUsers(filteredUsers);
     } catch (err) {
       console.error('Error fetching pending users:', err);
-      setError(err.response?.data?.error || err.response?.data?.detail || 'Failed to load pending users');
+      setError(err.response?.data?.error || err.response?.data?.detail || 'Failed to load pending local vets');
       setPendingUsers([]);
     } finally {
       setLoading(false);
@@ -39,17 +39,17 @@ const UserApprovalPage = () => {
       await usersAPI.approveUser(userId, notes);
       // Refresh the list to get updated data from backend
       await fetchPendingUsers();
-      alert('User approved successfully!');
+      alert('Local vet approved successfully!');
     } catch (err) {
       console.error('Error approving user:', err);
-      alert(err.response?.data?.error || err.response?.data?.detail || 'Failed to approve user');
+      alert(err.response?.data?.error || err.response?.data?.detail || 'Failed to approve local vet');
     } finally {
       setActionLoading({ ...actionLoading, [userId]: false });
     }
   };
 
   const handleReject = async (userId, notes = '') => {
-    if (!window.confirm('Are you sure you want to reject this user?')) {
+    if (!window.confirm('Are you sure you want to reject this local vet?')) {
       return;
     }
 
@@ -58,10 +58,10 @@ const UserApprovalPage = () => {
       await usersAPI.rejectUser(userId, notes);
       // Refresh the list to get updated data from backend
       await fetchPendingUsers();
-      alert('User rejected.');
+      alert('Local vet rejected.');
     } catch (err) {
       console.error('Error rejecting user:', err);
-      alert(err.response?.data?.error || err.response?.data?.detail || 'Failed to reject user');
+      alert(err.response?.data?.error || err.response?.data?.detail || 'Failed to reject local vet');
     } finally {
       setActionLoading({ ...actionLoading, [userId]: false });
     }
@@ -79,9 +79,9 @@ const UserApprovalPage = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">User Approval</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Local Vet Approval</h1>
           <p className="mt-1 text-sm text-gray-600">
-            Review and approve users waiting for access
+            Review and approve local veterinarians waiting for access
           </p>
         </div>
         <button
@@ -104,7 +104,7 @@ const UserApprovalPage = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <h3 className="mt-2 text-sm font-medium text-gray-900">No pending approvals</h3>
-          <p className="mt-1 text-sm text-gray-500">All users have been reviewed.</p>
+          <p className="mt-1 text-sm text-gray-500">All local veterinarians have been reviewed.</p>
         </div>
       ) : (
         <div className="bg-white shadow rounded-lg overflow-hidden">
@@ -213,7 +213,7 @@ const UserApprovalPage = () => {
                               handleReject(user.id, notes);
                             }
                           }}
-                          disabled={actionLoading[user.id] || !user.is_approved_by_admin}
+                          disabled={actionLoading[user.id] || user.is_approved_by_admin}
                           className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {actionLoading[user.id] ? 'Processing...' : 'Reject'}
